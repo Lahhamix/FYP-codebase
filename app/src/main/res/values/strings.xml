@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">BLE_Viewer</string>
+    <string name="bluetooth_not_enabled">Bluetooth is not enabled. Please enable it and restart the app.</string><string name="permissions_not_granted">Permissions not granted. The app cannot function without them.</string>
+    <string name="scanning">Scanning...</string>
+    <string name="connecting">Connecting to %1$s...</string>
+    <string name="connected_discovering">Connected. Discovering services...</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="receiving_data">Receiving data...</string>
+    <string name="accel_data">Accel: %1$s</string>
+    <string name="gyro_data">Gyro: %1$s</string>
+</resources>
