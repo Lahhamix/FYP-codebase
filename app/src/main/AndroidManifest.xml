@@ -10,7 +10,8 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/logo_with_bg"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Test">
+        android:theme="@style/Theme.Test"
+        android:hardwareAccelerated="true">
         <activity
             android:name=".WelcomeActivity"
             android:exported="true"
@@ -23,20 +24,28 @@
         </activity>
         <activity
             android:name=".ScanActivity"
-            android:theme="@style/Theme.Test.NoActionBar" />
+            android:theme="@style/Theme.Test.NoActionBar"
+            android:hardwareAccelerated="true" />
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Test.NoActionBar" />
+            android:theme="@style/Theme.Test.NoActionBar"
+            android:hardwareAccelerated="true" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    
+    <!-- Android 12+ (API 31+) permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Try without neverForLocation flag first - some devices need location even on Android 12+ -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    
+    <!-- Location permission (required for BLE scanning on Android 11 and below, helpful on 12+) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
 </manifest>
