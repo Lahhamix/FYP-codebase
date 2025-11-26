@@ -11,4 +11,7 @@
     <color name="border">#29F1F8FE</color>
     <color name="ble_connected">#1EA64A</color>
     <color name="profile_image_background">#A7D7C5</color>
+    <color name="status_normal">#1EA64A</color>
+    <color name="status_warning">#FFC107</color>
+    <color name="status_critical">#F44336</color>
 </resources>

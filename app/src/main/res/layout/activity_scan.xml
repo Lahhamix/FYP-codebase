@@ -8,8 +8,8 @@
 
     <ImageView
         android:id="@+id/scan_logo"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="161dp"
+        android:layout_height="157dp"
         android:layout_marginTop="48dp"
         android:src="@drawable/logo"
         app:layout_constraintEnd_toEndOf="parent"
@@ -21,7 +21,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:fontFamily="@font/rubik_medium"
+        android:fontFamily="@font/angkor"
         android:text="Scanning for\nthe wearable ..."
         android:textAlignment="center"
         android:textColor="@android:color/white"
@@ -34,7 +34,7 @@
         android:id="@+id/progress_bar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="0dp"
-        android:layout_height="10dp"
+        android:layout_height="25dp"
         android:layout_marginTop="10dp"
         android:indeterminate="true"
         android:indeterminateTint="@color/progress_bar_color"

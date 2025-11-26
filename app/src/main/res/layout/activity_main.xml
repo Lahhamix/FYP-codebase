@@ -100,264 +100,91 @@
                     </RelativeLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Section Title -->
-                <TextView
-                    android:id="@+id/imuSectionTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:fontFamily="@font/rubik_medium"
-                    android:gravity="center"
-                    android:letterSpacing="0.05"
-                    android:text="IMU Readings"
-                    android:textColor="@color/whitish_blue"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <!-- Progress Indicator -->
-                <ProgressBar
-                    android:id="@+id/progressBar"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="6dp"
-                    android:layout_marginBottom="24dp"
-                    android:indeterminate="true"
-                    android:indeterminateTint="@color/dark_blue"
-                    android:visibility="gone"
-                    tools:visibility="visible" />
-
-                <!-- Acceleration Data Card -->
-                <com.google.android.material.card.MaterialCardView
+                <!-- Feature Cards -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="18dp"
-                    app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/border"
-                    app:strokeWidth="2dp">
+                    android:orientation="horizontal"
+                    android:weightSum="2">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
+                    <!-- Vital Signs Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/vitalSignsCard"
+                        android:layout_width="0dp"
+                        android:layout_height="150dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/border"
+                        app:strokeWidth="2dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
                             <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:layout_marginEnd="12dp"
-                                android:contentDescription="Acceleration Icon"
-                                android:src="@android:drawable/ic_menu_compass"
-                                app:tint="#4CAF50" />
+                                android:layout_width="60dp"
+                                android:layout_height="60dp"
+                                android:src="@drawable/heart" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
                                 android:fontFamily="@font/rubik_medium"
-                                android:text="Acceleration Data"
-                                android:textColor="#4CAF50"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
+                                android:text="Vital Signs"
+                                android:textColor="@color/dark_blue"
+                                android:textSize="16sp" />
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:id="@+id/accelText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/rubik_medium"
-                            android:textColor="@color/dark_blue"
-                            android:textSize="16sp"
-                            tools:text="X: 0.98, Y: -0.05, Z: 0.12" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Gyroscope Data Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="18dp"
-                    app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/border"
-                    app:strokeWidth="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
+                    <!-- Gait Analysis Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/gaitAnalysisCard"
+                        android:layout_width="0dp"
+                        android:layout_height="150dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/border"
+                        app:strokeWidth="2dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
                             <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:layout_marginEnd="12dp"
-                                android:contentDescription="Gyroscope Icon"
-                                android:src="@android:drawable/ic_menu_rotate"
-                                app:tint="#FF9800" />
+                                android:layout_width="60dp"
+                                android:layout_height="60dp"
+                                android:src="@drawable/foot" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android.layout_marginTop="8dp"
                                 android:fontFamily="@font/rubik_medium"
-                                android:text="Gyroscope Data"
-                                android:textColor="#FFB74D"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
+                                android:text="Gait Analysis"
+                                android:textColor="@color/dark_blue"
+                                android:textSize="16sp" />
                         </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/gyroText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/rubik_medium"
-                            android:textColor="@color/dark_blue"
-                            android:textSize="16sp"
-                            tools:text="X: -2.4, Y: 10.1, Z: 5.7" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Section Title: PPG Readings -->
-                <TextView
-                    android:id="@+id/ppgSectionTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="12dp"
-                    android:fontFamily="@font/rubik_medium"
-                    android:gravity="center"
-                    android:letterSpacing="0.05"
-                    android:text="PPG Readings"
-                    android:textColor="@color/whitish_blue"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <!-- Heart Rate Data Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="18dp"
-                    app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/border"
-                    app:strokeWidth="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:layout_marginEnd="12dp"
-                                android:contentDescription="Heart Rate Icon"
-                                android:src="@android:drawable/ic_menu_recent_history"
-                                app:tint="#E91E63" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/rubik_medium"
-                                android:text="Heart Rate"
-                                android:textColor="#E91E63"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/heartRateText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/rubik_medium"
-                            android:textColor="@color/dark_blue"
-                            android:textSize="16sp"
-                            tools:text="BPM: 72.0 | Avg: 70" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- SpO2 Data Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="18dp"
-                    app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/border"
-                    app:strokeWidth="2dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <ImageView
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
-                                android:layout_marginEnd="12dp"
-                                android:contentDescription="SpO2 Icon"
-                                android:src="@android:drawable/ic_dialog_info"
-                                app:tint="#2196F3" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/rubik_medium"
-                                android:text="Blood Oxygen (SpO2)"
-                                android:textColor="#2196F3"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/spo2Text"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/rubik_medium"
-                            android:textColor="@color/dark_blue"
-                            android:textSize="16sp"
-                            tools:text="SpO2: 98.5% | Estimated: 98.2%" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
                 <!-- Footer -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="24dp"
                     android:layout_marginBottom="24dp"
                     android:fontFamily="@font/rubik_medium"
                     android:gravity="center"

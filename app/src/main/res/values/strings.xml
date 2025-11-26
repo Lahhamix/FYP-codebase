@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Test</string>
+    <string name="app_name">SoleMate</string>
     <string name="bluetooth_not_enabled">Bluetooth is not enabled. Please enable it and restart the app.</string><string name="permissions_not_granted">Permissions not granted. The app cannot function without them.</string>
     <string name="scanning">Scanning...</string>
     <string name="connecting">Connecting to %1$s...</string>

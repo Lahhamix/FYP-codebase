@@ -1,42 +1,47 @@
 #include <ArduinoBLE.h>
+#include <string.h>
 #include "imu_reader.h"
 #include "ppg_reader.h"
+#include "encryption.h"
 
 // -----------------------------------------------------------------------------
-// BLE Service and Characteristics - NO ENCRYPTION
+// BLE Service and Characteristics - Encrypted payloads
 // -----------------------------------------------------------------------------
 // Service: Cura Wearable Service
 BLEService wearableService("9a8b0001-6d5e-4c10-b6d9-1f25c09d9e00");
 
 // Each sensor type uses a SEPARATE BLE characteristic (separate channel)
-// Data sent as PLAIN TEXT CSV format (no encryption)
+// Data is encrypted (AES-128-CBC) and Base64 encoded before transmission
+
+// Each characteristic reserves 1 byte for length + 80 bytes ciphertext
+static const int kCharacteristicSize = 81;
 
 // Characteristic: Accelerometer Data (ax,ay,az) - Channel 1
-BLEStringCharacteristic accelChar(
+BLECharacteristic accelChar(
   "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
-  64  // Reduced size for plain text
+  kCharacteristicSize
 );
 
 // Characteristic: Gyroscope Data (gx,gy,gz) - Channel 2
-BLEStringCharacteristic gyroChar(
+BLECharacteristic gyroChar(
   "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
-  64
+  kCharacteristicSize
 );
 
 // Characteristic: Heart Rate Data (bpm,beatAvg,minAvg,hrAvg) - Channel 3
-BLEStringCharacteristic heartRateChar(
+BLECharacteristic heartRateChar(
   "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
-  64
+  kCharacteristicSize
 );
 
 // Characteristic: SpO2 Data (espO2,spO2) - Channel 4
-BLEStringCharacteristic spo2Char(
+BLECharacteristic spo2Char(
   "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
-  64
+  kCharacteristicSize
 );
 
 // -----------------------------------------------------------------------------
@@ -68,6 +73,8 @@ void setup() {
     while (1);
   }
 
+  encryption_init();
+
   BLE.setLocalName("Cura");
   BLE.setDeviceName("Cura");
   BLE.setAdvertisedService(wearableService);
@@ -78,19 +85,45 @@ void setup() {
   wearableService.addCharacteristic(spo2Char);
   BLE.addService(wearableService);
 
-  accelChar.writeValue("0.00,0.00,0.00");
-  gyroChar.writeValue("0.00,0.00,0.00");
-  heartRateChar.writeValue("--");
-  spo2Char.writeValue("--");
+  EncryptedPayload accelInit;
+  EncryptedPayload gyroInit;
+  EncryptedPayload heartInit;
+  EncryptedPayload spo2Init;
+  if (encryptAccel("0.00,0.00,0.00", accelInit)) {
+    writeEncryptedValue(accelChar, accelInit, "accelerometer (init)");
+  }
+  if (encryptGyro("0.00,0.00,0.00", gyroInit)) {
+    writeEncryptedValue(gyroChar, gyroInit, "gyroscope (init)");
+  }
+  if (encryptHeartRate("--", heartInit)) {
+    writeEncryptedValue(heartRateChar, heartInit, "heart rate (init)");
+  }
+  if (encryptSpO2("--", spo2Init)) {
+    writeEncryptedValue(spo2Char, spo2Init, "SpO2 (init)");
+  }
 
   BLE.advertise();
   Serial.println("📡 Advertising as Cura...");
-  Serial.println("📝 Sending PLAIN TEXT data (no encryption)");
+  Serial.println("🔐 Streaming encrypted sensor data");
 }
 
 // -----------------------------------------------------------------------------
 // LOOP - Synchronized data streaming
 // -----------------------------------------------------------------------------
+
+void writeEncryptedValue(BLECharacteristic& characteristic, const EncryptedPayload& payload, const char* label) {
+  if (payload.length == 0 || payload.length > sizeof(payload.data)) {
+    Serial.print("[ENCRYPTION] Invalid payload length for ");
+    Serial.println(label);
+    return;
+  }
+
+  uint8_t framedPayload[sizeof(payload.data) + 1];
+  framedPayload[0] = (uint8_t)payload.length;
+  memcpy(&framedPayload[1], payload.data, payload.length);
+  characteristic.writeValue(framedPayload, payload.length + 1);
+}
+
 void loop() {
   BLEDevice central = BLE.central();
 
@@ -99,22 +132,32 @@ void loop() {
     Serial.println(central.address());
 
     while (central.connected()) {
-      // Read and stream IMU data - PLAIN TEXT
+      // Read and stream IMU data
       IMUData imuData = readIMU();
       if (imuData.available) {
         String accelData = String(imuData.ax, 2) + "," + String(imuData.ay, 2) + "," + String(imuData.az, 2);
         String gyroData = String(imuData.gx, 2) + "," + String(imuData.gy, 2) + "," + String(imuData.gz, 2);
+        EncryptedPayload accelEncrypted;
+        EncryptedPayload gyroEncrypted;
         
         Serial.print("[ACCEL] ");
         Serial.println(accelData);
-        accelChar.writeValue(accelData);
+        if (encryptAccel(accelData, accelEncrypted)) {
+          writeEncryptedValue(accelChar, accelEncrypted, "accelerometer");
+        } else {
+          Serial.println("[ENCRYPTION] Failed to encrypt accelerometer data");
+        }
         
         Serial.print("[GYRO] ");
         Serial.println(gyroData);
-        gyroChar.writeValue(gyroData);
+        if (encryptGyro(gyroData, gyroEncrypted)) {
+          writeEncryptedValue(gyroChar, gyroEncrypted, "gyroscope");
+        } else {
+          Serial.println("[ENCRYPTION] Failed to encrypt gyroscope data");
+        }
       }
 
-      // Read and stream PPG data - PLAIN TEXT
+      // Read and stream PPG data
       PPGData ppgData = readPPG();
       
       if (ppgData.heartRateAvailable) {
@@ -122,12 +165,22 @@ void loop() {
                         String(ppgData.beatAvg) + "," + 
                         String(ppgData.minAvg) + "," + 
                         String(ppgData.hrAvg);
-        heartRateChar.writeValue(hrData);
+        EncryptedPayload hrEncrypted;
+        if (encryptHeartRate(hrData, hrEncrypted)) {
+          writeEncryptedValue(heartRateChar, hrEncrypted, "heart rate");
+        } else {
+          Serial.println("[ENCRYPTION] Failed to encrypt heart rate data");
+        }
       }
 
       if (ppgData.spo2Available) {
         String spo2Data = String(ppgData.espO2, 1) + "," + String(ppgData.spO2, 1);
-        spo2Char.writeValue(spo2Data);
+        EncryptedPayload spo2Encrypted;
+        if (encryptSpO2(spo2Data, spo2Encrypted)) {
+          writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");
+        } else {
+          Serial.println("[ENCRYPTION] Failed to encrypt SpO2 data");
+        }
       }
 
       delay(100); // ~10 Hz synchronized update rate

@@ -1,37 +1,40 @@
 package com.example.ble_viewer
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.bluetooth.*
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
-import android.util.Log
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.io.ByteArrayOutputStream
 
 @SuppressLint("MissingPermission")
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
-
     private lateinit var statusText: TextView
-    private lateinit var accelText: TextView
-    private lateinit var gyroText: TextView
-    private lateinit var heartRateText: TextView
-    private lateinit var spo2Text: TextView
 
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothGatt: BluetoothGatt? = null
+
+    companion object {
+        const val ACTION_SENSOR_DATA = "com.example.ble_viewer.ACTION_SENSOR_DATA"
+        const val EXTRA_UUID_STRING = "com.example.ble_viewer.EXTRA_UUID_STRING"
+        const val EXTRA_DECRYPTED_DATA = "com.example.ble_viewer.EXTRA_DECRYPTED_DATA"
+    }
 
     private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
     private val imuServiceUuid = UUID.fromString("9a8b0001-6d5e-4c10-b6d9-1f25c09d9e00")
@@ -42,6 +45,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private val notificationQueue = ConcurrentLinkedQueue<BluetoothGattCharacteristic>()
     private var isProcessingQueue = false
+    private val characteristicBuffers = mutableMapOf<UUID, ByteArrayOutputStream>()
+    private val maxPayloadLength = 80
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,35 +58,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         drawerLayout = findViewById(R.id.drawer_layout)
         navigationView = findViewById(R.id.nav_view)
-
         navigationView.setNavigationItemSelectedListener(this)
 
-        // Initialize UI elements
         statusText = findViewById(R.id.statusText)
-        accelText = findViewById(R.id.accelText)
-        gyroText = findViewById(R.id.gyroText)
-        heartRateText = findViewById(R.id.heartRateText)
-        spo2Text = findViewById(R.id.spo2Text)
-        
-        // Set default values
-        accelText.text = "Waiting for data..."
-        gyroText.text = "Waiting for data..."
-        heartRateText.text = "Waiting for sensor data..."
-        spo2Text.text = "Waiting for sensor data..."
 
-        // Initialize Bluetooth
+        val vitalSignsCard: MaterialCardView = findViewById(R.id.vitalSignsCard)
+        vitalSignsCard.setOnClickListener {
+            val intent = Intent(this, ReadingsActivity::class.java)
+            startActivity(intent)
+        }
+
         val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
 
-        // Get device address from intent and connect
         val deviceAddress = intent.getStringExtra("DEVICE_ADDRESS")
-        if (deviceAddress != null && bluetoothAdapter != null) {
-            statusText.text = getString(R.string.connecting, deviceAddress)
-            val device = bluetoothAdapter!!.getRemoteDevice(deviceAddress)
-            connectToDevice(device)
-        } else {
-            statusText.text = "Error: No device address provided"
-            Toast.makeText(this, "No device address provided", Toast.LENGTH_SHORT).show()
+        if (deviceAddress != null) {
+            val device = bluetoothAdapter?.getRemoteDevice(deviceAddress)
+            if (device != null) {
+                connectToDevice(device)
+            }
         }
     }
 
@@ -100,10 +95,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.nav_settings -> { 
-                // Handle Settings click
+            R.id.nav_settings -> {
+                val intent = Intent(this, ReadingsActivity::class.java)
+                startActivity(intent)
             }
-            // Add other cases for your menu items
         }
         drawerLayout.closeDrawers()
         return true
@@ -113,106 +108,33 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         bluetoothGatt = device.connectGatt(this, false, gattCallback)
     }
 
-    /**
-     * Format accelerometer/gyroscope data for display
-     * Input: "1.23,4.56,7.89" -> Output: "X: 1.23, Y: 4.56, Z: 7.89"
-     */
-    private fun formatAccelGyroData(data: String): String {
-        return try {
-            val parts = data.split(",")
-            if (parts.size == 3) {
-                "X: ${parts[0].trim()}, Y: ${parts[1].trim()}, Z: ${parts[2].trim()}"
-            } else {
-                data
-            }
-        } catch (e: Exception) {
-            data
-        }
-    }
-
-    /**
-     * Format heart rate data for display
-     * Input: "72.0,70,69,71" -> Output: "BPM: 72.0 | Avg: 70 | Min Avg: 69 | HR Avg: 71"
-     */
-    private fun formatHeartRateData(data: String): String {
-        return try {
-            val parts = data.split(",")
-            if (parts.size >= 4) {
-                "BPM: ${parts[0].trim()} | Avg: ${parts[1].trim()} | Min Avg: ${parts[2].trim()} | HR Avg: ${parts[3].trim()}"
-            } else if (parts.size == 2) {
-                "BPM: ${parts[0].trim()} | Avg: ${parts[1].trim()}"
-            } else {
-                data
-            }
-        } catch (e: Exception) {
-            data
-        }
-    }
-
-    /**
-     * Format SpO2 data for display
-     * Input: "98.5,98.2" -> Output: "SpO2: 98.5% | Estimated: 98.2%"
-     */
-    private fun formatSpO2Data(data: String): String {
-        return try {
-            val parts = data.split(",")
-            if (parts.size == 2) {
-                "Estimated SpO2: ${parts[0].trim()}% | SpO2: ${parts[1].trim()}%"
-            } else {
-                data
-            }
-        } catch (e: Exception) {
-            data
-        }
-    }
-
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            when (newState) {
-                BluetoothProfile.STATE_CONNECTED -> {
-                    runOnUiThread { statusText.text = getString(R.string.connected_discovering) }
-                    gatt.discoverServices()
-                }
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    runOnUiThread { statusText.text = getString(R.string.disconnected) }
-                    bluetoothGatt?.close()
-                    isProcessingQueue = false
-                    notificationQueue.clear()
-                }
-            }
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                runOnUiThread {
-                    statusText.text = "Connection error: $status"
-                }
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                runOnUiThread { statusText.text = getString(R.string.connected_discovering) }
+                gatt.discoverServices()
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                runOnUiThread { statusText.text = getString(R.string.disconnected) }
+                characteristicBuffers.values.forEach { it.reset() }
+                characteristicBuffers.clear()
+                bluetoothGatt?.close()
+                isProcessingQueue = false
+                notificationQueue.clear()
             }
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            val imuService = gatt.getService(imuServiceUuid)
-            val accelChar = imuService?.getCharacteristic(accelCharUuid)
-            val gyroChar = imuService?.getCharacteristic(gyroCharUuid)
-            val heartRateChar = imuService?.getCharacteristic(heartRateCharUuid)
-            val spo2Char = imuService?.getCharacteristic(spo2CharUuid)
-
-            // Add all available characteristics to notification queue
-            if (accelChar != null) {
-                notificationQueue.add(accelChar)
-                Log.d("BLE_SETUP", "Added Accel characteristic to queue")
-            }
-            if (gyroChar != null) {
-                notificationQueue.add(gyroChar)
-                Log.d("BLE_SETUP", "Added Gyro characteristic to queue")
-            }
-            if (heartRateChar != null) {
-                notificationQueue.add(heartRateChar)
-                Log.d("BLE_SETUP", "Added Heart Rate characteristic to queue")
-            }
-            if (spo2Char != null) {
-                notificationQueue.add(spo2Char)
-                Log.d("BLE_SETUP", "Added SpO2 characteristic to queue")
-            }
-
-            processNotificationQueue(gatt)
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                val imuService = gatt.getService(imuServiceUuid)
+                val characteristics = listOf(
+                    imuService?.getCharacteristic(accelCharUuid),
+                    imuService?.getCharacteristic(gyroCharUuid),
+                    imuService?.getCharacteristic(heartRateCharUuid),
+                    imuService?.getCharacteristic(spo2CharUuid)
+                )
+                notificationQueue.addAll(characteristics.filterNotNull())
+                processNotificationQueue(gatt)
+            } 
         }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
@@ -221,54 +143,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            // Get raw bytes from BLE characteristic
             val bytes = characteristic.value ?: return
-            
-            // Convert to plain text string
-            val plainData = String(bytes, Charsets.UTF_8).trim()
-            
-            // Skip empty data
-            if (plainData.isEmpty()) {
-                return
-            }
-            
-            Log.d("BLE_RAW", "Received: $plainData")
-            
-            // Update UI with plain text data
-            runOnUiThread {
-                when (characteristic.uuid) {
-                    accelCharUuid -> {
-                        val formatted = formatAccelGyroData(plainData)
-                        accelText.text = formatted
-                        Log.d("BLE_DATA", "Accel: $formatted")
-                    }
-                    gyroCharUuid -> {
-                        val formatted = formatAccelGyroData(plainData)
-                        gyroText.text = formatted
-                        Log.d("BLE_DATA", "Gyro: $formatted")
-                    }
-                    heartRateCharUuid -> {
-                        // Only display if we have actual data (not "--")
-                        if (plainData != "--" && plainData.contains(",")) {
-                            val formatted = formatHeartRateData(plainData)
-                            heartRateText.text = formatted
-                            Log.d("BLE_DATA", "Heart Rate: $formatted")
-                        } else {
-                            heartRateText.text = "No heart rate detected"
-                        }
-                    }
-                    spo2CharUuid -> {
-                        // Only display if we have actual data (not "--")
-                        if (plainData != "--" && plainData.contains(",")) {
-                            val formatted = formatSpO2Data(plainData)
-                            spo2Text.text = formatted
-                            Log.d("BLE_DATA", "SpO2: $formatted")
-                        } else {
-                            spo2Text.text = "No SpO2 detected"
-                        }
-                    }
-                }
-            }
+            val buffer = characteristicBuffers.getOrPut(characteristic.uuid) { ByteArrayOutputStream() }
+            buffer.write(bytes)
+            drainBuffer(characteristic, buffer)
         }
 
         private fun processNotificationQueue(gatt: BluetoothGatt) {
@@ -283,15 +161,49 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val characteristic = notificationQueue.poll() ?: return
 
             gatt.setCharacteristicNotification(characteristic, true)
-            val descriptor = characteristic.getDescriptor(CCCD_UUID) ?: return
+            val descriptor = characteristic.getDescriptor(CCCD_UUID)
+            if (descriptor == null) {
+                isProcessingQueue = false
+                processNotificationQueue(gatt)
+                return
+            }
 
             descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
             } else {
                 gatt.writeDescriptor(descriptor)
             }
+        }
+    }
+
+    private fun drainBuffer(characteristic: BluetoothGattCharacteristic, buffer: ByteArrayOutputStream) {
+        while (buffer.size() > 0) {
+            val packet = buffer.toByteArray()
+            if (packet.isEmpty()) return
+
+            val payloadLength = packet[0].toInt() and 0xFF
+            if (payloadLength == 0 || payloadLength > maxPayloadLength) {
+                Log.e("BLE_BUFFER", "Invalid payload length $payloadLength for ${characteristic.uuid}, clearing buffer")
+                buffer.reset()
+                return
+            }
+
+            if (packet.size - 1 < payloadLength) {
+                // wait for more bytes
+                return
+            }
+
+            val messageBytes = packet.copyOfRange(1, payloadLength + 1)
+            val remainingBytes = packet.copyOfRange(payloadLength + 1, packet.size)
+            buffer.reset()
+            buffer.write(remainingBytes)
+
+            val intent = Intent(ACTION_SENSOR_DATA).apply {
+                putExtra(EXTRA_UUID_STRING, characteristic.uuid.toString())
+                putExtra(EXTRA_DECRYPTED_DATA, messageBytes)
+            }
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
         }
     }
 
