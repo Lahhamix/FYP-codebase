@@ -51,6 +51,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("org.bouncycastle:bcprov-jdk15to18:1.78.1")
+    implementation("androidx.biometric:biometric:1.1.0")
 
     // Charting library
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")

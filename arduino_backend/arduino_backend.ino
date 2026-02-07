@@ -75,8 +75,8 @@ void setup() {
 
   encryption_init();
 
-  BLE.setLocalName("Cura");
-  BLE.setDeviceName("Cura");
+  BLE.setLocalName("SoleMate");
+  BLE.setDeviceName("SoleMate");
   BLE.setAdvertisedService(wearableService);
 
   wearableService.addCharacteristic(accelChar);
@@ -103,7 +103,7 @@ void setup() {
   }
 
   BLE.advertise();
-  Serial.println("📡 Advertising as Cura...");
+  Serial.println("📡 Advertising as SoleMate...");
   Serial.println("🔐 Streaming encrypted sensor data");
 }
 

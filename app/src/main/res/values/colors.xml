@@ -14,4 +14,5 @@
     <color name="status_normal">#1EA64A</color>
     <color name="status_warning">#FFC107</color>
     <color name="status_critical">#F44336</color>
+    <color name="Blue_gray">#567694</color>
 </resources>
