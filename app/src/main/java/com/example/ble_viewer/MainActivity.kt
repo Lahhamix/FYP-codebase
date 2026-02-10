@@ -68,6 +68,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             startActivity(intent)
         }
 
+        val gaitCard: MaterialCardView = findViewById(R.id.gaitAnalysisCard)
+        gaitCard.setOnClickListener {
+            val intent = Intent(this, GaitAnalysisActivity::class.java)
+            startActivity(intent)
+        }
+
         val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
 
@@ -95,6 +101,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.nav_vital_signs -> {
+                val intent = Intent(this, ReadingsActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.nav_gait_analysis -> {
+                val intent = Intent(this, GaitAnalysisActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.nav_about_us -> {
+                val intent = Intent(this, AboutUsActivity::class.java)
+                startActivity(intent)
+            }
             R.id.nav_settings -> {
                 val intent = Intent(this, ReadingsActivity::class.java)
                 startActivity(intent)

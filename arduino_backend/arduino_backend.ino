@@ -140,16 +140,16 @@ void loop() {
         EncryptedPayload accelEncrypted;
         EncryptedPayload gyroEncrypted;
         
-        Serial.print("[ACCEL] ");
-        Serial.println(accelData);
+        // Serial.print("[ACCEL] ");
+        // Serial.println(accelData);
         if (encryptAccel(accelData, accelEncrypted)) {
           writeEncryptedValue(accelChar, accelEncrypted, "accelerometer");
         } else {
           Serial.println("[ENCRYPTION] Failed to encrypt accelerometer data");
         }
         
-        Serial.print("[GYRO] ");
-        Serial.println(gyroData);
+        // Serial.print("[GYRO] ");
+        // Serial.println(gyroData);
         if (encryptGyro(gyroData, gyroEncrypted)) {
           writeEncryptedValue(gyroChar, gyroEncrypted, "gyroscope");
         } else {
@@ -160,11 +160,8 @@ void loop() {
       // Read and stream PPG data
       PPGData ppgData = readPPG();
       
-      if (ppgData.heartRateAvailable) {
-        String hrData = String(ppgData.beatsPerMinute, 1) + "," + 
-                        String(ppgData.beatAvg) + "," + 
-                        String(ppgData.minAvg) + "," + 
-                        String(ppgData.hrAvg);
+      if (ppgData.heartRateAvailable && ppgData.validHeartRate) {
+        String hrData = String(ppgData.beatsPerMinute);
         EncryptedPayload hrEncrypted;
         if (encryptHeartRate(hrData, hrEncrypted)) {
           writeEncryptedValue(heartRateChar, hrEncrypted, "heart rate");
@@ -173,8 +170,8 @@ void loop() {
         }
       }
 
-      if (ppgData.spo2Available) {
-        String spo2Data = String(ppgData.espO2, 1) + "," + String(ppgData.spO2, 1);
+      if (ppgData.spo2Available && ppgData.validSPO2) {
+        String spo2Data = String(ppgData.spO2, 1);
         EncryptedPayload spo2Encrypted;
         if (encryptSpO2(spo2Data, spo2Encrypted)) {
           writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");

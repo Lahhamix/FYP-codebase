@@ -6,19 +6,17 @@
 #include "heartRate.h"
 
 struct PPGData {
-  float beatsPerMinute;
-  int beatAvg;
-  int minAvg;
-  int hrAvg;
-  float espO2;
+  int32_t beatsPerMinute;
   double spO2;
   bool heartRateAvailable;
   bool spo2Available;
-  long irValue;  // For debugging
+  int8_t validHeartRate;   // 1 if heart rate is valid, 0 otherwise
+  int8_t validSPO2;        // 1 if SpO2 is valid, 0 otherwise
 };
 
 bool ppg_init();
 PPGData readPPG();
+void resetSpo2();
 
 #endif
 

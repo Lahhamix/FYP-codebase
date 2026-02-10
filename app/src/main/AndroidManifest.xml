@@ -40,6 +40,14 @@
             android:name=".ReadingsActivity"
             android:label="Readings"
             android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
+            android:name=".GaitAnalysisActivity"
+            android:label="Gait Analysis"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
+            android:name=".AboutUsActivity"
+            android:label="About"
+            android:theme="@style/Theme.Test.NoActionBar" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

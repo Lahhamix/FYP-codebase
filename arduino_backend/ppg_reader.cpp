@@ -2,38 +2,26 @@
 
 MAX30105 particleSensor;
 
-// Heart rate detection variables
-const byte RATE_SIZE = 15;
-const byte MIN_SIZE = 60;
-const byte HR_SIZE = 1200;
-byte rates[RATE_SIZE];
-byte minrate[MIN_SIZE];
-byte Hrate[HR_SIZE];
-byte midSpot = 0;
-byte rateSpot = 0;
-byte hSpot = 0;
-long lastBeat = 0;
+// Finger detection threshold
+const uint32_t FINGER_THRESHOLD = 20000;
 
-float beatsPerMinute;
-int beatAvg = 0;
-int MinAvg = 0;
-int HrAvg = 0;
+// Heart Rate variables
+uint32_t lastBeatMs = 0;
+float bpmHist[4] = {0, 0, 0, 0};
+uint8_t bpmIdx = 0;
+int32_t heartRateInt = 0;
+int8_t validHeartRate = 0;
 
 // SpO2 calculation variables
-double avered = 0;
-double aveir = 0;
-double sumirrms = 0;
-double sumredrms = 0;
-int i = 0;
+uint32_t ir = 0, red = 0;
+double avered = 0.0, aveir = 0.0;
+double sumredrms = 0.0, sumirrms = 0.0;
+double R = 0.0;
+double SpO2 = 0.0;
+int8_t validSPO2 = 0;
 
-int Num = 100;  // Calculate SpO2 by this sampling interval (from working ESP32 code)
-float ESpO2 = 0;  // Estimated SpO2 (filtered)
-double SpO2 = 0;
-double FSpO2 = 0.7;  // Filter factor for SpO2
-double frate = 0.95;  // Low-pass filter smoothing
-
-#define FINGER_ON 50000  // IR level indicating finger is present (from working ESP32 code)
-#define USEFIFO
+const int SPO2_SAMPLES = 100;
+int spo2SampleCounter = 0;
 
 bool ppg_init() {
   Wire.begin();
@@ -45,122 +33,125 @@ bool ppg_init() {
   
   Serial.println("✅ MAX30105 found! Place your finger on the sensor.");
   
-  // EXACT setup from working ESP32 code
-  particleSensor.setup(31, 4, 3, 3200, 411, 4096);  // Default settings that work
-  particleSensor.setPulseAmplitudeRed(0xFF);  // Dim red LED
-  particleSensor.setPulseAmplitudeGreen(0);   // Turn off green LED
+  // Cleaner sensor configuration (stable, anti-saturation)
+  particleSensor.setup(
+    40,     // LED brightness
+    4,      // sample average
+    2,      // Red + IR
+    100,    // sample rate Hz
+    215,    // pulse width
+    16384   // ADC range
+  );
+
+  particleSensor.setPulseAmplitudeIR(0x30);
+  particleSensor.setPulseAmplitudeRed(0x10);
+  particleSensor.setPulseAmplitudeGreen(0);
+
+  lastBeatMs = millis();
   
-  // Initialize rate arrays
-  for (byte i = 0; i < RATE_SIZE; i++) rates[i] = 0;
-  for (byte i = 0; i < MIN_SIZE; i++) minrate[i] = 0;
-  for (int i = 0; i < HR_SIZE; i++) Hrate[i] = 0;
-  
-  Serial.println("[PPG] Arrays initialized, waiting for heartbeats...");
+  Serial.println("[PPG] Initialized. Waiting for heartbeats...");
   
   return true;
+}
+
+void resetSpo2() {
+  sumredrms = 0.0;
+  sumirrms = 0.0;
+  spo2SampleCounter = 0;
 }
 
 PPGData readPPG() {
   PPGData data;
   data.heartRateAvailable = false;
   data.spo2Available = false;
+  data.validHeartRate = 0;
+  data.validSPO2 = 0;
   
-  //================================================================================//
-  // Heart Rate Monitor - EXACT COPY from working ESP32 code
-  long irValue = particleSensor.getIR();
-  data.irValue = irValue;
-  
-  // EXACT from ESP32 line 30-35 (MAX30102.ino)
-  if (checkForBeat(irValue)) {
-    long delta = millis() - lastBeat;
-    lastBeat = millis();
-    beatsPerMinute = 60 / (delta / 1000.0);
-    
-    if (beatsPerMinute > 50 && beatsPerMinute < 255) {
-      rates[rateSpot++] = (byte)beatsPerMinute;
-      rateSpot %= RATE_SIZE;
-      
-      minrate[midSpot++] = (byte)beatsPerMinute;
-      midSpot %= MIN_SIZE;
-      
-      Hrate[hSpot++] = (byte)beatsPerMinute;
-      hSpot %= HR_SIZE;
-      
-      beatAvg = 0;
-      for (byte x = 0; x < RATE_SIZE; x++) {
-        beatAvg += rates[x];
-      }
-      beatAvg /= RATE_SIZE;
-      
-      MinAvg = 0;
-      for (byte y = 0; y < MIN_SIZE; y++) {
-        MinAvg += minrate[y];
-      }
-      MinAvg /= MIN_SIZE;
-      
-      HrAvg = 0;
-      for (byte z = 0; z < HR_SIZE; z++) {
-        HrAvg += Hrate[z];
-      }
-      HrAvg /= HR_SIZE;
-      
-      data.beatsPerMinute = beatsPerMinute;
-      data.beatAvg = beatAvg;
-      data.minAvg = MinAvg;
-      data.hrAvg = HrAvg;
-      data.heartRateAvailable = true;
-    }
-  }
-  
-  // Finger detection check (from ESP32 line 71)
-  if (irValue < FINGER_ON) {
-    Serial.println("  🛑 No finger detected");
-  }
-  
-  //================================================================================//
-  // SpO2 Reading - EXACT COPY from working ESP32 code
-  
-  #ifdef USEFIFO
   particleSensor.check();
   
   while (particleSensor.available()) {
-    uint32_t red = particleSensor.getFIFORed();
-    uint32_t ir = particleSensor.getFIFOIR();
+    red = particleSensor.getFIFORed();
+    ir  = particleSensor.getFIFOIR();
+    particleSensor.nextSample();
     
-    i++;
-    double fred = (double)red;
-    double fir = (double)ir;
-    
-    // Low-pass filter the signal
-    avered = avered * frate + fred * (1.0 - frate);
-    aveir = aveir * frate + fir * (1.0 - frate);
-    
-    sumredrms += (fred - avered) * (fred - avered);
-    sumirrms += (fir - aveir) * (fir - aveir);
-    
-    // Compute SpO2 every Num samples
-    if ((i % Num) == 0) {
-      double R = (sqrt(sumredrms) / avered) / (sqrt(sumirrms) / aveir);
-      SpO2 = (0.0092 * R + 0.963) * 100 + 1;  // EXACT formula from working ESP32
-      ESpO2 = FSpO2 * ESpO2 + (1.0 - FSpO2) * SpO2;  // Low-pass filter
-      sumredrms = 0.0;
-      sumirrms = 0.0;
-      i = 0;
-      
-      data.espO2 = ESpO2;
-      data.spO2 = SpO2;
-      data.spo2Available = true;
-      
-      Serial.print("[PPG] 💉 SpO2: ");
-      Serial.print(ESpO2, 1);
-      Serial.println("%");
-      
-      break;
+    // Finger detection
+    if (ir < FINGER_THRESHOLD) {
+      validHeartRate = 0;
+      validSPO2 = 0;
+      resetSpo2();
+      Serial.println("[PPG] 🛑 No finger detected");
+      continue;
     }
     
-    particleSensor.nextSample();
+    // Heart Rate detection
+    if (checkForBeat((long)ir)) {
+      uint32_t now = millis();
+      uint32_t dt = now - lastBeatMs;
+      lastBeatMs = now;
+      
+      if (dt > 0) {
+        float bpm = 60000.0f / dt;
+        
+        if (bpm > 45 && bpm < 180) {
+          bpmHist[bpmIdx++] = bpm;
+          bpmIdx %= 4;
+          
+          float sum = 0;
+          for (int i = 0; i < 4; i++) sum += bpmHist[i];
+          heartRateInt = (int)(sum / 4.0f + 0.5f);
+          validHeartRate = 1;
+          
+          data.beatsPerMinute = heartRateInt;
+          data.heartRateAvailable = true;
+          data.validHeartRate = 1;
+          
+          // Serial print for heart rate
+          Serial.print("[PPG] ❤️ BPM: ");
+          Serial.print(heartRateInt);
+          Serial.println(" ✅");
+        }
+      }
+    }
+    
+    // SpO2 calculation
+    double fred = (double)red;
+    double fir  = (double)ir;
+    
+    avered = avered * 0.9 + fred * 0.1;
+    aveir  = aveir  * 0.9 + fir  * 0.1;
+    
+    sumredrms += (fred - avered) * (fred - avered);
+    sumirrms  += (fir  - aveir)  * (fir  - aveir);
+    
+    spo2SampleCounter++;
+    
+    if (spo2SampleCounter >= SPO2_SAMPLES) {
+      if (avered > 1 && aveir > 1) {
+        R = (sqrt(sumredrms) / avered) / (sqrt(sumirrms) / aveir);
+        SpO2 = (0.0092 * R + 0.963) * 100.0 + 1.0;
+        
+        if (SpO2 > 100) SpO2 = 100;
+        if (SpO2 < 0)   SpO2 = 0;
+        
+        validSPO2 = 1;
+        data.spO2 = SpO2;
+        data.spo2Available = true;
+        data.validSPO2 = 1;
+        
+        // Serial print for SpO2
+        Serial.print("[PPG] 🩸 SpO2: ");
+        Serial.print(SpO2, 1);
+        Serial.println(" % ✅");
+      } else {
+        validSPO2 = 0;
+      }
+      resetSpo2();
+    }
   }
-  #endif
+  
+  // Copy final validity flags
+  data.validHeartRate = validHeartRate;
+  data.validSPO2 = validSPO2;
   
   return data;
 }
