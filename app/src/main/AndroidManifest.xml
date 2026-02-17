@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -43,10 +44,6 @@
         <activity
             android:name=".GaitAnalysisActivity"
             android:label="Gait Analysis"
-            android:theme="@style/Theme.Test.NoActionBar" />
-        <activity
-            android:name=".AboutUsActivity"
-            android:label="About"
             android:theme="@style/Theme.Test.NoActionBar" />
     </application>
 

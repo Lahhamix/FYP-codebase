@@ -8,7 +8,7 @@
     android:orientation="vertical"
     tools:context=".ReadingsActivity">
 
-    <include layout="@layout/toolbar_main" />
+    <include layout="@layout/toolbar_vitalsignals" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -21,19 +21,6 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Section Title: Vital Signs -->
-            <TextView
-                android:id="@+id/vitalSignsTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:fontFamily="@font/rubik_medium"
-                android:gravity="center"
-                android:letterSpacing="0.05"
-                android:text="💓 Vital Signs"
-                android:textColor="@color/white"
-                android:textSize="24sp"
-                android:textStyle="bold" />
 
             <!-- Heart Rate Card -->
             <com.google.android.material.card.MaterialCardView
@@ -101,14 +88,14 @@
                     <com.github.mikephil.charting.charts.LineChart
                         android:id="@+id/heartRateChart"
                         android:layout_width="match_parent"
-                        android:layout_height="180dp" />
+                        android:layout_height="150dp" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:fontFamily="@font/rubik_medium"
-                        android:gravity="center"
+                        android.gravity="center"
                         android:text="30-second history"
                         android:textColor="#999999"
                         android:textSize="12sp" />
@@ -181,7 +168,7 @@
                     <com.github.mikephil.charting.charts.LineChart
                         android:id="@+id/spo2Chart"
                         android:layout_width="match_parent"
-                        android:layout_height="180dp" />
+                        android:layout_height="150dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

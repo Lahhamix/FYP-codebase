@@ -1,24 +1,37 @@
 package com.example.ble_viewer
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.bluetooth.*
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
+import java.io.ByteArrayOutputStream
+import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.io.ByteArrayOutputStream
+
+// Data class to hold timestamped sensor data
+data class TimestampedSensorData(val timestamp: String, val heartRate: Int?, val spo2: Double?)
 
 @SuppressLint("MissingPermission")
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
@@ -34,6 +47,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         const val ACTION_SENSOR_DATA = "com.example.ble_viewer.ACTION_SENSOR_DATA"
         const val EXTRA_UUID_STRING = "com.example.ble_viewer.EXTRA_UUID_STRING"
         const val EXTRA_DECRYPTED_DATA = "com.example.ble_viewer.EXTRA_DECRYPTED_DATA"
+        private const val WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 101
     }
 
     private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -47,6 +61,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var isProcessingQueue = false
     private val characteristicBuffers = mutableMapOf<UUID, ByteArrayOutputStream>()
     private val maxPayloadLength = 80
+
+    private val timestampedSensorData = mutableListOf<TimestampedSensorData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +90,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             startActivity(intent)
         }
 
+        val downloadButton: Button = findViewById(R.id.download_data_button)
+        downloadButton.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                exportDataToCsv()
+            } else {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), WRITE_EXTERNAL_STORAGE_REQUEST_CODE)
+            }
+        }
+
         val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
 
@@ -82,6 +107,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val device = bluetoothAdapter?.getRemoteDevice(deviceAddress)
             if (device != null) {
                 connectToDevice(device)
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == WRITE_EXTERNAL_STORAGE_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                exportDataToCsv()
+            } else {
+                Toast.makeText(this, "Permission denied. Cannot download data.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -217,11 +253,66 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             buffer.reset()
             buffer.write(remainingBytes)
 
+            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
+
+            when (characteristic.uuid) {
+                heartRateCharUuid -> {
+                    val bpm = AESCrypto.decryptHeartRate(messageBytes).trim().toIntOrNull()
+                    if (bpm != null) {
+                        timestampedSensorData.add(TimestampedSensorData(timestamp, bpm, null))
+                    }
+                }
+                spo2CharUuid -> {
+                    val spo2 = AESCrypto.decryptSpO2(messageBytes).trim().toDoubleOrNull()
+                    if (spo2 != null) {
+                        timestampedSensorData.add(TimestampedSensorData(timestamp, null, spo2))
+                    }
+                }
+            }
+
             val intent = Intent(ACTION_SENSOR_DATA).apply {
                 putExtra(EXTRA_UUID_STRING, characteristic.uuid.toString())
                 putExtra(EXTRA_DECRYPTED_DATA, messageBytes)
             }
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        }
+    }
+
+    private fun exportDataToCsv() {
+        val username = getSharedPreferences("SolematePrefs", MODE_PRIVATE)
+            .getString("username", "user")
+
+        val fileName = "${username}_sensor_data.csv"
+
+        val resolver = contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        }
+
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+
+        try {
+            if (uri == null) {
+                Toast.makeText(this, "Download failed: cannot create file.", Toast.LENGTH_LONG).show()
+                return
+            }
+
+            resolver.openOutputStream(uri)?.use { os ->
+                os.write("Timestamp,Heart Rate,SpO2\n".toByteArray())
+                timestampedSensorData.forEach { data ->
+                    val heartRate = data.heartRate?.toString() ?: ""
+                    val spo2 = data.spo2?.toString() ?: ""
+                    os.write("${data.timestamp},$heartRate,$spo2\n".toByteArray())
+                }
+            }
+
+            Toast.makeText(this, "Saved to Downloads: $fileName", Toast.LENGTH_LONG).show()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 

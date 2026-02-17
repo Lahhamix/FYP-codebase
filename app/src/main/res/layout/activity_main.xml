@@ -172,7 +172,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android.layout_marginTop="8dp"
+                                android:layout_marginTop="8dp"
                                 android:fontFamily="@font/rubik_medium"
                                 android:text="Gait Analysis"
                                 android:textColor="@color/dark_blue"
@@ -180,6 +180,16 @@
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
+
+                <Button
+                    android:id="@+id/download_data_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/rounded_button"
+                    android:fontFamily="@font/rubik_medium"
+                    android:text="Download Data"
+                    android:textColor="#003366" />
 
                 <!-- Footer -->
                 <TextView
