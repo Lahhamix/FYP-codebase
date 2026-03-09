@@ -8,7 +8,7 @@
     android:orientation="vertical"
     tools:context=".GaitAnalysisActivity">
 
-    <include layout="@layout/toolbar_main" />
+    <include layout="@layout/toolbar_gaitanalysis" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -20,20 +20,6 @@
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:padding="20dp">
-
-            <!-- Section Title-->
-            <TextView
-                android:id="@+id/gaitTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:fontFamily="@font/rubik_medium"
-                android:gravity="center"
-                android:letterSpacing="0.05"
-                android:text="🚶 Gait Analysis"
-                android:textColor="@color/white"
-                android:textSize="24sp"
-                android:textStyle="bold" />
 
             <!-- Acceleration Data Card -->
             <com.google.android.material.card.MaterialCardView
@@ -163,7 +149,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Analytics Placeholder Card (neutral styling) -->
+            <!-- Edema Scale Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -171,7 +157,7 @@
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/border"
+                app:strokeColor="#2196F3"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -180,36 +166,145 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <ImageView
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:layout_gravity="center"
-                        android:layout_marginBottom="16dp"
-                        android:contentDescription="Analytics Icon"
-                        android:src="@android:drawable/ic_menu_info_details"
-                        app:tint="@color/dark_blue" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp">
 
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Edema Scale Icon"
+                            android:src="@android:drawable/ic_menu_view"
+                            app:tint="#2196F3" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/rubik_medium"
+                            android:text="Edema Assessment"
+                            android:textColor="#2196F3"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Current Status Display -->
                     <TextView
+                        android:id="@+id/edemaStatusText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
-                        android:text="Advanced Analytics"
+                        android:text="Calibrating..."
                         android:textColor="@color/dark_blue"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/edemaDeviationText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/rubik_medium"
+                        android:gravity="center"
+                        android:text="--"
+                        android:textColor="#999999"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="20dp" />
+
+                    <!-- Gradient Bar Container -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp">
+
+                        <!-- Gradient Bar Background -->
+                        <View
+                            android:id="@+id/edemaGradientBar"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:background="@drawable/edema_gradient_bar" />
+
+                        <!-- Indicator Pointer -->
+                        <View
+                            android:id="@+id/edemaIndicator"
+                            android:layout_width="8dp"
+                            android:layout_height="50dp"
+                            android:layout_alignTop="@id/edemaGradientBar"
+                            android:layout_marginTop="-5dp"
+                            android:background="@color/dark_blue"
+                            android:visibility="gone" />
+
+                    </RelativeLayout>
+
+                    <!-- Labels -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/rubik_medium"
+                            android:text="SEVERE"
+                            android:textColor="#999999"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/rubik_medium"
+                            android:gravity="center"
+                            android:text="MODERATE"
+                            android:textColor="#999999"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/rubik_medium"
+                            android:gravity="center"
+                            android:text="MILD"
+                            android:textColor="#999999"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/rubik_medium"
+                            android:gravity="end"
+                            android:text="NONE"
+                            android:textColor="#999999"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="16dp"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
-                        android:text="Step detection, stride length, and mobility insights will appear here."
+                        android:text="Real-time edema monitoring from flex sensors"
                         android:textColor="#999999"
-                        android:textSize="14sp" />
+                        android:textSize="12sp" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

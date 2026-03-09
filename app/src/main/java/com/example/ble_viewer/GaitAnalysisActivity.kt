@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +16,10 @@ class GaitAnalysisActivity : AppCompatActivity() {
 
     private lateinit var accelText: TextView
     private lateinit var gyroText: TextView
+    private lateinit var edemaStatusText: TextView
+    private lateinit var edemaDeviationText: TextView
+    private lateinit var edemaIndicator: View
+    private lateinit var edemaGradientBar: View
     private var disconnectDialog: AlertDialog? = null
 
     private val sensorDataReceiver = object : BroadcastReceiver() {
@@ -32,12 +37,14 @@ class GaitAnalysisActivity : AppCompatActivity() {
                     val decryptedData = when (uuidString) {
                         "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptAccel(encryptedBytes)
                         "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptGyro(encryptedBytes)
+                        "9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptFlex(encryptedBytes)
                         else -> return
                     }
 
                     when (uuidString) {
                         "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00" -> accelText.text = "📍 Accel: $decryptedData"
                         "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00" -> gyroText.text = "🔄 Gyro: $decryptedData"
+                        "9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00" -> updateEdemaDisplay(decryptedData)
                     }
                 }
                 MainActivity.ACTION_DEVICE_DISCONNECTED -> {
@@ -53,6 +60,45 @@ class GaitAnalysisActivity : AppCompatActivity() {
 
         accelText = findViewById(R.id.accelText)
         gyroText = findViewById(R.id.gyroText)
+        edemaStatusText = findViewById(R.id.edemaStatusText)
+        edemaDeviationText = findViewById(R.id.edemaDeviationText)
+        edemaIndicator = findViewById(R.id.edemaIndicator)
+        edemaGradientBar = findViewById(R.id.edemaGradientBar)
+    }
+
+    private fun updateEdemaDisplay(data: String) {
+        // Data format: "edemaLabel,totalDeviation,deviation1,deviation2"
+        // Example: "none,2,1,1" or "moderate,15,7,8"
+        val parts = data.split(",")
+        if (parts.size < 2) return
+
+        val edemaLevel = parts[0].trim()
+        val totalDeviation = parts[1].trim().toIntOrNull() ?: 0
+
+        // Update status text
+        edemaStatusText.text = edemaLevel.replaceFirstChar { it.uppercase() }
+        edemaDeviationText.text = "Deviation: $totalDeviation"
+
+        // Position indicator on gradient bar based on edema level
+        // Gradient goes from left (severe/red) to right (none/green)
+        val position = when (edemaLevel.lowercase()) {
+            "severe" -> 0.05f      // Far left
+            "moderate" -> 0.3f     // Left-center
+            "mild" -> 0.5f         // Center
+            "subclinical" -> 0.75f // Right-center
+            "none" -> 0.95f        // Far right
+            "calibrating" -> 0.5f  // Center during calibration
+            else -> 0.5f
+        }
+
+        // Update indicator position
+        edemaIndicator.post {
+            val barWidth = edemaGradientBar.width
+            if (barWidth > 0) {
+                edemaIndicator.visibility = View.VISIBLE
+                edemaIndicator.x = edemaGradientBar.x + (barWidth * position) - (edemaIndicator.width / 2)
+            }
+        }
     }
 
     private fun showDisconnectDialog() {

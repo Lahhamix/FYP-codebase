@@ -15,4 +15,11 @@
     <color name="status_warning">#FFC107</color>
     <color name="status_critical">#F44336</color>
     <color name="Blue_gray">#567694</color>
+    
+    <!-- Edema Scale Colors -->
+    <color name="edema_none">#4CAF50</color>
+    <color name="edema_subclinical">#FFEB3B</color>
+    <color name="edema_mild">#FF9800</color>
+    <color name="edema_moderate">#FF5722</color>
+    <color name="edema_severe">#F44336</color>
 </resources>

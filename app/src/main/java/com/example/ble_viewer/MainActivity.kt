@@ -80,6 +80,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val gyroCharUuid = UUID.fromString("9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00")
     private val heartRateCharUuid = UUID.fromString("9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00")
     private val spo2CharUuid = UUID.fromString("9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00")
+    private val edemaCharUuid = UUID.fromString("9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00")
 
     private val notificationQueue = ConcurrentLinkedQueue<BluetoothGattCharacteristic>()
     private var isProcessingQueue = false
@@ -384,7 +385,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 imuService?.getCharacteristic(accelCharUuid),
                 imuService?.getCharacteristic(gyroCharUuid),
                 imuService?.getCharacteristic(heartRateCharUuid),
-                imuService?.getCharacteristic(spo2CharUuid)
+                imuService?.getCharacteristic(spo2CharUuid),
+                imuService?.getCharacteristic(edemaCharUuid)
             )
             notificationQueue.addAll(characteristics.filterNotNull())
             processNotificationQueue(gatt)

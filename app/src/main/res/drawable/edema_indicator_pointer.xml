@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Triangle pointer -->
+    <item android:gravity="center">
+        <rotate
+            android:fromDegrees="180"
+            android:pivotX="50%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <corners android:radius="2dp" />
+                <size
+                    android:width="16dp"
+                    android:height="16dp" />
+                <solid android:color="@color/dark_blue" />
+            </shape>
+        </rotate>
+    </item>
+    <!-- Shadow/border -->
+    <item android:gravity="center">
+        <shape android:shape="oval">
+            <size
+                android:width="20dp"
+                android:height="20dp" />
+            <solid android:color="@color/dark_blue" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/white" />
+        </shape>
+    </item>
+</layer-list>

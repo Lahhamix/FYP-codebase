@@ -16,6 +16,7 @@ object AESCrypto {
     private lateinit var spo2Key: SecretKeySpec
     private lateinit var accelKey: SecretKeySpec
     private lateinit var gyroKey: SecretKeySpec
+    private lateinit var flexKey: SecretKeySpec
 
     // IVs can remain static as they don't need to be secret, just unique for each encryption.
     // These MUST match the values in the Arduino code.
@@ -23,6 +24,7 @@ object AESCrypto {
     private val spo2IV = IvParameterSpec(ByteArray(16) { (0x30 + it).toByte() })
     private val accelIV = IvParameterSpec(ByteArray(16) { (0x00 + it).toByte() })
     private val gyroIV = IvParameterSpec(ByteArray(16) { (0x10 + it).toByte() })
+    private val flexIV = IvParameterSpec(ByteArray(16) { (0x40 + it).toByte() })
 
     /**
      * Fallback: Initialize with legacy static keys (for Arduino firmware without key exchange).
@@ -45,6 +47,10 @@ object AESCrypto {
             0x47, 0x79, 0x72, 0x6F, 0x4B, 0x65, 0x79, 0x31,
             0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39
         ), "AES")
+        flexKey = SecretKeySpec(byteArrayOf(
+            0x46, 0x6C, 0x65, 0x78, 0x4B, 0x65, 0x79, 0x31,
+            0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39
+        ), "AES")
         isInitialized = true
         Log.d(TAG, "AESCrypto initialized with legacy keys (no key exchange).")
     }
@@ -60,6 +66,7 @@ object AESCrypto {
         spo2Key = SecretKeySpec(deriveKey(sharedSecret, "SPO2"), "AES")
         accelKey = SecretKeySpec(deriveKey(sharedSecret, "ACCEL"), "AES")
         gyroKey = SecretKeySpec(deriveKey(sharedSecret, "GYRO"), "AES")
+        flexKey = SecretKeySpec(deriveKey(sharedSecret, "FLEX"), "AES")
         isInitialized = true
         Log.d(TAG, "AESCrypto initialized successfully from shared secret.")
     }
@@ -103,4 +110,5 @@ object AESCrypto {
     fun decryptSpO2(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, spo2Key, spo2IV)
     fun decryptAccel(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, accelKey, accelIV)
     fun decryptGyro(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, gyroKey, gyroIV)
+    fun decryptFlex(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, flexKey, flexIV)
 }
