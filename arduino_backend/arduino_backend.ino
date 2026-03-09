@@ -2,6 +2,7 @@
 #include <string.h>
 #include "imu_reader.h"
 #include "ppg_reader.h"
+#include "flex_reader.h"
 #include "encryption.h"
 #include "key_exchange.h"
 
@@ -43,6 +44,12 @@ BLECharacteristic spo2Char(
   kCharacteristicSize
 );
 
+BLECharacteristic edemaChar(
+  "9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00",
+  BLERead | BLENotify,
+  kCharacteristicSize
+);
+
 // Called when Android writes its public key - derive keys and init encryption
 void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
   const uint8_t* data = characteristic.value();
@@ -59,6 +66,9 @@ void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
       writeEncryptedValue(heartRateChar, heartInit, "heart rate (init)");
     if (encryptSpO2("--", spo2Init))
       writeEncryptedValue(spo2Char, spo2Init, "SpO2 (init)");
+    EncryptedPayload edemaInit;
+    if (encryptFlex("calibrating,0,0,0", edemaInit))
+      writeEncryptedValue(edemaChar, edemaInit, "flex edema (init)");
   }
 }
 
@@ -88,6 +98,13 @@ void setup() {
   }
   Serial.println("✅ PPG initialized.");
 
+  // Initialize Flex sensors
+  if (!flex_init()) {
+    Serial.println("❌ Failed to initialize Flex sensors!");
+    while (1);
+  }
+  Serial.println("✅ Flex sensors initialized.");
+
   // Initialize BLE
   if (!BLE.begin()) {
     while (1);
@@ -112,6 +129,7 @@ void setup() {
   wearableService.addCharacteristic(gyroChar);
   wearableService.addCharacteristic(heartRateChar);
   wearableService.addCharacteristic(spo2Char);
+  wearableService.addCharacteristic(edemaChar);
   BLE.addService(wearableService);
 
   BLE.advertise();
@@ -197,6 +215,21 @@ void loop() {
           writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");
         } else {
           Serial.println("[ENCRYPTION] Failed to encrypt SpO2 data");
+        }
+      }
+
+      // Read and stream Flex edema data
+      FlexData flexData = readFlex();
+      if (flexData.dataAvailable) {
+        String edemaData = String(flexData.edemaLabel) + "," +
+                           String(flexData.totalDeviation) + "," +
+                           String(flexData.deviation1) + "," +
+                           String(flexData.deviation2);
+        EncryptedPayload edemaEncrypted;
+        if (encryptFlex(edemaData, edemaEncrypted)) {
+          writeEncryptedValue(edemaChar, edemaEncrypted, "flex edema");
+        } else {
+          Serial.println("[ENCRYPTION] Failed to encrypt flex edema data");
         }
       }
 

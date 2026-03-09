@@ -30,6 +30,7 @@ bool encryptAccel(const String& plaintext, EncryptedPayload& payload);
 bool encryptGyro(const String& plaintext, EncryptedPayload& payload);
 bool encryptHeartRate(const String& plaintext, EncryptedPayload& payload);
 bool encryptSpO2(const String& plaintext, EncryptedPayload& payload);
+bool encryptFlex(const String& plaintext, EncryptedPayload& payload);
 
 #endif
 

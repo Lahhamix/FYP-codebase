@@ -23,11 +23,17 @@ static const uint8_t spo2IV[16] = {
   0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F
 };
 
+static const uint8_t flexIV[16] = {
+  0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+  0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F
+};
+
 // Keys from key exchange (populated after ECDH)
 static uint8_t accelKey[16];
 static uint8_t gyroKey[16];
 static uint8_t heartRateKey[16];
 static uint8_t spo2Key[16];
+static uint8_t flexKey[16];
 
 static bool encryptionReady = false;
 
@@ -43,6 +49,7 @@ void encryption_init_from_key_exchange() {
   key_exchange_get_gyro_key(gyroKey);
   key_exchange_get_heart_rate_key(heartRateKey);
   key_exchange_get_spo2_key(spo2Key);
+  key_exchange_get_flex_key(flexKey);
   encryptionReady = true;
   cbc.setKey(accelKey, 16);
   cbc.setIV(accelIV, 16);
@@ -125,5 +132,9 @@ bool encryptHeartRate(const String& plaintext, EncryptedPayload& payload) {
 
 bool encryptSpO2(const String& plaintext, EncryptedPayload& payload) {
   return encryptWithKeyIV(plaintext, spo2Key, spo2IV, payload);
+}
+
+bool encryptFlex(const String& plaintext, EncryptedPayload& payload) {
+  return encryptWithKeyIV(plaintext, flexKey, flexIV, payload);
 }
 

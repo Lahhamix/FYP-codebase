@@ -20,12 +20,14 @@ static const char PURPOSE_HEART_RATE[] = "HEART_RATE";
 static const char PURPOSE_SPO2[] = "SPO2";
 static const char PURPOSE_ACCEL[] = "ACCEL";
 static const char PURPOSE_GYRO[] = "GYRO";
+static const char PURPOSE_FLEX[] = "FLEX";
 
 static uint8_t s_sharedSecret[SHARED_SECRET_SIZE];
 static uint8_t s_accelKey[DERIVED_KEY_SIZE];
 static uint8_t s_gyroKey[DERIVED_KEY_SIZE];
 static uint8_t s_heartRateKey[DERIVED_KEY_SIZE];
 static uint8_t s_spo2Key[DERIVED_KEY_SIZE];
+static uint8_t s_flexKey[DERIVED_KEY_SIZE];
 
 static uint8_t s_peripheralPublicKey[PUBLIC_KEY_UNCOMPRESSED_SIZE];
 static uint8_t s_privateKey[32];
@@ -90,6 +92,7 @@ bool key_exchange_process_phone_key(const uint8_t* phonePublicKey, size_t len) {
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_GYRO, s_gyroKey);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_HEART_RATE, s_heartRateKey);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_SPO2, s_spo2Key);
+  deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_FLEX, s_flexKey);
 
   s_keyExchangeComplete = true;
   Serial.println("[KEY_EXCHANGE] Key derivation complete.");
@@ -118,4 +121,8 @@ void key_exchange_get_heart_rate_key(uint8_t* outKey) {
 
 void key_exchange_get_spo2_key(uint8_t* outKey) {
   memcpy(outKey, s_spo2Key, DERIVED_KEY_SIZE);
+}
+
+void key_exchange_get_flex_key(uint8_t* outKey) {
+  memcpy(outKey, s_flexKey, DERIVED_KEY_SIZE);
 }
