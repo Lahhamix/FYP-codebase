@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.mikephil.charting.charts.LineChart
@@ -25,47 +26,49 @@ class ReadingsActivity : AppCompatActivity() {
     private lateinit var spo2Status: TextView
     private lateinit var spo2Chart: LineChart
 
+    private var disconnectDialog: AlertDialog? = null
+
     private val bpmHistory = mutableListOf<Float>()
     private val spo2History = mutableListOf<Float>()
-    private var bpmEntryCount = 0
-    private var spo2EntryCount = 0
 
     private val sensorDataReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val uuidString = intent.getStringExtra(MainActivity.EXTRA_UUID_STRING)
-            val encryptedBytes = intent.getByteArrayExtra(MainActivity.EXTRA_DECRYPTED_DATA)
+            when (intent.action) {
+                MainActivity.ACTION_SENSOR_DATA -> {
+                    val uuidString = intent.getStringExtra(MainActivity.EXTRA_UUID_STRING)
+                    val encryptedBytes = intent.getByteArrayExtra(MainActivity.EXTRA_DECRYPTED_DATA) ?: return
 
-            if (encryptedBytes == null) {
-                Log.e("BLE_PIPE", "[X] Received null byte array in broadcast.")
-                return
-            }
+                    val decryptedData = when (uuidString) {
+                        "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptHeartRate(encryptedBytes)
+                        "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptSpO2(encryptedBytes)
+                        else -> return
+                    }
 
-            val decryptedData = when (uuidString) {
-                "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptHeartRate(encryptedBytes)
-                "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptSpO2(encryptedBytes)
-                else -> return
-            }
-
-            when (uuidString) {
-                "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00" -> {
-                    val bpm = decryptedData.trim().toIntOrNull()
-                    if (bpm != null) {
-                        heartRateBpm.text = "$bpm BPM"
-                        updateHeartRateStatus(bpm)
-                        bpmHistory.add(bpm.toFloat())
-                        if (bpmHistory.size > 30) bpmHistory.removeAt(0)
-                        updateHeartRateChart()
+                    when (uuidString) {
+                        "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00" -> {
+                            val bpm = decryptedData.trim().toIntOrNull()
+                            if (bpm != null) {
+                                heartRateBpm.text = "$bpm BPM"
+                                updateHeartRateStatus(bpm)
+                                bpmHistory.add(bpm.toFloat())
+                                if (bpmHistory.size > 30) bpmHistory.removeAt(0)
+                                updateHeartRateChart()
+                            }
+                        }
+                        "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00" -> {
+                            val spo2 = decryptedData.trim().toDoubleOrNull()
+                            if (spo2 != null) {
+                                spo2Percentage.text = String.format("%.1f %%", spo2)
+                                updateSpo2Status(spo2)
+                                spo2History.add(spo2.toFloat())
+                                if (spo2History.size > 30) spo2History.removeAt(0)
+                                updateSpo2Chart()
+                            }
+                        }
                     }
                 }
-                "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00" -> {
-                    val spo2 = decryptedData.trim().toDoubleOrNull()
-                    if (spo2 != null) {
-                        spo2Percentage.text = String.format("%.1f %%", spo2)
-                        updateSpo2Status(spo2)
-                        spo2History.add(spo2.toFloat())
-                        if (spo2History.size > 30) spo2History.removeAt(0)
-                        updateSpo2Chart()
-                    }
+                MainActivity.ACTION_DEVICE_DISCONNECTED -> {
+                    showDisconnectDialog()
                 }
             }
         }
@@ -84,6 +87,49 @@ class ReadingsActivity : AppCompatActivity() {
 
         setupHeartRateChart()
         setupSpo2Chart()
+    }
+
+    private fun showDisconnectDialog() {
+        runOnUiThread {
+            if (isFinishing || isDestroyed) return@runOnUiThread
+            if (disconnectDialog?.isShowing == true) return@runOnUiThread
+
+            disconnectDialog = AlertDialog.Builder(this)
+                .setTitle("Connection Lost")
+                .setMessage(
+                    "The wearable device has been disconnected.\n\n" +
+                            "You can reconnect to the last device or scan for another available device."
+                )
+                .setCancelable(false)
+                .setPositiveButton("Reconnect") { _, _ ->
+                    val intent = Intent(this, MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    intent.putExtra("RECONNECT_LAST", true)
+                    startActivity(intent)
+                    finish()
+                }
+                .setNegativeButton("Scan Devices") { _, _ ->
+                    val intent = Intent(this, ScanActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    startActivity(intent)
+                    finish()
+                }
+                .create()
+
+            disconnectDialog?.show()
+
+            disconnectDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+                setTextColor(getColor(R.color.dark_blue))
+                textSize = 15f
+                isAllCaps = false
+            }
+
+            disconnectDialog?.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
+                setTextColor(getColor(R.color.dark_blue))
+                textSize = 15f
+                isAllCaps = false
+            }
+        }
     }
 
     private fun setupHeartRateChart() {
@@ -166,7 +212,10 @@ class ReadingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val filter = IntentFilter(MainActivity.ACTION_SENSOR_DATA)
+        val filter = IntentFilter().apply {
+            addAction(MainActivity.ACTION_SENSOR_DATA)
+            addAction(MainActivity.ACTION_DEVICE_DISCONNECTED)
+        }
         LocalBroadcastManager.getInstance(this).registerReceiver(sensorDataReceiver, filter)
     }
 

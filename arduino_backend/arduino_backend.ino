@@ -3,55 +3,76 @@
 #include "imu_reader.h"
 #include "ppg_reader.h"
 #include "encryption.h"
+#include "key_exchange.h"
 
 // -----------------------------------------------------------------------------
-// BLE Service and Characteristics - Encrypted payloads
+// BLE Services and Characteristics
 // -----------------------------------------------------------------------------
-// Service: Cura Wearable Service
+// Service: Wearable sensor data (encrypted)
 BLEService wearableService("9a8b0001-6d5e-4c10-b6d9-1f25c09d9e00");
 
-// Each sensor type uses a SEPARATE BLE characteristic (separate channel)
-// Data is encrypted (AES-128-CBC) and Base64 encoded before transmission
+// Key exchange service - MUST match Android MainActivity.kt
+BLEService keyExchangeService(KEY_EXCHANGE_SERVICE_UUID);
+BLECharacteristic phonePublicKeyChar(PHONE_PUBLIC_KEY_CHAR_UUID, BLEWrite, 65);
+BLECharacteristic peripheralPublicKeyChar(PERIPHERAL_PUBLIC_KEY_CHAR_UUID, BLERead, 65);
 
 // Each characteristic reserves 1 byte for length + 80 bytes ciphertext
 static const int kCharacteristicSize = 81;
 
-// Characteristic: Accelerometer Data (ax,ay,az) - Channel 1
 BLECharacteristic accelChar(
   "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
 );
 
-// Characteristic: Gyroscope Data (gx,gy,gz) - Channel 2
 BLECharacteristic gyroChar(
   "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
 );
 
-// Characteristic: Heart Rate Data (bpm,beatAvg,minAvg,hrAvg) - Channel 3
 BLECharacteristic heartRateChar(
   "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
 );
 
-// Characteristic: SpO2 Data (espO2,spO2) - Channel 4
 BLECharacteristic spo2Char(
   "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
 );
 
+// Called when Android writes its public key - derive keys and init encryption
+void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
+  const uint8_t* data = characteristic.value();
+  size_t len = characteristic.valueLength();
+  if (key_exchange_process_phone_key(data, len)) {
+    encryption_init_from_key_exchange();
+    // Write initial values so Android gets them when it enables notifications
+    EncryptedPayload accelInit, gyroInit, heartInit, spo2Init;
+    if (encryptAccel("0.00,0.00,0.00", accelInit))
+      writeEncryptedValue(accelChar, accelInit, "accelerometer (init)");
+    if (encryptGyro("0.00,0.00,0.00", gyroInit))
+      writeEncryptedValue(gyroChar, gyroInit, "gyroscope (init)");
+    if (encryptHeartRate("--", heartInit))
+      writeEncryptedValue(heartRateChar, heartInit, "heart rate (init)");
+    if (encryptSpO2("--", spo2Init))
+      writeEncryptedValue(spo2Char, spo2Init, "SpO2 (init)");
+  }
+}
+
 // -----------------------------------------------------------------------------
 // SETUP
 // -----------------------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
-  while (!Serial);
-
+  // Don't block on Serial - Arduino must advertise even when not connected to USB
+  delay(500);  // Brief delay for Serial to init (optional, for debug)
   Serial.println("🔬 Initializing wearable sensors...");
+
+  // Seed RNG for ECDH key generation (use analog pin + time for entropy)
+  randomSeed(analogRead(0) + micros());
 
   // Initialize IMU
   if (!imu_init()) {
@@ -69,42 +90,33 @@ void setup() {
 
   // Initialize BLE
   if (!BLE.begin()) {
-    Serial.println("❌ Starting BLE failed!");
     while (1);
   }
 
-  encryption_init();
+  // Key exchange: generate keypair, prepare peripheral public key
+  key_exchange_init();
 
   BLE.setLocalName("SoleMate");
   BLE.setDeviceName("SoleMate");
   BLE.setAdvertisedService(wearableService);
 
+  // Key exchange service (Android must complete this before sensor data)
+  phonePublicKeyChar.setEventHandler(BLEWritten, onPhoneKeyWritten);
+  peripheralPublicKeyChar.writeValue(key_exchange_get_peripheral_public_key(), 65);
+  keyExchangeService.addCharacteristic(phonePublicKeyChar);
+  keyExchangeService.addCharacteristic(peripheralPublicKeyChar);
+  BLE.addService(keyExchangeService);
+
+  // Wearable sensor service
   wearableService.addCharacteristic(accelChar);
   wearableService.addCharacteristic(gyroChar);
   wearableService.addCharacteristic(heartRateChar);
   wearableService.addCharacteristic(spo2Char);
   BLE.addService(wearableService);
 
-  EncryptedPayload accelInit;
-  EncryptedPayload gyroInit;
-  EncryptedPayload heartInit;
-  EncryptedPayload spo2Init;
-  if (encryptAccel("0.00,0.00,0.00", accelInit)) {
-    writeEncryptedValue(accelChar, accelInit, "accelerometer (init)");
-  }
-  if (encryptGyro("0.00,0.00,0.00", gyroInit)) {
-    writeEncryptedValue(gyroChar, gyroInit, "gyroscope (init)");
-  }
-  if (encryptHeartRate("--", heartInit)) {
-    writeEncryptedValue(heartRateChar, heartInit, "heart rate (init)");
-  }
-  if (encryptSpO2("--", spo2Init)) {
-    writeEncryptedValue(spo2Char, spo2Init, "SpO2 (init)");
-  }
-
   BLE.advertise();
   Serial.println("📡 Advertising as SoleMate...");
-  Serial.println("🔐 Streaming encrypted sensor data");
+  Serial.println("🔐 ECDH key exchange + AES-128-CBC encryption");
 }
 
 // -----------------------------------------------------------------------------
@@ -125,6 +137,7 @@ void writeEncryptedValue(BLECharacteristic& characteristic, const EncryptedPaylo
 }
 
 void loop() {
+  BLE.poll();  // Process BLE events (connection, writes, etc.)
   BLEDevice central = BLE.central();
 
   if (central) {
@@ -132,6 +145,13 @@ void loop() {
     Serial.println(central.address());
 
     while (central.connected()) {
+      BLE.poll();  // Must poll to receive Android's key exchange write
+      // Only stream encrypted data after key exchange is complete
+      if (!encryption_is_ready()) {
+        delay(50);
+        continue;
+      }
+
       // Read and stream IMU data
       IMUData imuData = readIMU();
       if (imuData.available) {
@@ -140,16 +160,16 @@ void loop() {
         EncryptedPayload accelEncrypted;
         EncryptedPayload gyroEncrypted;
         
-        // Serial.print("[ACCEL] ");
-        // Serial.println(accelData);
+        //Serial.print("[ACCEL] ");
+        //Serial.println(accelData);
         if (encryptAccel(accelData, accelEncrypted)) {
           writeEncryptedValue(accelChar, accelEncrypted, "accelerometer");
         } else {
           Serial.println("[ENCRYPTION] Failed to encrypt accelerometer data");
         }
         
-        // Serial.print("[GYRO] ");
-        // Serial.println(gyroData);
+        //Serial.print("[GYRO] ");
+        //Serial.println(gyroData);
         if (encryptGyro(gyroData, gyroEncrypted)) {
           writeEncryptedValue(gyroChar, gyroEncrypted, "gyroscope");
         } else {

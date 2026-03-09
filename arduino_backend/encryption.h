@@ -11,8 +11,15 @@ struct EncryptedPayload {
   uint8_t data[80];  // supports up to 64 bytes of ciphertext + padding
 };
 
-// Initialize encryption system
+// Initialize encryption system with keys from key exchange.
+// Must be called after key_exchange_process_phone_key() succeeds.
+void encryption_init_from_key_exchange();
+
+// Legacy: init with default keys (for backward compat, not used when key exchange is active)
 void encryption_init();
+
+// Returns true if encryption is ready (key exchange complete and keys loaded)
+bool encryption_is_ready();
 
 // Helper functions
 size_t addPKCS5Padding(const uint8_t* data, size_t dataLen, uint8_t* paddedData, size_t maxLen);

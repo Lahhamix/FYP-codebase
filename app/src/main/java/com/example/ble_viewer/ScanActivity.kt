@@ -42,16 +42,19 @@ class ScanActivity : AppCompatActivity() {
         devicesRecyclerView = findViewById(R.id.devices_recycler_view)
         cancelButton = findViewById(R.id.cancel_button)
 
-        deviceListAdapter = DeviceListAdapter(mutableListOf()) { (deviceName, deviceAddress) ->
+        deviceListAdapter = DeviceListAdapter(mutableListOf()) { scanResult ->
             try {
                 bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
             } catch (e: Exception) {
                 Log.e("ScanActivity", "Error stopping scan: ${e.message}")
             }
-            val intent = Intent(this, MainActivity::class.java)
-            intent.putExtra("DEVICE_ADDRESS", deviceAddress)
-            startActivity(intent)
-            finish()
+            // Delay 500ms after stopping scan - BLE stack needs time to settle (fixes GATT 133)
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val intent = Intent(this, MainActivity::class.java)
+                intent.putExtra("DEVICE_ADDRESS", scanResult.device.address)
+                startActivity(intent)
+                finish()
+            }, 500)
         }
 
         devicesRecyclerView.adapter = deviceListAdapter
@@ -172,7 +175,7 @@ class ScanActivity : AppCompatActivity() {
             val deviceAddress = device.address
             Log.d("ScanActivity", "Found SoleMate device: $deviceName ($deviceAddress)")
             runOnUiThread {
-                deviceListAdapter.addDevice(Pair(deviceName, deviceAddress))
+                deviceListAdapter.addDevice(DeviceScanResult(deviceName, deviceAddress, device))
             }
         }
     }

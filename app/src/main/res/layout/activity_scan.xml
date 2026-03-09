@@ -8,8 +8,8 @@
 
     <ImageView
         android:id="@+id/scan_logo"
-        android:layout_width="161dp"
-        android:layout_height="157dp"
+        android:layout_width="180dp"
+        android:layout_height="140dp"
         android:layout_marginTop="48dp"
         android:src="@drawable/logo"
         app:layout_constraintEnd_toEndOf="parent"
@@ -20,12 +20,12 @@
         android:id="@+id/scanning_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:fontFamily="@font/angkor"
         android:text="Scanning for\nthe wearable ..."
         android:textAlignment="center"
         android:textColor="@android:color/white"
-        android:textSize="28sp"
+        android:textSize="32sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/scan_logo" />
@@ -35,11 +35,9 @@
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="0dp"
         android:layout_height="25dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="32dp"
         android:indeterminate="true"
         android:indeterminateTint="@color/progress_bar_color"
-        android:progressBackgroundTint="@color/white"
-        android:progressBackgroundTintMode="src_atop"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/scanning_text" />
@@ -48,42 +46,40 @@
         android:id="@+id/available_devices_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
         android:fontFamily="@font/rubik_medium"
         android:text="Available devices"
         android:textColor="@android:color/white"
-        android:textSize="15sp"
+        android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
 
-    <FrameLayout
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/devices_recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
-        android:background="@drawable/device_item_background"
+        android:layout_marginBottom="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toTopOf="@+id/cancel_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/available_devices_label">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/devices_recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="8dp"/>
-    </FrameLayout>
+        app:layout_constraintTop_toBottomOf="@+id/available_devices_label" />
 
     <Button
         android:id="@+id/cancel_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
+        android:layout_width="140dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="40dp"
+        android:background="@drawable/rounded_button"
         android:fontFamily="@font/rubik_medium"
-        android:text="Cancel"
+        android:text="CANCEL"
         android:textColor="@color/dark_blue"
+        android:textSize="16sp"
         app:backgroundTint="@color/white"
-        app:cornerRadius="100dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
