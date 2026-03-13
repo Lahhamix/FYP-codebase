@@ -12,6 +12,9 @@
 const int flexPin1 = A0;
 const int flexPin2 = A1;
 
+// ADC calibration
+const int ADC_MAX = 4095;          // 12‑bit resolution
+
 // Baselines
 int baseline_value1 = 0;
 int baseline_value2 = 0;
@@ -25,11 +28,11 @@ int deviation1 = 0;
 int deviation2 = 0;
 int total_deviation = 0;
 
-// Thresholds unchanged
-const int subclinical_threshold = 3;
-const int mild_threshold        = 5;
-const int moderate_threshold    = 10;
-const int severe_threshold      = 20;
+// thresholds scaled for 12‑bit ADC (original values ×4)
+const int subclinical_threshold = 12;
+const int mild_threshold        = 20;
+const int moderate_threshold    = 40;
+const int severe_threshold      = 80;
 
 // Timing
 const unsigned long CALIBRATION_MS  = 60000;
@@ -64,11 +67,11 @@ unsigned long preStartMs = 0;
 bool preSamplingStarted = false;
 bool preSamplingDone = false;
 
-// Calibration mins
-int minFilt1 = 1023;
-int minFilt2 = 1023;
-int minRaw1 = 1023;
-int minRaw2 = 1023;
+// Calibration mins (initialize to ADC_MAX for 12‑bit)
+int minFilt1 = ADC_MAX;
+int minFilt2 = ADC_MAX;
+int minRaw1 = ADC_MAX;
+int minRaw2 = ADC_MAX;
 int maxRaw1 = 0;
 int maxRaw2 = 0;
 
@@ -108,6 +111,11 @@ const char* classifyEdema(int totalDeviation) {
 }
 
 bool flex_init() {
+  // ensure we read at 12‑bit resolution
+  #ifdef analogReadResolution
+  analogReadResolution(12);
+  #endif
+
   calibrated = false;
   calibrationStarted = true;
   calibrationStartMs = millis();
@@ -120,10 +128,10 @@ bool flex_init() {
   preSamplingStarted = true;
   preSamplingDone = false;
 
-  minFilt1 = 1023;
-  minFilt2 = 1023;
-  minRaw1 = 1023;
-  minRaw2 = 1023;
+  minFilt1 = ADC_MAX;
+  minFilt2 = ADC_MAX;
+  minRaw1 = ADC_MAX;
+  minRaw2 = ADC_MAX;
   maxRaw1 = 0;
   maxRaw2 = 0;
 
@@ -244,8 +252,8 @@ FlexData readFlex() {
     Serial.println(filt2);
 
     if (t >= CALIBRATION_MS) {
-      if (minFilt1 == 1023) minFilt1 = (preN > 0) ? (int)(preAcc1 / preN) : raw1;
-      if (minFilt2 == 1023) minFilt2 = (preN > 0) ? (int)(preAcc2 / preN) : raw2;
+      if (minFilt1 == ADC_MAX) minFilt1 = (preN > 0) ? (int)(preAcc1 / preN) : raw1;
+      if (minFilt2 == ADC_MAX) minFilt2 = (preN > 0) ? (int)(preAcc2 / preN) : raw2;
 
       baseline_value1 = minFilt1;
       baseline_value2 = minFilt2;

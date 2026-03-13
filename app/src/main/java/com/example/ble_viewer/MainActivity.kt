@@ -35,7 +35,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
 // Data class to hold timestamped sensor data
-data class TimestampedSensorData(val timestamp: String, val heartRate: Int?, val spo2: Double?)
+data class TimestampedSensorData(val timestamp: String, val heartRate: Int?, val spo2: Double?, val edema: String?)
 
 @SuppressLint("MissingPermission")
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val uiHandler = Handler(Looper.getMainLooper())
     private var latestBpm: Int? = null
     private var latestSpo2: Double? = null
+    private var latestEdema: String? = null
     private var isLoggingStarted = false
     
     // --- Key Exchange Members ---
@@ -161,7 +162,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val dataLoggingRunnable = object : Runnable {
         override fun run() {
             val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
-            timestampedSensorData.add(TimestampedSensorData(timestamp, latestBpm, latestSpo2))
+            timestampedSensorData.add(TimestampedSensorData(timestamp, latestBpm, latestSpo2, latestEdema))
             uiHandler.postDelayed(this, 1000)
         }
     }
@@ -466,6 +467,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             when (characteristic.uuid) {
                 heartRateCharUuid -> latestBpm = AESCrypto.decryptHeartRate(messageBytes).trim().toIntOrNull()
                 spo2CharUuid -> latestSpo2 = AESCrypto.decryptSpO2(messageBytes).trim().toDoubleOrNull()
+                edemaCharUuid -> latestEdema = AESCrypto.decryptFlex(messageBytes).trim()
             }
 
             val intent = Intent(ACTION_SENSOR_DATA).apply {
@@ -497,11 +499,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             resolver.openOutputStream(uri)?.use { os ->
-                os.write("Timestamp,Heart Rate,SpO2\n".toByteArray())
+                os.write("Timestamp,Heart Rate,SpO2,Edema\n".toByteArray())
                 timestampedSensorData.forEach { data ->
                     val heartRate = data.heartRate?.toString() ?: ""
                     val spo2 = data.spo2?.toString() ?: ""
-                    os.write("${data.timestamp},$heartRate,$spo2\n".toByteArray())
+                    val edema = data.edema ?: ""
+                    os.write("${data.timestamp},$heartRate,$spo2,$edema\n".toByteArray())
                 }
             }
             Toast.makeText(this, "Saved to Downloads: $fileName", Toast.LENGTH_LONG).show()
