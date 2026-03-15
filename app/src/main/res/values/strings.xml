@@ -9,4 +9,7 @@
     <string name="accel_data">Accel: %1$s</string>
     <string name="gyro_data">Gyro: %1$s</string>
     <string name="dashboard">Dashboard</string>
+    <string name="pressure_mode_pix">Pix</string>
+    <string name="pressure_mode_dynamic">Dynamic</string>
+    <string name="pressure_mode_fixed">Fixed</string>
 </resources>

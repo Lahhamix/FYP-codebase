@@ -46,6 +46,10 @@
             android:name=".GaitAnalysisActivity"
             android:label="Gait Analysis"
             android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
+            android:name=".PressureMatrixActivity"
+            android:label="Pressure Matrix"
+            android:theme="@style/Theme.Test.NoActionBar" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

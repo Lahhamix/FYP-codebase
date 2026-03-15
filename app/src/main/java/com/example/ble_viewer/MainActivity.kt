@@ -30,6 +30,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -66,8 +67,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         const val EXTRA_UUID_STRING = "com.example.ble_viewer.EXTRA_UUID_STRING"
         const val EXTRA_DECRYPTED_DATA = "com.example.ble_viewer.EXTRA_DECRYPTED_DATA"
         private const val WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 101
-        private const val PERIPHERAL_PUBLIC_KEY_LENGTH = 65 
+        private const val PERIPHERAL_PUBLIC_KEY_LENGTH = 65
         private const val TAG = "BLE_VIEWER_MAIN"
+        val pressureCharUuid = UUID.fromString("9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00")
+        /** Set to true when pressure matrix uses encryption (must match Arduino PRESSURE_ENCRYPTION_ENABLED) */
+        const val PRESSURE_MATRIX_ENCRYPTION_ENABLED = true
     }
 
     private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -82,6 +86,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val heartRateCharUuid = UUID.fromString("9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00")
     private val spo2CharUuid = UUID.fromString("9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00")
     private val edemaCharUuid = UUID.fromString("9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00")
+    private val pressureCharUuid = UUID.fromString("9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00")
 
     private val notificationQueue = ConcurrentLinkedQueue<BluetoothGattCharacteristic>()
     private var isProcessingQueue = false
@@ -89,6 +94,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val maxPayloadLength = 80
 
     private val timestampedSensorData = mutableListOf<TimestampedSensorData>()
+    private var pressurePacketCount = 0  // for debug logging
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,6 +116,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         findViewById<MaterialCardView>(R.id.gaitAnalysisCard).setOnClickListener {
             startActivity(Intent(this, GaitAnalysisActivity::class.java))
+        }
+
+        val pressureCard = findViewById<MaterialCardView>(R.id.pressureMatrixCard)
+        pressureCard.setOnClickListener {
+            startActivity(Intent(this, PressureMatrixActivity::class.java))
+        }
+        
+        // Calibrate button on card: open pressure heatmap and start calibration immediately
+        findViewById<Button>(R.id.calibrateButton)?.setOnClickListener {
+            startActivity(Intent(this, PressureMatrixActivity::class.java).apply {
+                putExtra(PressureMatrixActivity.EXTRA_START_CALIBRATION, true)
+            })
         }
 
         findViewById<Button>(R.id.download_data_button).setOnClickListener {
@@ -387,7 +405,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 imuService?.getCharacteristic(gyroCharUuid),
                 imuService?.getCharacteristic(heartRateCharUuid),
                 imuService?.getCharacteristic(spo2CharUuid),
-                imuService?.getCharacteristic(edemaCharUuid)
+                imuService?.getCharacteristic(edemaCharUuid),
+                imuService?.getCharacteristic(pressureCharUuid)
             )
             notificationQueue.addAll(characteristics.filterNotNull())
             processNotificationQueue(gatt)
@@ -401,6 +420,42 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             if(isKeyExchangeInProgress) return
             val bytes = characteristic.value ?: return
+            
+            // Pressure: 20-byte plain or 24-byte encrypted (8 header + 12 payload or 8 header + 16 ciphertext)
+            if (characteristic.uuid == pressureCharUuid) {
+                val decryptedPressure: ByteArray? = if (PRESSURE_MATRIX_ENCRYPTION_ENABLED) {
+                    if (bytes.size == 24) {
+                        val header = bytes.copyOfRange(0, 8)
+                        val encryptedPayload = bytes.copyOfRange(8, 24)
+                        val payload = AESCrypto.decryptPressurePayload(encryptedPayload)
+                        if (payload != null && payload.size == 12) {
+                            header + payload
+                        } else {
+                            null
+                        }
+                    } else null
+                } else {
+                    if (bytes.size == 20) bytes else null
+                }
+                if (decryptedPressure != null && decryptedPressure.size == 20) {
+                    val intent = Intent(ACTION_SENSOR_DATA).apply {
+                        putExtra(EXTRA_UUID_STRING, characteristic.uuid.toString())
+                        putExtra(EXTRA_DECRYPTED_DATA, decryptedPressure)
+                    }
+                    LocalBroadcastManager.getInstance(this@MainActivity).sendBroadcast(intent)
+                    pressurePacketCount++
+                    if (pressurePacketCount == 1 || pressurePacketCount % 100 == 0) {
+                        Log.d(TAG, "Pressure packets received: $pressurePacketCount")
+                    }
+                } else if (decryptedPressure == null && (bytes.size == 20 || bytes.size == 24)) {
+                    Log.w(TAG, "Pressure decryption failed or wrong size")
+                } else if (bytes.size != 20 && bytes.size != 24) {
+                    Log.w(TAG, "Pressure packet wrong size: ${bytes.size} (expected 20 or 24)")
+                }
+                return
+            }
+            
+            // Handle other sensors (string-based)
             val buffer = characteristicBuffers.getOrPut(characteristic.uuid) { ByteArrayOutputStream() }
             buffer.write(bytes)
             drainBuffer(characteristic, buffer)
@@ -414,6 +469,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             isProcessingQueue = true
             val characteristic = notificationQueue.poll() ?: return
+            Log.d(TAG, "Enabling notifications for: ${characteristic.uuid}")
 
             gatt.setCharacteristicNotification(characteristic, true)
             val descriptor = characteristic.getDescriptor(CCCD_UUID) ?: run {
@@ -444,6 +500,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         stopDataLogging()
         keyExchangeManager?.close()
         keyExchangeManager = null
+        pressurePacketCount = 0
     }
 
     private fun drainBuffer(characteristic: BluetoothGattCharacteristic, buffer: ByteArrayOutputStream) {
@@ -483,31 +540,50 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val date = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
         val fileName = "${username}_sensor_data_${date}.csv"
 
-        val resolver = contentResolver
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-        }
-
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-
         try {
-            if (uri == null) {
-                Toast.makeText(this, "File creation failed.", Toast.LENGTH_LONG).show()
-                return
-            }
-
-            resolver.openOutputStream(uri)?.use { os ->
-                os.write("Timestamp,Heart Rate,SpO2,Edema\n".toByteArray())
-                timestampedSensorData.forEach { data ->
-                    val heartRate = data.heartRate?.toString() ?: ""
-                    val spo2 = data.spo2?.toString() ?: ""
-                    val edema = data.edema ?: ""
-                    os.write("${data.timestamp},$heartRate,$spo2,$edema\n".toByteArray())
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // API 29+ - Use MediaStore
+                val resolver = contentResolver
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
                 }
+
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                if (uri == null) {
+                    Toast.makeText(this, "File creation failed.", Toast.LENGTH_LONG).show()
+                    return
+                }
+
+                resolver.openOutputStream(uri)?.use { os ->
+                    os.write("Timestamp,Heart Rate,SpO2,Edema\n".toByteArray())
+                    timestampedSensorData.forEach { data ->
+                        val heartRate = data.heartRate?.toString() ?: ""
+                        val spo2 = data.spo2?.toString() ?: ""
+                        val edema = data.edema ?: ""
+                        os.write("${data.timestamp},$heartRate,$spo2,$edema\n".toByteArray())
+                    }
+                }
+                Toast.makeText(this, "Saved to Downloads: $fileName", Toast.LENGTH_LONG).show()
+            } else {
+                // API < 29 - Use direct file access
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) {
+                    downloadsDir.mkdirs()
+                }
+                val file = File(downloadsDir, fileName)
+                file.outputStream().use { os ->
+                    os.write("Timestamp,Heart Rate,SpO2,Edema\n".toByteArray())
+                    timestampedSensorData.forEach { data ->
+                        val heartRate = data.heartRate?.toString() ?: ""
+                        val spo2 = data.spo2?.toString() ?: ""
+                        val edema = data.edema ?: ""
+                        os.write("${data.timestamp},$heartRate,$spo2,$edema\n".toByteArray())
+                    }
+                }
+                Toast.makeText(this, "Saved to Downloads: $fileName", Toast.LENGTH_LONG).show()
             }
-            Toast.makeText(this, "Saved to Downloads: $fileName", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
         }

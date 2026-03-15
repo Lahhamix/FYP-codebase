@@ -28,12 +28,18 @@ static const uint8_t flexIV[16] = {
   0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F
 };
 
+static const uint8_t pressureIV[16] = {
+  0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57,
+  0x58, 0x59, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F
+};
+
 // Keys from key exchange (populated after ECDH)
 static uint8_t accelKey[16];
 static uint8_t gyroKey[16];
 static uint8_t heartRateKey[16];
 static uint8_t spo2Key[16];
 static uint8_t flexKey[16];
+static uint8_t pressureKey[16];
 
 static bool encryptionReady = false;
 
@@ -50,6 +56,7 @@ void encryption_init_from_key_exchange() {
   key_exchange_get_heart_rate_key(heartRateKey);
   key_exchange_get_spo2_key(spo2Key);
   key_exchange_get_flex_key(flexKey);
+  key_exchange_get_pressure_key(pressureKey);
   encryptionReady = true;
   cbc.setKey(accelKey, 16);
   cbc.setIV(accelIV, 16);
@@ -138,3 +145,22 @@ bool encryptFlex(const String& plaintext, EncryptedPayload& payload) {
   return encryptWithKeyIV(plaintext, flexKey, flexIV, payload);
 }
 
+bool encryptPressurePayload(const uint8_t* payload, size_t payloadLen, uint8_t* encryptedOut, size_t* encryptedLen) {
+  if (!encryptionReady || payloadLen == 0 || payloadLen > 12) {
+    return false;
+  }
+
+  // Pad payload to 16 bytes (AES block size)
+  uint8_t paddedData[16];
+  memcpy(paddedData, payload, payloadLen);
+  uint8_t padValue = 16 - payloadLen;
+  for (size_t i = payloadLen; i < 16; i++) {
+    paddedData[i] = padValue;
+  }
+
+  cbc.setKey(pressureKey, 16);
+  cbc.setIV(pressureIV, 16);
+  cbc.encrypt(encryptedOut, paddedData, 16);
+  *encryptedLen = 16;
+  return true;
+}

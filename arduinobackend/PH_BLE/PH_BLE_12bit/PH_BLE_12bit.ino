@@ -206,21 +206,35 @@ void packSamples12(const uint16_t* samples, int count, uint8_t* out12) {
 }
 
 // =========================================================
-// SERIAL CSV OUTPUT
+// FRAME STATS (same print in BLE and serial, always)
+// =========================================================
+void printFrameRawMinMax() {
+  uint16_t pMin = 0x0FFF, pMax = 0;
+  for (int r = 0; r < NUM_ROWS; r++) {
+    for (int c = 0; c < NUM_COLS; c++) {
+      uint16_t v = frame12[r][c] & 0x0FFF;
+      if (v < pMin) pMin = v;
+      if (v > pMax) pMax = v;
+    }
+  }
+  Serial.print("[PRESSURE] frame raw min=");
+  Serial.print(pMin);
+  Serial.print(" max=");
+  Serial.println(pMax);
+}
+
+// =========================================================
+// SERIAL CSV OUTPUT (optional; min/max is printed in loop)
 // =========================================================
 void sendFrameSerialCSV() {
   Serial.print("F,");
-
   for (int r = 0; r < NUM_ROWS; r++) {
     for (int c = 0; c < NUM_COLS; c++) {
-      Serial.print(frame12[r][c]);
-      if (!(r == NUM_ROWS - 1 && c == NUM_COLS - 1)) {
-        Serial.print(",");
-      }
+      if (r > 0 || c > 0) Serial.print(",");
+      Serial.print(frame12[r][c] & 0x0FFF);
     }
   }
-
-  Serial.print("\n");
+  Serial.println();
 }
 
 // =========================================================
@@ -323,7 +337,7 @@ void setup() {
   BLE.advertise();
   Serial.println("BLE advertising as 'Velo2' (continuous stream mode)");
 #else
-  Serial.println("Serial CSV mode enabled.");
+  /* Serial CSV mode: only [PRESSURE] frame raw min/max and F,... lines are printed */
 #endif
 }
 
@@ -337,10 +351,14 @@ void loop() {
 
   scanMatrix12bit();
 
+  // Same print in both modes, even when no BLE device connected
+  // printFrameRawMinMax();
+
 #if USE_BLE
   sendFrameContinuousBLE();
   delay(FRAME_DELAY_MS);
 #else
   sendFrameSerialCSV();
+  delay(FRAME_DELAY_MS);
 #endif
 }

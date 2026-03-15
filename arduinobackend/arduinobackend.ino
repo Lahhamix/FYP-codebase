@@ -3,8 +3,21 @@
 #include "imu_reader.h"
 #include "ppg_reader.h"
 #include "flex_reader.h"
+#include "pressure_reader.h"
 #include "encryption.h"
 #include "key_exchange.h"
+
+// Set to 1 to enable encryption for pressure matrix (must match Android PRESSURE_MATRIX_ENCRYPTION_ENABLED)
+#define PRESSURE_ENCRYPTION_ENABLED 1
+
+// Pressure: 20-byte plain (8 header + 12 payload) or 24-byte encrypted (8 header + 16 ciphertext)
+#define PRESSURE_HEADER_SIZE 8
+#define PRESSURE_PAYLOAD_SIZE 12
+#if PRESSURE_ENCRYPTION_ENABLED
+  static const int kPressurePacketSize = PRESSURE_HEADER_SIZE + 16;  // 8 + 16 encrypted
+#else
+  static const int kPressurePacketSize = PRESSURE_HEADER_SIZE + PRESSURE_PAYLOAD_SIZE;  // 20
+#endif
 
 // -----------------------------------------------------------------------------
 // BLE Services and Characteristics
@@ -32,7 +45,7 @@ BLECharacteristic gyroChar(
   kCharacteristicSize
 );
 
-BLECharacteristic heartRateChar(
+BLECharacteristic heartRateChar( 
   "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
@@ -48,6 +61,13 @@ BLECharacteristic edemaChar(
   "9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
+);
+
+// Pressure: 20-byte plain or 24-byte encrypted (kPressurePacketSize set above)
+BLECharacteristic pressureChar(
+  "9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00",
+  BLERead | BLENotify,
+  kPressurePacketSize
 );
 
 // Called when Android writes its public key - derive keys and init encryption
@@ -69,6 +89,19 @@ void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
     EncryptedPayload edemaInit;
     if (encryptFlex("calibrating,0,0,0", edemaInit))
       writeEncryptedValue(edemaChar, edemaInit, "flex edema (init)");
+    // Send initial pressure packet (20 bytes plain or 24 bytes with encrypted payload)
+#if PRESSURE_ENCRYPTION_ENABLED
+    uint8_t initPressure[kPressurePacketSize] = {0};
+    initPressure[0] = 0xA5;
+    initPressure[1] = 0x5A;
+    // bytes 8..23 are zeros; Android treats all-zero ciphertext as init and returns 12 zeros
+    pressureChar.writeValue(initPressure, kPressurePacketSize);
+#else
+    uint8_t initPacket[20] = {0};
+    initPacket[0] = 0xA5;
+    initPacket[1] = 0x5A;
+    pressureChar.writeValue(initPacket, 20);
+#endif
   }
 }
 
@@ -80,6 +113,7 @@ void setup() {
   // Don't block on Serial - Arduino must advertise even when not connected to USB
   delay(500);  // Brief delay for Serial to init (optional, for debug)
   Serial.println("🔬 Initializing wearable sensors...");
+  analogReadResolution(12);
 
   // Seed RNG for ECDH key generation (use analog pin + time for entropy)
   randomSeed(analogRead(0) + micros());
@@ -104,6 +138,13 @@ void setup() {
     while (1);
   }
   Serial.println("✅ Flex sensors initialized.");
+
+  // Initialize Pressure matrix
+  if (!pressure_init()) {
+    Serial.println("❌ Failed to initialize Pressure matrix!");
+    while (1);
+  }
+  Serial.println("✅ Pressure matrix initialized.");
 
   // Initialize BLE
   if (!BLE.begin()) {
@@ -130,6 +171,7 @@ void setup() {
   wearableService.addCharacteristic(heartRateChar);
   wearableService.addCharacteristic(spo2Char);
   wearableService.addCharacteristic(edemaChar);
+  wearableService.addCharacteristic(pressureChar);
   BLE.addService(wearableService);
 
   BLE.advertise();
@@ -161,6 +203,8 @@ void loop() {
   if (central) {
     Serial.print("🔗 Connected to: ");
     Serial.println(central.address());
+
+    static bool pressureStreamingStarted = false;  // reset when disconnected (see below)
 
     while (central.connected()) {
       BLE.poll();  // Must poll to receive Android's key exchange write
@@ -233,10 +277,88 @@ void loop() {
         }
       }
 
+      // Read and stream Pressure matrix (Python-style: 20-byte packets, rolling buffer on phone)
+      static uint16_t frameCounter = 0;
+      PressureFrame pressureFrame = readPressure();
+      if (pressureFrame.available) {
+        if (!pressureStreamingStarted) {
+          Serial.println("[PRESSURE] 📤 Streaming started (20-byte packets, Python-style).");
+          pressureStreamingStarted = true;
+        }
+        // Min/max of raw frame (same style as Android Logcat stats)
+        uint16_t pMin = 0x0FFF, pMax = 0;
+        for (int i = 0; i < NUM_VALUES; i++) {
+          uint16_t v = pressureFrame.data[i] & 0x0FFF;
+          if (v < pMin) pMin = v;
+          if (v > pMax) pMax = v;
+        }
+        Serial.print("[PRESSURE] frame raw min=");
+        Serial.print(pMin);
+        Serial.print(" max=");
+        Serial.println(pMax);
+
+        for (uint16_t startIndex = 0; startIndex < NUM_VALUES; startIndex += SAMPLES_PER_PACKET) {
+          BLE.poll();
+          int remaining = NUM_VALUES - startIndex;
+          uint8_t sampleCount = (remaining >= SAMPLES_PER_PACKET) ? SAMPLES_PER_PACKET : remaining;
+
+          uint8_t payload[12];
+          packSamples12(&pressureFrame.data[startIndex], sampleCount, payload);
+
+          // 8-byte header (always plain)
+          uint8_t header[PRESSURE_HEADER_SIZE];
+          header[0] = 0xA5;
+          header[1] = 0x5A;
+          header[2] = (uint8_t)(frameCounter & 0xFF);
+          header[3] = (uint8_t)((frameCounter >> 8) & 0xFF);
+          header[4] = (uint8_t)(startIndex & 0xFF);
+          header[5] = (uint8_t)((startIndex >> 8) & 0xFF);
+          header[6] = sampleCount;
+          header[7] = (startIndex == 0) ? 0x01 : ((startIndex + sampleCount >= NUM_VALUES) ? 0x02 : 0x00);
+
+#if PRESSURE_ENCRYPTION_ENABLED
+          uint8_t encryptedPayload[16];
+          size_t encryptedLen = 0;
+          if (encryptPressurePayload(payload, 12, encryptedPayload, &encryptedLen) && encryptedLen == 16) {
+            uint8_t packet[kPressurePacketSize];
+            memcpy(packet, header, PRESSURE_HEADER_SIZE);
+            memcpy(&packet[PRESSURE_HEADER_SIZE], encryptedPayload, 16);
+            pressureChar.writeValue(packet, kPressurePacketSize);
+          }
+#else
+          uint8_t packet[20];
+          memcpy(packet, header, PRESSURE_HEADER_SIZE);
+          memcpy(&packet[8], payload, 12);
+          pressureChar.writeValue(packet, 20);
+#endif
+          delay(2);
+        }
+        frameCounter++;
+      } else {
+        Serial.println("[PRESSURE] ⚠️ No frame (read not available).");
+      }
+
       delay(100); // ~10 Hz synchronized update rate
     }
 
+    pressureStreamingStarted = false;  // so next connection prints "Streaming started" again
     Serial.println("🔌 Disconnected.");
+  } else {
+    // No BLE device connected: still read pressure and print same stats as when connected
+    PressureFrame pressureFrame = readPressure();
+    if (pressureFrame.available) {
+      uint16_t pMin = 0x0FFF, pMax = 0;
+      for (int i = 0; i < NUM_VALUES; i++) {
+        uint16_t v = pressureFrame.data[i] & 0x0FFF;
+        if (v < pMin) pMin = v;
+        if (v > pMax) pMax = v;
+      }
+      Serial.print("[PRESSURE] frame raw min=");
+      Serial.print(pMin);
+      Serial.print(" max=");
+      Serial.println(pMax);
+    }
+    delay(100);
   }
 }
 

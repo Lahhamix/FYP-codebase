@@ -17,6 +17,7 @@ object AESCrypto {
     private lateinit var accelKey: SecretKeySpec
     private lateinit var gyroKey: SecretKeySpec
     private lateinit var flexKey: SecretKeySpec
+    private lateinit var pressureKey: SecretKeySpec
 
     // IVs can remain static as they don't need to be secret, just unique for each encryption.
     // These MUST match the values in the Arduino code.
@@ -25,6 +26,7 @@ object AESCrypto {
     private val accelIV = IvParameterSpec(ByteArray(16) { (0x00 + it).toByte() })
     private val gyroIV = IvParameterSpec(ByteArray(16) { (0x10 + it).toByte() })
     private val flexIV = IvParameterSpec(ByteArray(16) { (0x40 + it).toByte() })
+    private val pressureIV = IvParameterSpec(ByteArray(16) { (0x50 + it).toByte() })
 
     /**
      * Fallback: Initialize with legacy static keys (for Arduino firmware without key exchange).
@@ -51,6 +53,10 @@ object AESCrypto {
             0x46, 0x6C, 0x65, 0x78, 0x4B, 0x65, 0x79, 0x31,
             0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39
         ), "AES")
+        pressureKey = SecretKeySpec(byteArrayOf(
+            0x50, 0x72, 0x65, 0x73, 0x73, 0x4B, 0x65, 0x79,
+            0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38
+        ), "AES")
         isInitialized = true
         Log.d(TAG, "AESCrypto initialized with legacy keys (no key exchange).")
     }
@@ -67,6 +73,7 @@ object AESCrypto {
         accelKey = SecretKeySpec(deriveKey(sharedSecret, "ACCEL"), "AES")
         gyroKey = SecretKeySpec(deriveKey(sharedSecret, "GYRO"), "AES")
         flexKey = SecretKeySpec(deriveKey(sharedSecret, "FLEX"), "AES")
+        pressureKey = SecretKeySpec(deriveKey(sharedSecret, "PRESSURE"), "AES")
         isInitialized = true
         Log.d(TAG, "AESCrypto initialized successfully from shared secret.")
     }
@@ -111,4 +118,34 @@ object AESCrypto {
     fun decryptAccel(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, accelKey, accelIV)
     fun decryptGyro(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, gyroKey, gyroIV)
     fun decryptFlex(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, flexKey, flexIV)
+    
+    // Binary decryption for pressure matrix (decrypts 16-byte encrypted payload, returns 12-byte decrypted)
+    // Arduino pads 12-byte payload to 16 with PKCS7; Cipher.doFinal() returns plaintext with padding already removed.
+    fun decryptPressurePayload(encryptedBytes: ByteArray): ByteArray? {
+        if (!isInitialized) {
+            Log.e(TAG, "Decryption failed: AESCrypto has not been initialized.")
+            return null
+        }
+
+        if (encryptedBytes.size != 16) {
+            Log.w(TAG, "Decryption failed: encrypted payload must be 16 bytes, got ${encryptedBytes.size}")
+            return null
+        }
+
+        // Arduino sends an initial "empty" pressure packet with 16 zero bytes (not encrypted). Skip decryption.
+        if (encryptedBytes.all { it == 0.toByte() }) {
+            return ByteArray(12) { 0 }
+        }
+
+        return try {
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, pressureKey, pressureIV)
+            val decryptedBytes = cipher.doFinal(encryptedBytes)
+            // doFinal() with PKCS5Padding returns unpadded plaintext (12 bytes), not 16
+            if (decryptedBytes.size == 12) decryptedBytes else null
+        } catch (e: Exception) {
+            Log.e(TAG, "Decryption failed with exception: ${e.message}", e)
+            null
+        }
+    }
 }

@@ -19,7 +19,7 @@ except Exception:
 
 try:
     import pyqtgraph as pg
-    from pyqtgraph.Qt import QtCore, QtWidgets
+    from pyqtgraph.Qt import QtCore, QtWidgets, QtGui
 except Exception:
     print("pyqtgraph and PyQt are required. Install with:")
     print("pip install pyqtgraph pyqt5")
@@ -34,9 +34,9 @@ ADC_MAX = 4095.0
 BASELINE_FILE = "baseline_48x16.npy"
 
 # Default parameters
-THRESHOLD_RAW = 1000
-SMOOTH_SIGMA = 0.2
-DISPLAY_SMOOTH = 0.0
+THRESHOLD_RAW = 700
+SMOOTH_SIGMA = 0.6
+DISPLAY_SMOOTH = 0.2
 UPSCALE_DYNAMIC = 40
 UPSCALE_FIXED = 40
 GAMMA = 2.0
@@ -55,7 +55,7 @@ STATS_INTERVAL = 2.0
 
 # === File-level configuration (edit here) ===
 # Choose mode: 'pix', 'dynamic', or 'fixed'
-CONFIG_MODE = "dynamic"
+CONFIG_MODE = "pix"
 
 # Choose transport: True = BLE continuous mode, False = serial CSV mode
 CONFIG_USE_BLE = False
@@ -207,6 +207,7 @@ class HeatmapAppCont:
         self.ser = None
         self.ble = None
         self.grid_items = []
+        self._last_mat = np.zeros((ROWS, COLS), dtype=np.float32)  # for numbers window when no new frame
 
         self.app = QtWidgets.QApplication.instance()
         if self.app is None:
@@ -215,6 +216,16 @@ class HeatmapAppCont:
         self.win = QtWidgets.QMainWindow()
         self.win.setWindowTitle(f"Velostat Continuous Heatmap - mode={mode} - {'BLE' if use_ble else 'Serial'}")
         self.win.resize(500, 1200)
+
+        # Second window: matrix as plain text (one widget = reliable continuous update)
+        self.numbers_win = QtWidgets.QMainWindow()
+        self.numbers_win.setWindowTitle(f"Pressure Matrix (values) - mode={mode}")
+        self.numbers_text = QtWidgets.QPlainTextEdit()
+        self.numbers_text.setReadOnly(True)
+        self.numbers_text.setFont(QtGui.QFont("Consolas", 7))
+        self.numbers_text.setMinimumSize(ROWS * 36, COLS * 14)
+        self.numbers_win.setCentralWidget(self.numbers_text)
+        self.numbers_win.resize(ROWS * 38 + 24, COLS * 15 + 32)
 
         self.plot = pg.PlotWidget()
         self.plot.setBackground("w")
@@ -242,6 +253,7 @@ class HeatmapAppCont:
         self.stats_timer.start(int(STATS_INTERVAL * 1000))
 
         self.win.show()
+        self.numbers_win.show()
 
     def _setup_reader(self):
         if self.use_ble:
@@ -322,11 +334,33 @@ class HeatmapAppCont:
             self.plot.setYRange(0, display.shape[0], padding=0)
             self._clear_grid()
 
+    def _update_numbers_window(self, mat):
+        """Update the numbers window. mat is ROWS x COLS (after apply_orientation). Shown rotated 90° CW as plain text."""
+        if mat is None or mat.shape[0] != ROWS or mat.shape[1] != COLS:
+            return
+        if not getattr(self, "numbers_text", None):
+            return
+        try:
+            # Build text: 48 lines (rotated), each line 16 values (fixed width 6 chars)
+            lines = []
+            for r in range(COLS):
+                parts = []
+                for c in range(ROWS):
+                    val = mat[c, COLS - 1 - r]
+                    s = f"{val:.2f}" if abs(val) < 1e4 else f"{val:.0f}"
+                    parts.append(s.rjust(6))
+                lines.append(" ".join(parts))
+            self.numbers_text.setPlainText("\n".join(lines))
+        except Exception:
+            pass
+
     def read_one_frame(self):
         frame = None
 
         if self.use_ble:
-            frame = self.ble.read_latest_frame()
+            raw = self.ble.read_latest_frame()
+            if raw is not None:
+                frame = np.array(raw, dtype=np.float32, copy=True)
         else:
             rawline = self.ser.readline()
             if isinstance(rawline, bytes):
@@ -339,6 +373,7 @@ class HeatmapAppCont:
     def update_frame(self):
         frame = self.read_one_frame()
         if frame is None:
+            self._update_numbers_window(self._last_mat)
             return
 
         if self.mode == "pix":
@@ -361,7 +396,7 @@ class HeatmapAppCont:
 
         elif self.mode == "dynamic":
             mat = preprocess_dynamic(frame, self.baseline)
-            mat = apply_orientation(mat)
+            mat = apply_orientation(mat)  # same rotation/flips as heatmap
             display = upscale(mat, UPSCALE_DYNAMIC)
 
             nonzero = display[display > 0]
@@ -376,10 +411,13 @@ class HeatmapAppCont:
 
         else:  # fixed
             mat = preprocess_fixed(frame, self.baseline)
-            mat = apply_orientation(mat)
+            mat = apply_orientation(mat)  # same rotation/flips as heatmap
             display = upscale(mat, UPSCALE_FIXED)
 
             rgba = map_to_rgba(display, self.lut, VMIN_FIXED, VMAX_FIXED)
+
+        self._last_mat = mat
+        self._update_numbers_window(mat)
 
         self.image_item.setImage(rgba, autoLevels=False)
         self.image_item.setRect(QtCore.QRectF(0, 0, display.shape[1], display.shape[0]))
@@ -399,6 +437,11 @@ class HeatmapAppCont:
         return exit_code
 
     def close(self):
+        if getattr(self, "numbers_win", None) is not None:
+            try:
+                self.numbers_win.close()
+            except Exception:
+                pass
         if self.ser is not None:
             try:
                 self.ser.close()
