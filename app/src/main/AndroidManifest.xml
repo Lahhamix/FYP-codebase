@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <application
+        android:name=".SolemateApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -49,6 +50,10 @@
         <activity
             android:name=".PressureMatrixActivity"
             android:label="Pressure Matrix"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
+            android:name=".SettingsActivity"
+            android:label="Settings"
             android:theme="@style/Theme.Test.NoActionBar" />
     </application>
 

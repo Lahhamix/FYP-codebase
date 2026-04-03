@@ -39,4 +39,9 @@
         <item name="android:textColor">@color/dark_blue</item>
     </style>
 
+    <style name="ShapeAppearanceOverlay.RoundedLogo" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">13dp</item>
+    </style>
+
 </resources>

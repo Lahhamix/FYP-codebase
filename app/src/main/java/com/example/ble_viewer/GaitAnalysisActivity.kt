@@ -107,7 +107,7 @@ class GaitAnalysisActivity : AppCompatActivity() {
             if (disconnectDialog?.isShowing == true) return@runOnUiThread
 
             disconnectDialog = AlertDialog.Builder(this)
-                .setTitle("Connection Lost")
+                .setTitle(getString(R.string.dialog_connection_lost))
                 .setMessage(
                     "The wearable device has been disconnected.\n\n" +
                             "You can reconnect to the last device or scan for another available device."

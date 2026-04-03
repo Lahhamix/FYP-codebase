@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SoleMate</string>
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_language_current">الإنجليزية</string>
+    <string name="settings_language">اللغة</string>
+    <string name="username_placeholder">إسم المستخدم</string>
+    <string name="toast_biometric_unavailable">المصادقة البيومترية غير متاحة على هذا الجهاز.</string>
+    <string name="settings_language_available">اللّغات المتاحة: الإنجليزية، الفرنسية، العربية</string>
+</resources>

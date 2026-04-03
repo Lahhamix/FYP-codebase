@@ -24,7 +24,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="About SoleMate"
+                android:text="@string/about_solemate"
                 android:textSize="22sp"
                 android:textColor="@color/white"
                 android:fontFamily="@font/rubik_medium"
@@ -35,7 +35,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="SoleMate is a wearable prototype developed for FYP. It streams encrypted sensor data over BLE including heart rate and SpO2, and will soon include gait analytics and mobility insights."
+                android:text="@string/about_solemate_desc"
                 android:textColor="#CCCCCC"
                 android:textSize="14sp" />
 
@@ -43,7 +43,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Developed by: Your Team"
+                android:text="@string/about_team"
                 android:textColor="#CCCCCC"
                 android:textSize="14sp" />
 
@@ -51,7 +51,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Contact: your.email@example.com"
+                android:text="@string/about_contact"
                 android:textColor="#CCCCCC"
                 android:textSize="14sp" />
         </LinearLayout>

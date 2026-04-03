@@ -62,6 +62,8 @@ void resetSpo2() {
 
 PPGData readPPG() {
   PPGData data;
+  data.beatsPerMinute = 0;
+  data.spO2 = 0.0;
   data.heartRateAvailable = false;
   data.spo2Available = false;
   data.validHeartRate = 0;

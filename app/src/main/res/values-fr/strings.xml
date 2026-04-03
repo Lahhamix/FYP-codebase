@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SoleMate</string>
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_languages">Langues</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_picker_title">Choisir la langue</string>
+    <string name="settings_choose_language">Choisissez votre langue preferee</string>
+    <string name="settings_language_current">Français</string>
+    <string name="settings_language_available">Disponible en anglais, arabe et français.</string>
+    <string name="language_english">Anglais</string>
+    <string name="language_arabic">Arabe</string>
+    <string name="language_french">Français</string>
+
+    <string name="username_placeholder">Nom d\'utilisateur</string>
+    <string name="edit_profile">Modifier le profil</string>
+    <string name="sign_out">Déconnecter</string>
+
+    <string name="nav_home">Accueil</string>
+    <string name="settings_feedback">Envoyer des commentaires sur l\'application</string>
+    <string name="nav_history">Historique</string>
+    <string name="nav_settings">Paramètres</string>
+
+    <string name="share_report">Partager le Rapport</string>
+    <string name="export_csv">Exporter au format CSV</string>
+    <string name="system_ready">Système Prêt</string>
+    <string name="need_assistance">Besoin d’aide? Astuces rapides et assistance à portée de main.</string>
+    <string name="left_sock_active">CÔTÉ GAUCHE ACTIVE</string>
+    <string name="right_sock_active">CÔTÉ DROITE ACTIVE</string>
+
+    <string name="current_vitals">Signes Vitaux</string>
+    <string name="see_more_detailed">Voir plus de details</string>
+
+    <string name="sock_disconnected">Chaussette deconnectee</string>
+    <string name="sock_disconnected_desc">Votre chaussette SoleMate est hors de portee. Assurez-vous qu elle est a proximite et chargee.</string>
+    <string name="reconnect_now">Reconnecter</string>
+    <string name="scan_devices">Scanner</string>
+
+    <string name="sign_up_title">Créer un Compte</string>
+    <string name="to_solemate">À SoleMate</string>
+    <string name="toast_scan_bluetooth_unavailable">Bluetooth n\'est pas disponible sur cet appareil.</string>
+    <string name="toast_enable_bluetooth">Veuillez activer Bluetooth</string>
+    <string name="dialog_wearable_disconnected">L\'appareil portable a été déconnecté.</string>
+    <string name="dashboard_bp_class_label">PA Classification</string>
+    <string name="dashboard_swelling_label">GONFLEMENT</string>
+    <string name="dashboard_ataxia_label">ATAXIE</string>
+    <string name="scanning">Balayage...</string>
+    <string name="connecting">Connexion à %1$s...</string>
+    <string name="connected_discovering">Connecté. Découverte des services...</string>
+    <string name="disconnected">Déconnecté</string>
+    <string name="receiving_data">Réception de données...</string>
+    <string name="settings_resources">Ressources</string>
+    <string name="remember_me">Mémoriser</string>
+    <string name="settings_export_data">Exporter mes données (CSV/PDF)</string>
+    <string name="settings_request_deletion">Demande de suppression de données</string>
+    <string name="settings_app_tutorial">Ouvrir le tutoriel de l’application</string>
+    <string name="settings_datasheet_desc">Spécifications techniques v2.1</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="check_bluetooth_connection">Vérifiez la connexion Bluetooth</string>
+    <string name="settings_app_tutorial_desc">Guide visuel rapide pour SoleMate</string>
+    <string name="settings_device_manual">Manuel d\'utilisation de l\'appareil</string>
+    <string name="settings_device_manual_desc">Guide complet pour vos chaussettes intelligentes</string>
+    <string name="settings_datasheet">Télécharger la fiche technique</string>
+    <string name="settings_notifications_desc">Contrôlez les messages des applications et les alertes de l\'appareil.</string>
+    <string name="settings_device_alerts">Alertes de périphérique</string>
+    <string name="settings_device_alerts_desc">Vibrations et sons de l\'application</string>
+    <string name="settings_accessibility">Accessibilité</string>
+    <string name="settings_text_size">Taille du texte</string>
+    <string name="settings_text_size_large">Grande</string>
+    <string name="settings_text_size_standard">Standard</string>
+    <string name="settings_text_size_extra_large">Très Grande</string>
+    <string name="settings_security">Sécurité</string>
+    <string name="settings_biometric_signin">Connexion biométrique</string>
+    <string name="settings_biometric_desc">Déverrouillage par empreinte digitale ou reconnaissance faciale</string>
+    <string name="toast_biometric_unavailable">L\'authentification biométrique n\'est pas disponible sur cet appareil.</string>
+    <string name="settings_change_passcode">Changer le Mot de Passe</string>
+    <string name="settings_privacy_desc">Gérez le partage de vos données personnelles.</string>
+    <string name="settings_auto_share">Partage automatique avec le clinicien</string>
+    <string name="settings_auto_share_desc">Mises à jour cryptées envoyées toutes les 4 heures</string>
+    <string name="settings_exports_encrypted">TOUTES LES EXPORTATIONS SONT CHIFFRÉES AVANT LE TÉLÉCHARGEMENT</string>
+    <string name="settings_contact_support">Contacter l\'assistance</string>
+    <string name="settings_contact_support_desc">Appelez ou discutez avec l\'assistance SoleMate</string>
+    <string name="settings_privacy_policy">Politique de Confidentialité</string>
+    <string name="settings_terms_of_use">Conditions d\'utilisation</string>
+    <string name="settings_emergency_note">En cas d\'urgence médicale, veuillez composer le 140 immédiatement.</string>
+    <string name="chooser_share_report">Partager le Rapport</string>
+    <string name="scan_wearable">Recherche du dispositif portable…</string>
+    <string name="available_devices">Appareils disponibles</string>
+    <string name="sign_up">Créer un compte</string>
+    <string name="sign_up_google">Créer un Compte avec Google</string>
+</resources>

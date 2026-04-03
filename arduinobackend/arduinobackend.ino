@@ -208,7 +208,11 @@ void loop() {
 
     while (central.connected()) {
       BLE.poll();  // Must poll to receive Android's key exchange write
-      // Only stream encrypted data after key exchange is complete
+
+      // Always sample PPG so BPM/SpO2 remain visible in Serial Monitor even
+      // if BLE key exchange is delayed or fails.
+      PPGData ppgData = readPPG();
+
       if (!encryption_is_ready()) {
         delay(50);
         continue;
@@ -239,13 +243,13 @@ void loop() {
         }
       }
 
-      // Read and stream PPG data
-      PPGData ppgData = readPPG();
-      
       if (ppgData.heartRateAvailable && ppgData.validHeartRate) {
         String hrData = String(ppgData.beatsPerMinute);
         EncryptedPayload hrEncrypted;
         if (encryptHeartRate(hrData, hrEncrypted)) {
+          Serial.print("[PPG] Heart Rate: ");
+          Serial.print(hrData);
+          Serial.println(" BPM");
           writeEncryptedValue(heartRateChar, hrEncrypted, "heart rate");
         } else {
           Serial.println("[ENCRYPTION] Failed to encrypt heart rate data");
@@ -256,6 +260,9 @@ void loop() {
         String spo2Data = String(ppgData.spO2, 1);
         EncryptedPayload spo2Encrypted;
         if (encryptSpO2(spo2Data, spo2Encrypted)) {
+          Serial.print("[PPG] SpO2: ");
+          Serial.print(spo2Data);
+          Serial.println(" %");
           writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");
         } else {
           Serial.println("[ENCRYPTION] Failed to encrypt SpO2 data");
@@ -282,7 +289,7 @@ void loop() {
       PressureFrame pressureFrame = readPressure();
       if (pressureFrame.available) {
         if (!pressureStreamingStarted) {
-          Serial.println("[PRESSURE] 📤 Streaming started (20-byte packets, Python-style).");
+          //Serial.println("[PRESSURE] 📤 Streaming started (20-byte packets, Python-style).");
           pressureStreamingStarted = true;
         }
         // Min/max of raw frame (same style as Android Logcat stats)
@@ -292,10 +299,10 @@ void loop() {
           if (v < pMin) pMin = v;
           if (v > pMax) pMax = v;
         }
-        Serial.print("[PRESSURE] frame raw min=");
-        Serial.print(pMin);
-        Serial.print(" max=");
-        Serial.println(pMax);
+        //Serial.print("[PRESSURE] frame raw min=");
+        //Serial.print(pMin);
+        //Serial.print(" max=");
+        //Serial.println(pMax);
 
         for (uint16_t startIndex = 0; startIndex < NUM_VALUES; startIndex += SAMPLES_PER_PACKET) {
           BLE.poll();

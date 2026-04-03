@@ -4,40 +4,53 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@android:color/white">
 
-    <ImageView
-        android:id="@+id/scan_logo"
-        android:layout_width="180dp"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/logo_card"
+        android:layout_width="140dp"
         android:layout_height="140dp"
-        android:layout_marginTop="48dp"
-        android:src="@drawable/logo"
+        app:cardBackgroundColor="@android:color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="6dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:strokeColor="#E6EDF5"
+        app:strokeWidth="1dp"
+        tools:layout_editor_absoluteY="86dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.RoundedLogo" />
+    </com.google.android.material.card.MaterialCardView>
+
 
     <TextView
         android:id="@+id/scanning_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:fontFamily="@font/angkor"
-        android:text="Scanning for\nthe wearable ..."
+        android:fontFamily="@font/alfaslaboneregular"
+        android:text="@string/scan_wearable"
         android:textAlignment="center"
-        android:textColor="@android:color/white"
+        android:textColor="@color/blue"
         android:textSize="32sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/scan_logo" />
+        app:layout_constraintTop_toBottomOf="@+id/logo_card" />
 
     <ProgressBar
         android:id="@+id/progress_bar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="0dp"
         android:layout_height="25dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="2dp"
         android:indeterminate="true"
-        android:indeterminateTint="@color/progress_bar_color"
+        android:indeterminateTint="@color/blue"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/scanning_text" />
@@ -47,10 +60,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="14dp"
         android:fontFamily="@font/rubik_medium"
-        android:text="Available devices"
-        android:textColor="@android:color/white"
+        android:text="@string/available_devices"
+        android:textColor="@color/blue"
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
@@ -59,7 +72,7 @@
         android:id="@+id/devices_recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="28dp"
         android:layout_marginBottom="16dp"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
@@ -76,10 +89,10 @@
         android:layout_marginBottom="40dp"
         android:background="@drawable/rounded_button"
         android:fontFamily="@font/rubik_medium"
-        android:text="CANCEL"
-        android:textColor="@color/dark_blue"
+        android:text="@string/cancel"
+        android:textColor="@color/white"
         android:textSize="16sp"
-        app:backgroundTint="@color/white"
+        app:backgroundTint="@color/blue"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

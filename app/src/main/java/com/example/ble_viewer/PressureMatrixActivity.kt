@@ -541,8 +541,8 @@ class PressureMatrixActivity : AppCompatActivity() {
             if (disconnectDialog?.isShowing == true) return@runOnUiThread
 
             disconnectDialog = AlertDialog.Builder(this)
-                .setTitle("Connection Lost")
-                .setMessage("The wearable device has been disconnected.")
+                .setTitle(getString(R.string.dialog_connection_lost))
+                .setMessage(getString(R.string.dialog_wearable_disconnected))
                 .setCancelable(false)
                 .setPositiveButton("OK") { _, _ ->
                     finish()

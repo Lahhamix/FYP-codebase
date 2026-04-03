@@ -52,6 +52,8 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+    implementation("com.google.android.gms:play-services-auth:21.1.1")
+    implementation("com.github.angads25:toggle:1.1.0")
 
     // Charting library
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")

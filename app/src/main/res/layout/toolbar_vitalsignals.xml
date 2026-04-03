@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:fontFamily="@font/rubik_medium"
-        android:text="Vital Signals"
+        android:text="@string/vital_signals"
         android:textColor="@android:color/white"
         android:textSize="20sp"
         android:textStyle="bold" />

@@ -86,12 +86,12 @@ class ScanActivity : AppCompatActivity() {
 
     private fun requestPermissionsAndStartScan() {
         if (bluetoothAdapter == null) {
-            Toast.makeText(this, "Bluetooth is not available on this device", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_scan_bluetooth_unavailable), Toast.LENGTH_LONG).show()
             return
         }
 
         if (!bluetoothAdapter!!.isEnabled) {
-            Toast.makeText(this, "Please enable Bluetooth", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_enable_bluetooth), Toast.LENGTH_LONG).show()
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, 1)
             return
@@ -99,7 +99,7 @@ class ScanActivity : AppCompatActivity() {
 
         val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
         if (!LocationManagerCompat.isLocationEnabled(locationManager)) {
-            Toast.makeText(this, "Location services MUST be enabled for BLE scanning.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_enable_location_for_ble), Toast.LENGTH_LONG).show()
             val locationIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(locationIntent)
             return
@@ -137,7 +137,7 @@ class ScanActivity : AppCompatActivity() {
         if (requestCode == PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
             startScan()
         } else {
-            Toast.makeText(this, "Permissions are required to scan for BLE devices", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_ble_permissions_required), Toast.LENGTH_LONG).show()
         }
     }
 
