@@ -18,7 +18,7 @@
 
     <string name="settings_title">Settings</string>
     <string name="settings_default_name">Jane Salam</string>
-    <string name="settings_default_email">jane.salam@example.cc</string>
+    <string name="settings_default_email" translatable="false">jane.salam@example.cc</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="sign_out">Sign out</string>
 
@@ -75,7 +75,7 @@
     <string name="settings_terms_of_use">Terms of Use</string>
     <string name="settings_emergency_note">If you are experiencing a medical emergency, please call 140 immediately.</string>
     <string name="settings_app_version">App Version 1.0.0 (Build 1)</string>
-    <string name="settings_copyright">© 2026 SoleMate Health Inc.</string>
+    <string name="settings_copyright" translatable="false">© 2026 SoleMate Health Inc.</string>
     <string name="settings_feedback">Send app feedback</string>
 
     <string name="nav_history">History</string>
@@ -147,7 +147,7 @@
     <string name="spo2_default_state">🟢 Excellent</string>
 
     <string name="heart_rate_upper">HEART RATE</string>
-    <string name="spo2_upper">SPO2</string>
+    <string name="spo2_upper" translatable="false">SPO2</string>
     <string name="bp_classification">BP Classification</string>
     <string name="swelling_upper">SWELLING</string>
     <string name="ataxia_upper">ATAXIA</string>
@@ -199,7 +199,7 @@
     <string name="dashboard_status_stable">Stable</string>
     <string name="dashboard_status_no_backend">No Backend</string>
     <string name="dashboard_heart_rate_label">HEART RATE</string>
-    <string name="dashboard_spo2_label">SPO2</string>
+    <string name="dashboard_spo2_label" translatable="false">SPO2</string>
     <string name="dashboard_bp_class_label">BP Classification</string>
     <string name="dashboard_swelling_label">SWELLING</string>
     <string name="dashboard_ataxia_label">ATAXIA</string>
