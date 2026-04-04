@@ -138,14 +138,16 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/button_edit_profile"
                         android:layout_width="0dp"
-                        android:layout_height="56dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:layout_weight="1"
                         android:ellipsize="end"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
-                        android:maxLines="1"
+                        android:maxLines="2"
+                        android:minHeight="56dp"
                         android:paddingHorizontal="12dp"
+                        android:paddingVertical="10dp"
                         android:text="@string/edit_profile"
                         android:textAllCaps="false"
                         android:textColor="@android:color/white"
@@ -159,14 +161,16 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/button_sign_out"
                         android:layout_width="0dp"
-                        android:layout_height="56dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:ellipsize="end"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
-                        android:maxLines="1"
+                        android:maxLines="2"
+                        android:minHeight="56dp"
                         android:paddingHorizontal="12dp"
+                        android:paddingVertical="10dp"
                         android:text="@string/sign_out"
                         android:textAllCaps="false"
                         android:textColor="#2F5A80"
@@ -196,7 +200,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/roboto_medium"
+                    android:fontFamily="@font/rubik_medium"
                     android:text="@string/settings_languages"
                     android:textColor="#1A416B"
                     android:textSize="18sp"
@@ -522,7 +526,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/roboto_medium"
+                    android:fontFamily="@font/rubik_medium"
                     android:text="@string/settings_accessibility"
                     android:textColor="#1A416B"
                     android:textSize="18sp"
@@ -627,7 +631,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/roboto_medium"
+                    android:fontFamily="@font/rubik_medium"
                     android:text="@string/settings_security"
                     android:textColor="#1A416B"
                     android:textSize="18sp"
@@ -777,7 +781,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/roboto_medium"
+                    android:fontFamily="@font/rubik_medium"
                     android:text="@string/settings_privacy_data"
                     android:textColor="#1A416B"
                     android:textSize="18sp"
@@ -794,12 +798,14 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/settings_export_outline_bg"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="12dp">
+                    android:minHeight="46dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
 
                     <ImageView
                         android:layout_width="18dp"
@@ -813,6 +819,7 @@
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:fontFamily="@font/roboto_medium"
+                        android:maxLines="2"
                         android:text="@string/settings_export_data"
                         android:textColor="#2F5A80"
                         android:textSize="16sp"
@@ -826,12 +833,14 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:background="@drawable/settings_danger_outline_bg"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="12dp">
+                    android:minHeight="46dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
 
                     <ImageView
                         android:layout_width="18dp"
@@ -845,6 +854,7 @@
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:fontFamily="@font/roboto_medium"
+                        android:maxLines="2"
                         android:text="@string/settings_request_deletion"
                         android:textColor="#D35353"
                         android:textSize="16sp"
@@ -922,7 +932,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/roboto_medium"
+                    android:fontFamily="@font/rubik_medium"
                     android:text="@string/settings_support_legal"
                     android:textColor="#1A416B"
                     android:textSize="18sp"

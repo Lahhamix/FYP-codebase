@@ -69,6 +69,8 @@ class ScanActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("ScanActivity", "Error stopping scan: ${e.message}")
             }
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
             finish()
         }
 

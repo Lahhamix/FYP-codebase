@@ -6,7 +6,7 @@
     <string name="settings_languages">Langues</string>
     <string name="settings_language">Langue</string>
     <string name="settings_language_picker_title">Choisir la langue</string>
-    <string name="settings_choose_language">Choisissez votre langue preferee</string>
+    <string name="settings_choose_language">Choisissez votre langue préférée</string>
     <string name="settings_language_current">Français</string>
     <string name="settings_language_available">Disponible en anglais, arabe et français.</string>
     <string name="language_english">Anglais</string>
@@ -19,7 +19,7 @@
     <string name="sign_out">Déconnecter</string>
 
     <string name="nav_home">Accueil</string>
-    <string name="settings_feedback">Envoyer des commentaires sur l\'application</string>
+    <string name="settings_feedback">Donner votre avis</string>
     <string name="nav_history">Historique</string>
     <string name="nav_settings">Paramètres</string>
 
@@ -31,7 +31,7 @@
     <string name="status_stable">Stable</string>
     <string name="status_pending">En attente</string>
     <string name="status_no_backend">Aucun backend</string>
-    <string name="need_assistance">Besoin d’aide? Astuces rapides et assistance à portée de main.</string>
+    <string name="need_assistance">Besoin d’aide?\nAstuces rapides et assistance à portée de main.</string>
     <string name="left_sock_active">CÔTÉ GAUCHE ACTIVE</string>
     <string name="right_sock_active">CÔTÉ DROITE ACTIVE</string>
 
@@ -113,10 +113,11 @@
     <string name="sign_up_google">Créer un Compte avec Google</string>
     <string name="history_30s">Historique des 30 secondes</string>
     <string name="cancel">Annuler</string>
+    <string name="skip_for_now">Passer pour l’instant</string>
     <string name="about_solemate">À propos de SoleMate</string>
     <string name="accel_data">Accél: %1$s</string>
-    <string name="dont_have_account">Vous n’avez pas de compte ?</string>
-    <string name="already_have_account">Vous avez déjà un compte ?</string>
+    <string name="dont_have_account">"Vous n’avez pas de compte?  "</string>
+    <string name="already_have_account">"Vous avez déjà un compte?  "</string>
     <string name="gait_acceleration_data">Données d’accélération</string>
     <string name="settings_app_version">Version de l’application 1.0.0 (Build 1)</string>
     <string name="swelling_upper">Gonflement</string>

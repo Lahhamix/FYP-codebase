@@ -134,6 +134,7 @@
     <string name="scan_wearable">Scanning for the wearable ...</string>
     <string name="available_devices">Available devices</string>
     <string name="cancel">CANCEL</string>
+    <string name="skip_for_now">Skip for now</string>
 
     <string name="about_solemate">About SoleMate</string>
     <string name="about_solemate_desc">SoleMate is a wearable prototype developed for FYP. It streams encrypted sensor data over BLE including heart rate and SpO2, and will soon include gait analytics and mobility insights.</string>
@@ -156,7 +157,7 @@
     <string name="status_stable">Stable</string>
     <string name="status_pending">Pending</string>
     <string name="status_no_backend">No Backend</string>
-    <string name="need_assistance">Need assistance? Quick tips and support are one tap away.</string>
+    <string name="need_assistance">Need assistance?\nQuick tips and support are one tap away.</string>
 
     <string name="left_sock_active">LEFT SOCK ACTIVE</string>
     <string name="right_sock_active">RIGHT SOCK ACTIVE</string>

@@ -17,14 +17,15 @@
     <string name="settings_language_available">اللّغات المتاحة: الإنجليزية، الفرنسية، العربية</string>
     <string name="history_30s">سجل آخر 30 ثانية</string>
     <string name="cancel">إلغاء</string>
+    <string name="skip_for_now">تخطي الآن</string>
     <string name="about_solemate">حول SoleMate</string>
     <string name="receiving_data">جارٍ استقبال البيانات...</string>
     <string name="accel_data">التسارع: %1 $s</string>
     <string name="settings_auto_share_desc">يتم إرسال تحديثات مشفّرة كل 4 ساعات</string>
     <string name="settings_exports_encrypted">جميع الملفات المُصدّرة مشفّرة قبل التنزيل</string>
     <string name="sign_up">إنشاء حساب</string>
-    <string name="dont_have_account">ليس لديك حساب؟</string>
-    <string name="already_have_account">هل لديك حساب؟</string>
+    <string name="dont_have_account">"ليس لديك حساب؟  "</string>
+    <string name="already_have_account">"هل لديك حساب؟  "</string>
     <string name="settings_device_alerts_desc">الاهتزازات والأصوات من التطبيق</string>
     <string name="settings_accessibility">إمكانية الوصول</string>
     <string name="gait_acceleration_data">بيانات التسارع</string>
@@ -52,8 +53,8 @@
     <string name="toast_device_missing_service">يفتقد الجهاز خدمة بيانات المستشعر</string>
     <string name="toast_device_no_characteristics">لا يحتوي الجهاز على خصائص المستشعر</string>
     <string name="toast_bluetooth_permission_reconnect">إذن البلوتوث مطلوب لإعادة الاتصال</string>
-    <string name="bp_classification">تصنيف ضغط الدم</string>
-    <string name="dashboard_bp_class_label">تصنيف ضغط الدم</string>
+    <string name="bp_classification">ضغط الدم</string>
+    <string name="dashboard_bp_class_label">ضغط الدم</string>
     <string name="plantar_pressure">ضغط باطن القدم</string>
     <string name="open_heatmap_calibrate">فتح خريطة الحرارة وإجراء المعايرة</string>
     <string name="calibrate">معايرة</string>
@@ -87,7 +88,7 @@
     <string name="settings_notifications_desc">التحكم في رسائل التطبيق وتنبيهات الجهاز</string>
     <string name="toast_csv_exported">تم تصدير ملف CSV إلى التنزيلات</string>
     <string name="scan_devices">البحث عن الأجهزة</string>
-    <string name="current_vitals">المؤشرات الحيوية الحالية</string>
+    <string name="current_vitals">المؤشرات الحيوية</string>
     <string name="gyro_data">الجيروسكوب: % $s1</string>
     <string name="dashboard">لوحة التحكم</string>
     <string name="settings_device_alerts">تنبيهات الجهاز</string>
@@ -98,7 +99,7 @@
     <string name="settings_datasheet">تنزيل ورقة البيانات</string>
     <string name="pressure_mode_pix">بكسل</string>
     <string name="pressure_mode_dynamic">ديناميكي</string>
-    <string name="edit_profile">تعديل الملف الشخصي</string>
+    <string name="edit_profile">تعديل الملف</string>
     <string name="sharing_export">المشاركة والتصدير</string>
     <string name="sharing_export_desc">شارك بياناتك مع العائلة أو الأطباء</string>
     <string name="share_report">مشاركة التقرير</string>
@@ -110,7 +111,7 @@
     <string name="settings_export_data">تصدير بياناتي (CSV/PDF)</string>
     <string name="settings_text_size_standard">قياسي</string>
     <string name="settings_text_size_extra_large">كبير جدًا</string>
-    <string name="welcome_tagline">قدمك، صحتك، دائمًا على اتصال</string>
+    <string name="welcome_tagline">قدمك،\n صحتك،\n  دائمًا على اتصال</string>
     <string name="get_started">ابدأ</string>
     <string name="gait_acceleration_desc">بيانات التسارع في الوقت الحقيقي من مستشعر IMU</string>
     <string name="gait_gyroscope_data">بيانات الجيروسكوب</string>
@@ -133,7 +134,7 @@
     <string name="status_stable">مستقر</string>
     <string name="status_pending">قيد الانتظار</string>
     <string name="status_no_backend">لا يوجد خادم خلفي</string>
-    <string name="need_assistance">هل تحتاج إلى مساعدة؟ نصائح سريعة ودعم بنقرة واحدة</string>
+    <string name="need_assistance">هل تحتاج إلى مساعدة؟\n نصائح سريعة ودعم بنقرة واحدة</string>
     <string name="left_sock_active">الجورب الأيسر نشط</string>
     <string name="toast_enable_bluetooth">يُرجى تفعيل البلوتوث</string>
     <string name="toast_enable_location_for_ble">يجب تفعيل خدمات الموقع للبحث عبر البلوتوث منخفض الطاقة (BLE)</string>

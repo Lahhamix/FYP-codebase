@@ -239,7 +239,7 @@ class MainActivity : AppCompatActivity() {
 
         updateToolbarUsername()
         disconnectedPanel.bringToFront()
-        setDisconnectedMode(false)
+        setDisconnectedMode(true)
 
         reconnectInlineButton.setOnClickListener {
             reconnectLastDevice()
@@ -308,15 +308,15 @@ class MainActivity : AppCompatActivity() {
         val deviceAddress = intent.getStringExtra("DEVICE_ADDRESS")
         val reconnectLast = intent.getBooleanExtra("RECONNECT_LAST", false)
 
-        if (!hasBluetoothConnectPermission()) {
-            requestBluetoothConnectPermission()
-            runOnUiThread {
-                Toast.makeText(this, getString(R.string.toast_bluetooth_permission_connect), Toast.LENGTH_SHORT).show()
-            }
-            return
-        }
-
         if (deviceAddress != null) {
+            if (!hasBluetoothConnectPermission()) {
+                requestBluetoothConnectPermission()
+                runOnUiThread {
+                    Toast.makeText(this, getString(R.string.toast_bluetooth_permission_connect), Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+
             lastDeviceAddress = deviceAddress
             try {
                 val device = bluetoothAdapter?.getRemoteDevice(deviceAddress)
@@ -338,6 +338,14 @@ class MainActivity : AppCompatActivity() {
                 requestBluetoothConnectPermission()
             }
         } else if (reconnectLast) {
+            if (!hasBluetoothConnectPermission()) {
+                requestBluetoothConnectPermission()
+                runOnUiThread {
+                    Toast.makeText(this, getString(R.string.toast_bluetooth_permission_reconnect), Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+
             lastDeviceAddress?.let { address ->
                 try {
                     val device = bluetoothAdapter?.getRemoteDevice(address)
@@ -353,6 +361,9 @@ class MainActivity : AppCompatActivity() {
                     requestBluetoothConnectPermission()
                 }
             }
+        } else {
+            isDeviceConnected = false
+            setDisconnectedMode(true)
         }
     }
 
@@ -520,13 +531,15 @@ class MainActivity : AppCompatActivity() {
                 isDeviceConnected = true
                 runOnUiThread { setDisconnectedMode(false) }
                 uiHandler.postDelayed({
-                    runOnUiThread { updateDashboardStatus("Connecting", DashboardStatusVisual.LOADING) }
+                    runOnUiThread {
+                        updateDashboardStatus(getString(R.string.connected_discovering), DashboardStatusVisual.LOADING)
+                    }
                     gatt.discoverServices()
                 }, 800)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 isDeviceConnected = false
                 runOnUiThread { 
-                    updateDashboardStatus("Disconnected", DashboardStatusVisual.TEXT_ONLY)
+                    updateDashboardStatus(getString(R.string.disconnected), DashboardStatusVisual.TEXT_ONLY)
                     setDisconnectedMode(true)
                     broadcastDisconnection()
                 }
@@ -540,7 +553,7 @@ class MainActivity : AppCompatActivity() {
                 if (keyService == null) {
                     runOnUiThread { 
                         setDisconnectedMode(false)
-                        updateDashboardStatus("Connected", DashboardStatusVisual.CHECK)
+                        updateDashboardStatus(getLocalizedConnectedLabel(), DashboardStatusVisual.CHECK)
                     }
                     AESCrypto.initWithLegacyKeys()
                     isKeyExchangeInProgress = false
@@ -698,7 +711,7 @@ class MainActivity : AppCompatActivity() {
             Log.i(TAG, "Key exchange successful, shared secret established")
             runOnUiThread {
                 setDisconnectedMode(false)
-                updateDashboardStatus("Connected", DashboardStatusVisual.CHECK)
+                updateDashboardStatus(getLocalizedConnectedLabel(), DashboardStatusVisual.CHECK)
             }
             isKeyExchangeInProgress = false
             keyExchangeTimeoutRunnable?.let { uiHandler.removeCallbacks(it) }
@@ -755,7 +768,7 @@ class MainActivity : AppCompatActivity() {
                 if (!isDeviceConnected || bluetoothGatt == null) {
                     return
                 }
-                updateDashboardStatus("System Ready", DashboardStatusVisual.CHECK)
+                updateDashboardStatus(getString(R.string.system_ready), DashboardStatusVisual.CHECK)
                 startDataLogging()
             }
             return
@@ -777,6 +790,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             gatt.writeDescriptor(descriptor)
         }
+    }
+
+    private fun getLocalizedConnectedLabel(): String {
+        val connectedDiscovering = getString(R.string.connected_discovering)
+        return connectedDiscovering.substringBefore('.').trim().ifEmpty { connectedDiscovering }
     }
 
     private fun broadcastDisconnection() {
@@ -824,7 +842,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun reconcileDisconnectedOverlay() {
         if (!hasAttemptedConnection && !isDeviceConnected && bluetoothGatt == null) {
-            setDisconnectedMode(false)
+            setDisconnectedMode(true)
             return
         }
 
