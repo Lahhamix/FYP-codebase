@@ -1090,11 +1090,13 @@
                     android:textSize="13sp" />
 
                 <TextView
+                    android:id="@+id/button_send_feedback"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:fontFamily="@font/roboto_medium
-"
+                    android:fontFamily="@font/roboto_medium"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:text="@string/settings_feedback"
                     android:textColor="#1A416B"
                     android:textSize="16sp"

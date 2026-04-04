@@ -1,6 +1,7 @@
 package com.example.ble_viewer
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -26,6 +27,9 @@ class SettingsActivity : AppCompatActivity() {
         private const val EXTRA_LANGUAGE_TRANSITION = "extra_language_transition"
         const val EXTRA_SCROLL_TO_RESOURCES = "extra_scroll_to_resources"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
+        private const val FEEDBACK_FORM_URL_EN = "https://docs.google.com/forms/d/e/1FAIpQLSe0C7NxZ-hUC-oVMoHSYUianMU36Q1E4xyMS07JrURUJOXjEw/viewform?usp=dialog"
+        private const val FEEDBACK_FORM_URL_AR = "https://docs.google.com/forms/d/e/1FAIpQLSeV57vy8dmqPhhS2ElAWk40UaOpFfPHfTvdEUbzHOTVdCdsEQ/viewform?usp=publish-editor"
+        private const val FEEDBACK_FORM_URL_FR = "https://docs.google.com/forms/d/e/1FAIpQLSfGYhRvRHMw5pOEZHiQuD2yoHH5n2Kx5rEdt7noJBoZb0n1QQ/viewform?usp=publish-editor"
     }
 
     private var suppressFinishAnimation = false
@@ -125,6 +129,10 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
+        findViewById<TextView>(R.id.button_send_feedback).setOnClickListener {
+            openFeedbackFormForCurrentLanguage()
+        }
+
         findViewById<LinearLayout>(R.id.settings_language_row).setOnClickListener {
             showLanguagePicker()
         }
@@ -140,6 +148,21 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<LinearLayout>(R.id.nav_settings).setOnClickListener {
             // Already on settings.
+        }
+    }
+
+    private fun openFeedbackFormForCurrentLanguage() {
+        val url = when (currentLanguageTag()) {
+            "ar" -> FEEDBACK_FORM_URL_AR
+            "fr" -> FEEDBACK_FORM_URL_FR
+            else -> FEEDBACK_FORM_URL_EN
+        }
+
+        val openUrlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        runCatching {
+            startActivity(openUrlIntent)
+        }.onFailure {
+            Toast.makeText(this, getString(R.string.settings_contact_support_desc), Toast.LENGTH_SHORT).show()
         }
     }
 
