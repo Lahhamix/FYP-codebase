@@ -52,6 +52,15 @@
     <string name="settings_text_size_large">Large</string>
     <string name="settings_text_size_standard">Standard</string>
     <string name="settings_text_size_extra_large">Extra Large</string>
+    <string name="settings_voice_read_hints">Text-to-Speech</string>
+    <string name="settings_voice_read_hints_desc">By activating this, the app reads key screen information aloud.</string>
+    <string name="tts_dialog_title">Enable Text-to-Speech</string>
+    <string name="tts_dialog_message">When enabled: single tap on information reads it aloud, double tap opens details, and long press on action buttons reads their purpose.</string>
+    <string name="tts_dialog_do_not_show_again">Do not show this again</string>
+    <string name="tts_dialog_read_aloud">Read this aloud</string>
+    <string name="tts_dialog_enable">Enable</string>
+    <string name="tts_dialog_cancel">Cancel</string>
+    <string name="tts_unavailable">Text-to-speech is unavailable on this device.</string>
 
     <string name="settings_security">Security</string>
     <string name="settings_biometric_signin">Biometric sign-in</string>

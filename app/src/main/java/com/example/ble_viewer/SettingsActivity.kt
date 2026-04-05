@@ -3,10 +3,13 @@ package com.example.ble_viewer
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.view.LayoutInflater
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.Button
+import android.widget.CheckBox
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
@@ -17,6 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.github.angads25.toggle.widget.LabeledSwitch
 import com.google.android.material.materialswitch.MaterialSwitch
 import java.util.Locale
 
@@ -26,7 +30,10 @@ class SettingsActivity : AppCompatActivity() {
         private var pendingLanguageTransition = false
         private const val EXTRA_LANGUAGE_TRANSITION = "extra_language_transition"
         const val EXTRA_SCROLL_TO_RESOURCES = "extra_scroll_to_resources"
-        private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
+        private const val PREFS_NAME = "SolematePrefs"
+        private const val KEY_DEVICE_ALERTS_ENABLED = "device_alerts_enabled"
+        private const val KEY_VOICE_READ_HINTS_ENABLED = "voice_read_hints_enabled"
+        private const val KEY_VOICE_READ_HINTS_DIALOG_SEEN = "voice_read_hints_dialog_seen"
         private const val FEEDBACK_FORM_URL_EN = "https://docs.google.com/forms/d/e/1FAIpQLSe0C7NxZ-hUC-oVMoHSYUianMU36Q1E4xyMS07JrURUJOXjEw/viewform?usp=dialog"
         private const val FEEDBACK_FORM_URL_AR = "https://docs.google.com/forms/d/e/1FAIpQLSeV57vy8dmqPhhS2ElAWk40UaOpFfPHfTvdEUbzHOTVdCdsEQ/viewform?usp=publish-editor"
         private const val FEEDBACK_FORM_URL_FR = "https://docs.google.com/forms/d/e/1FAIpQLSfGYhRvRHMw5pOEZHiQuD2yoHH5n2Kx5rEdt7noJBoZb0n1QQ/viewform?usp=publish-editor"
@@ -40,7 +47,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var settingsScrollView: View
     private lateinit var textSizeSlider: SeekBar
     private lateinit var textSizeValue: TextView
-    private lateinit var biometricSwitch: MaterialSwitch
+    private lateinit var deviceAlertsSwitch: MaterialSwitch
+    private lateinit var voiceReadHintsSwitch: LabeledSwitch
+    private lateinit var voiceReadHintsRow: LinearLayout
+    private var suppressVoiceReadToggleCallback = false
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var pendingSpeechText: String? = null
 
     private data class LanguageOption(
         val tag: String,
@@ -96,11 +109,16 @@ class SettingsActivity : AppCompatActivity() {
         settingsScrollView = findViewById(R.id.settings_scroll_view)
         textSizeSlider = findViewById(R.id.text_size_slider)
         textSizeValue = findViewById(R.id.settings_text_size_value)
-        biometricSwitch = findViewById(R.id.settings_biometric_switch)
+        deviceAlertsSwitch = findViewById(R.id.settings_biometric_switch)
+        voiceReadHintsSwitch = findViewById(R.id.settings_voice_read_hints_switch)
+        voiceReadHintsRow = findViewById(R.id.settings_voice_read_hints_row)
         updateUsername()
         updateLanguageChip()
-        setupBiometricToggle()
+        setupAccessibilityToggles()
+        setupReadableResourceRows()
         setupTextSizeControls()
+        setupSecurityAndAccessibilityTts()
+        setupGeneralNavigationTts()
 
         if (intent.getBooleanExtra(EXTRA_SCROLL_TO_RESOURCES, false)) {
             settingsScrollView.post {
@@ -111,6 +129,14 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.button_edit_profile).setOnClickListener {
             Toast.makeText(this, getString(R.string.toast_edit_profile_coming_soon), Toast.LENGTH_SHORT).show()
+        }
+        findViewById<Button>(R.id.button_edit_profile).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.edit_profile))
+                true
+            } else {
+                false
+            }
         }
 
         findViewById<Button>(R.id.button_sign_out).setOnClickListener {
@@ -128,13 +154,33 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
+        findViewById<Button>(R.id.button_sign_out).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.sign_out))
+                true
+            } else {
+                false
+            }
+        }
 
         findViewById<TextView>(R.id.button_send_feedback).setOnClickListener {
             openFeedbackFormForCurrentLanguage()
         }
+        findViewById<TextView>(R.id.button_send_feedback).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_feedback))
+            }
+            true
+        }
 
         findViewById<LinearLayout>(R.id.settings_language_row).setOnClickListener {
             showLanguagePicker()
+        }
+        findViewById<LinearLayout>(R.id.settings_language_row).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_language) + ". " + getString(R.string.settings_choose_language))
+            }
+            true
         }
 
         findViewById<LinearLayout>(R.id.nav_home).setOnClickListener {
@@ -199,19 +245,293 @@ class SettingsActivity : AppCompatActivity() {
         languageValue.text = getString(option.labelRes)
     }
 
-    private fun setupBiometricToggle() {
-        val prefs = getSharedPreferences("SolematePrefs", MODE_PRIVATE)
-        biometricSwitch.isChecked = prefs.getBoolean(KEY_BIOMETRIC_ENABLED, false)
-        biometricSwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && !BiometricAuthHelper.isAvailable(this)) {
-                biometricSwitch.isChecked = false
-                prefs.edit().putBoolean(KEY_BIOMETRIC_ENABLED, false).apply()
-                Toast.makeText(this, getString(R.string.toast_biometric_unavailable), Toast.LENGTH_SHORT).show()
-                return@setOnCheckedChangeListener
+    private fun setupAccessibilityToggles() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+
+        deviceAlertsSwitch.isChecked = prefs.getBoolean(KEY_DEVICE_ALERTS_ENABLED, true)
+        deviceAlertsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, isChecked).apply()
+        }
+        findViewById<LinearLayout>(R.id.settings_device_alerts_row).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_device_alerts) + ". " + getString(R.string.settings_notifications_desc))
+            }
+            true
+        }
+
+        voiceReadHintsSwitch.setOn(prefs.getBoolean(KEY_VOICE_READ_HINTS_ENABLED, false))
+
+        voiceReadHintsRow.setOnLongClickListener {
+            speakSettingsText(buildTutorialSpeech())
+            true
+        }
+
+        voiceReadHintsSwitch.setOnToggledListener { _, isChecked ->
+            if (suppressVoiceReadToggleCallback) return@setOnToggledListener
+
+            if (!isChecked) {
+                prefs.edit().putBoolean(KEY_VOICE_READ_HINTS_ENABLED, false).apply()
+                stopDialogSpeech()
+                return@setOnToggledListener
             }
 
-            prefs.edit().putBoolean(KEY_BIOMETRIC_ENABLED, isChecked).apply()
+            val skipDialog = prefs.getBoolean(KEY_VOICE_READ_HINTS_DIALOG_SEEN, false)
+            if (skipDialog) {
+                prefs.edit().putBoolean(KEY_VOICE_READ_HINTS_ENABLED, true).apply()
+            } else {
+                showVoiceReadHintsDialog()
+            }
         }
+    }
+
+    private fun showVoiceReadHintsDialog() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_tts_info, null)
+        val messageView = dialogView.findViewById<TextView>(R.id.tts_dialog_message)
+        val doNotShowAgain = dialogView.findViewById<CheckBox>(R.id.tts_dialog_do_not_show_again)
+        val speakerButton = dialogView.findViewById<ImageButton>(R.id.tts_dialog_speaker)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .setNegativeButton(R.string.tts_dialog_cancel) { _, _ ->
+                setVoiceReadHintsSwitchChecked(false)
+                prefs.edit().putBoolean(KEY_VOICE_READ_HINTS_ENABLED, false).apply()
+                stopDialogSpeech()
+            }
+            .setPositiveButton(R.string.tts_dialog_enable) { _, _ ->
+                prefs.edit()
+                    .putBoolean(KEY_VOICE_READ_HINTS_ENABLED, true)
+                    .putBoolean(KEY_VOICE_READ_HINTS_DIALOG_SEEN, doNotShowAgain.isChecked)
+                    .apply()
+                stopDialogSpeech()
+            }
+            .create()
+
+        speakerButton.setOnClickListener {
+            speakSettingsText(buildVoiceReadHintsSpeech(messageView.text.toString()))
+        }
+
+        dialog.setOnDismissListener {
+            stopDialogSpeech()
+        }
+
+        dialog.show()
+    }
+
+    private fun setVoiceReadHintsSwitchChecked(checked: Boolean) {
+        suppressVoiceReadToggleCallback = true
+        voiceReadHintsSwitch.setOn(checked)
+        suppressVoiceReadToggleCallback = false
+    }
+
+    private fun setupSecurityAndAccessibilityTts() {
+        // Text Size Slider long-press TTS
+        val textSizeValue = findViewById<TextView>(R.id.settings_text_size_value)
+        val textSizeSlider = findViewById<SeekBar>(R.id.text_size_slider)
+        if (textSizeValue != null && textSizeSlider != null) {
+            findViewById<LinearLayout>(R.id.settings_text_size_row).setOnLongClickListener {
+                if (isVoiceReadHintsEnabled()) {
+                    speakSettingsText(getString(R.string.settings_text_size) + ": " + textSizeValue.text.toString())
+                }
+                true
+            }
+            // Also add long-press to the value TextView
+            textSizeValue.setOnLongClickListener {
+                if (isVoiceReadHintsEnabled()) {
+                    speakSettingsText(getString(R.string.settings_text_size) + ": " + textSizeValue.text.toString())
+                }
+                true
+            }
+        }
+
+        // Biometric Sign-in toggle long-press TTS
+        findViewById<LinearLayout>(R.id.settings_biometric_signin_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_biometric_signin) + ". " + getString(R.string.settings_biometric_desc))
+            }
+            true
+        }
+
+        // Change Passcode long-press TTS
+        findViewById<LinearLayout>(R.id.settings_change_passcode_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_change_passcode))
+            }
+            true
+        }
+
+        // Manage Paired Devices long-press TTS (uses new ID)
+        findViewById<LinearLayout>(R.id.settings_manage_paired_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_manage_paired) + ". " + getString(R.string.settings_manage_paired_desc))
+            }
+            true
+        }
+    }
+
+    private fun setupReadableResourceRows() {
+        val resourceRows = listOf(
+            findViewById<LinearLayout>(R.id.settings_voice_read_hints_row) to buildTutorialSpeech(),
+            findViewById<LinearLayout>(R.id.settings_device_manual_row) to (getString(R.string.settings_device_manual) + ". " + getString(R.string.settings_device_manual_desc)),
+            findViewById<LinearLayout>(R.id.settings_datasheet_row) to (getString(R.string.settings_datasheet) + ". " + getString(R.string.settings_datasheet_desc))
+        )
+
+        resourceRows.forEach { (row, speechText) ->
+            row.setOnLongClickListener {
+                if (isVoiceReadHintsEnabled()) {
+                    speakSettingsText(speechText)
+                }
+                true
+            }
+        }
+    }
+
+    private fun setupGeneralNavigationTts() {
+        findViewById<LinearLayout>(R.id.nav_home).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.nav_home))
+            }
+            true
+        }
+
+        findViewById<LinearLayout>(R.id.nav_history).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.nav_history))
+            }
+            true
+        }
+
+        findViewById<LinearLayout>(R.id.nav_settings).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.nav_settings))
+            }
+            true
+        }
+
+        findViewById<LinearLayout>(R.id.settings_contact_support_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_contact_support) + ". " + getString(R.string.settings_contact_support_desc))
+            }
+            true
+        }
+
+        findViewById<LinearLayout>(R.id.settings_privacy_policy_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_privacy_policy))
+            }
+            true
+        }
+
+        findViewById<LinearLayout>(R.id.settings_terms_of_use_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_terms_of_use))
+            }
+            true
+        }
+
+        findViewById<LinearLayout>(R.id.settings_export_data_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_export_data))
+            }
+            true
+        }
+
+        findViewById<LinearLayout>(R.id.settings_request_deletion_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(getString(R.string.settings_request_deletion))
+            }
+            true
+        }
+    }
+
+    private fun buildVoiceReadHintsSpeech(messageOverride: String? = null): String {
+        val message = messageOverride?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.tts_dialog_message)
+        return getString(R.string.tts_dialog_title) + ". " + message
+    }
+
+    private fun buildTutorialSpeech(): String {
+        return getString(R.string.settings_app_tutorial) + ". " + getString(R.string.settings_app_tutorial_desc)
+    }
+
+    private fun speakSettingsText(text: String) {
+        if (!isVoiceReadHintsEnabled()) {
+            stopDialogSpeech()
+            return
+        }
+
+        val message = text.trim()
+        if (message.isBlank()) return
+
+        pendingSpeechText = message
+
+        if (tts == null) {
+            tts = TextToSpeech(this) { status ->
+                ttsReady = status == TextToSpeech.SUCCESS
+                if (ttsReady) {
+                    speakPendingText()
+                } else {
+                    pendingSpeechText = null
+                    Toast.makeText(this, getString(R.string.tts_unavailable), Toast.LENGTH_SHORT).show()
+                }
+            }
+            return
+        }
+
+        if (ttsReady) {
+            speakPendingText()
+        }
+    }
+
+    private fun speakPendingText() {
+        val engine = tts ?: return
+        val message = pendingSpeechText?.trim().orEmpty()
+        if (message.isBlank()) return
+
+        if (!configureSpeechLanguage(engine)) {
+            pendingSpeechText = null
+            Toast.makeText(this, getString(R.string.tts_unavailable), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        engine.speak(message, TextToSpeech.QUEUE_FLUSH, null, "settings_tts")
+        pendingSpeechText = null
+    }
+
+    private fun configureSpeechLanguage(engine: TextToSpeech): Boolean {
+        val candidates = listOf(
+            Locale.forLanguageTag(currentLanguageTag()),
+            resources.configuration.locales[0],
+            Locale.getDefault(),
+            Locale.US
+        ).distinctBy { it.toLanguageTag() }
+
+        for (candidate in candidates) {
+            val result = engine.setLanguage(candidate)
+            if (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private fun stopDialogSpeech() {
+        tts?.stop()
+        pendingSpeechText = null
+    }
+
+    private fun isVoiceReadHintsEnabled(): Boolean {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getBoolean(KEY_VOICE_READ_HINTS_ENABLED, false)
+    }
+
+    override fun onDestroy() {
+        stopDialogSpeech()
+        tts?.shutdown()
+        tts = null
+        super.onDestroy()
     }
 
     private fun setupTextSizeControls() {

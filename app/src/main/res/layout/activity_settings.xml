@@ -296,9 +296,13 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
+                    android:id="@+id/settings_voice_read_hints_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -344,6 +348,7 @@
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
 
                 <LinearLayout
+                    android:id="@+id/settings_device_manual_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
@@ -391,6 +396,7 @@
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
 
                 <LinearLayout
+                    android:id="@+id/settings_datasheet_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
@@ -463,6 +469,7 @@
                     android:textSize="13sp" />
 
                 <LinearLayout
+                    android:id="@+id/settings_device_alerts_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -533,6 +540,7 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
+                    android:id="@+id/settings_text_size_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
@@ -618,6 +626,65 @@
                         android:textColor="#637383"
                         android:textSize="12sp" />
                 </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    android:background="#DDE5ED" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/settings_icon_circle_bg"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_voice_read_hints"
+                        app:tint="#4B6B89" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/roboto_medium"
+                            android:text="@string/settings_voice_read_hints"
+                            android:textColor="#2F3D4A"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/roboto_medium"
+                            android:text="@string/settings_voice_read_hints_desc"
+                            android:textColor="#8F9AA6"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <com.github.angads25.toggle.widget.LabeledSwitch
+                        android:id="@+id/settings_voice_read_hints_switch"
+                        android:layout_width="60dp" 
+                        android:layout_height="36dp"
+                        android:textSize="0sp"
+                        app:colorBorder="#D5DAE0"
+                        app:colorOff="#FFFFFF"
+                        app:colorOn="#0D3B66"
+                        app:on="false"
+                        app:textOff=""
+                        app:textOn="" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -638,6 +705,7 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
+                    android:id="@+id/settings_biometric_signin_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -692,6 +760,7 @@
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
 
                 <LinearLayout
+                    android:id="@+id/settings_change_passcode_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
@@ -725,8 +794,12 @@
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
 
                 <LinearLayout
+                    android:id="@+id/settings_manage_paired_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -797,6 +870,7 @@
                     android:textSize="13sp" />
 
                 <LinearLayout
+                    android:id="@+id/settings_export_data_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -832,6 +906,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/settings_request_deletion_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
@@ -867,6 +942,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/settings_contact_support_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -987,8 +1063,12 @@
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
 
                 <LinearLayout
+                    android:id="@+id/settings_privacy_policy_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -1019,6 +1099,7 @@
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
 
                 <LinearLayout
+                    android:id="@+id/settings_terms_of_use_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"

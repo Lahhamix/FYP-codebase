@@ -132,6 +132,14 @@
     <string name="settings_text_size">حجم النص</string>
     <string name="settings_text_size_large">كبير</string>
     <string name="status_stable">مستقر</string>
+    <string name="settings_voice_read_hints">تحويل النص إلى كلام</string>
+    <string name="settings_voice_read_hints_desc">عند تفعيل هذا الخيار، يقرأ التطبيق بصوت عالٍ المعلومات الأساسية على الشاشة.</string>
+    <string name="tts_dialog_title">تفعيل تحويل النص إلى كلام</string>
+    <string name="tts_dialog_message">عند التفعيل: الضغطة الواحدة على المعلومات تقرؤها بصوت عالٍ، والضغط المزدوج يفتح التفاصيل، والضغط المطوّل على أزرار الإجراءات يشرح وظيفتها.</string>
+    <string name="tts_dialog_do_not_show_again">عدم إظهار هذا مرة أخرى</string>
+    <string name="tts_dialog_read_aloud">قراءة هذا بصوت عالٍ</string>
+    <string name="tts_dialog_enable">تفعيل</string>
+    <string name="tts_dialog_cancel">إلغاء</string>
     <string name="status_pending">قيد الانتظار</string>
     <string name="status_no_backend">لا يوجد خادم خلفي</string>
     <string name="need_assistance">هل تحتاج إلى مساعدة؟\n نصائح سريعة ودعم بنقرة واحدة</string>

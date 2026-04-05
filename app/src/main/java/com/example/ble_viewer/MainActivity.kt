@@ -16,13 +16,17 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.speech.tts.TextToSpeech
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.RelativeSizeSpan
 import android.util.Log
+import android.view.GestureDetector
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
+import android.view.accessibility.AccessibilityManager
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -82,6 +86,10 @@ class MainActivity : AppCompatActivity() {
     private var lastDeviceAddress: String? = null
     private var isDeviceConnected = false
     private var hasAttemptedConnection = false
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var lastSpokenMessage: String? = null
+    private var lastSpokenAtMs: Long = 0L
 
     // --- Data Logging Members ---
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -103,6 +111,9 @@ class MainActivity : AppCompatActivity() {
         private const val BLUETOOTH_CONNECT_REQUEST_CODE = 102
         private const val PERIPHERAL_PUBLIC_KEY_LENGTH = 65
         private const val TAG = "BLE_VIEWER_MAIN"
+        private const val PREFS_NAME = "SolematePrefs"
+        private const val KEY_VOICE_READ_HINTS_ENABLED = "voice_read_hints_enabled"
+        private const val SPEECH_COOLDOWN_MS = 1200L
         val pressureCharUuid = UUID.fromString("9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00")
         const val PRESSURE_MATRIX_ENCRYPTION_ENABLED = true
     }
@@ -248,21 +259,80 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, ScanActivity::class.java))
         }
 
-        findViewById<android.view.View>(R.id.vitalSignsCard).setOnClickListener {
-            startActivity(Intent(this, ReadingsActivity::class.java))
-        }
-        findViewById<TextView>(R.id.seeMoreDetailed).setOnClickListener {
+        val openReadings: () -> Unit = {
             startActivity(Intent(this, ReadingsActivity::class.java))
         }
 
-        findViewById<MaterialCardView>(R.id.gaitAnalysisCard).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java).apply {
-                putExtra(SettingsActivity.EXTRA_SCROLL_TO_RESOURCES, true)
-            })
-        }
+        attachInfoTapBehavior(
+            view = findViewById(R.id.vitalSignsCard),
+            readTextProvider = { getString(R.string.current_vitals) },
+            onDoubleTapAction = openReadings
+        )
+        attachInfoTapBehavior(
+            view = findViewById(R.id.seeMoreDetailed),
+            readTextProvider = { getString(R.string.see_more_detailed) },
+            onDoubleTapAction = openReadings
+        )
+        attachInfoTapBehavior(
+            view = currentVitalsCard,
+            readTextProvider = {
+                val heart = heartRateText.text?.toString()?.trim().orEmpty()
+                val oxygen = spo2Text.text?.toString()?.trim().orEmpty()
+                getString(R.string.current_vitals) + ": " +
+                    getString(R.string.heart_rate_label) + " " + heart + ", " +
+                    getString(R.string.oxygen_saturation) + " " + oxygen
+            },
+            onDoubleTapAction = openReadings
+        )
 
-        findViewById<MaterialCardView>(R.id.pressureMatrixCard).setOnClickListener {
-            startActivity(Intent(this, PressureMatrixActivity::class.java))
+        attachInfoTapBehavior(
+            view = findViewById<MaterialCardView>(R.id.gaitAnalysisCard),
+            readTextProvider = { getString(R.string.gait_analysis_title) },
+            onDoubleTapAction = {
+                startActivity(Intent(this, SettingsActivity::class.java).apply {
+                    putExtra(SettingsActivity.EXTRA_SCROLL_TO_RESOURCES, true)
+                })
+            }
+        )
+
+        attachInfoTapBehavior(
+            view = findViewById<MaterialCardView>(R.id.pressureMatrixCard),
+            readTextProvider = { getString(R.string.plantar_pressure) },
+            onDoubleTapAction = {
+                startActivity(Intent(this, PressureMatrixActivity::class.java))
+            }
+        )
+        
+        // Add long-press TTS for BP, Swelling, and Ataxia cards
+        bpCard.setOnLongClickListener {
+            if (canUseCustomSpeech()) {
+                val bpText = bpCard.findViewById<TextView>(R.id.bpText)?.text?.toString() ?: ""
+                val bpStatus = bpCard.findViewById<TextView>(R.id.bpStatus)?.text?.toString() ?: ""
+                speakIfEnabled("Blood Pressure: $bpStatus $bpText", force = true)
+                true
+            } else {
+                false
+            }
+        }
+        
+        swellingCard.setOnLongClickListener {
+            if (canUseCustomSpeech()) {
+                val swellingValue = swellingText.text?.toString() ?: ""
+                speakIfEnabled("Swelling: $swellingValue", force = true)
+                true
+            } else {
+                false
+            }
+        }
+        
+        ataxiaCard.setOnLongClickListener {
+            if (canUseCustomSpeech()) {
+                val ataxiaValue = ataxiaCard.findViewById<TextView>(R.id.ataxiaText)?.text?.toString() ?: ""
+                speakIfEnabled("Ataxia: $ataxiaValue", force = true)
+                true
+            } else {
+                false
+            }
         }
         
         findViewById<Button>(R.id.calibrateButton)?.setOnClickListener {
@@ -270,6 +340,7 @@ class MainActivity : AppCompatActivity() {
                 putExtra(PressureMatrixActivity.EXTRA_START_CALIBRATION, true)
             })
         }
+        attachLongPressReadAloud(findViewById(R.id.calibrateButton), getString(R.string.calibrate))
 
         findViewById<Button>(R.id.download_data_button).setOnClickListener {
             checkPermissionAndExport()
@@ -277,21 +348,30 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.share_report_button).setOnClickListener {
             shareCsvReport()
         }
+        attachLongPressReadAloud(findViewById(R.id.download_data_button))
+        attachLongPressReadAloud(findViewById(R.id.share_report_button))
+        attachLongPressReadAloud(reconnectInlineButton)
+        attachLongPressReadAloud(scanDevicesInlineButton)
 
         findViewById<View>(R.id.profile_card).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+        attachLongPressReadAloud(findViewById(R.id.profile_card), "Profile")
 
         toolbarUsername.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+        attachLongPressReadAloud(toolbarUsername)
 
         findViewById<View>(R.id.nav_settings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+        attachLongPressReadAloud(findViewById(R.id.nav_home), getString(R.string.nav_home))
+        attachLongPressReadAloud(findViewById(R.id.nav_history), getString(R.string.nav_history))
+        attachLongPressReadAloud(findViewById(R.id.nav_settings), getString(R.string.nav_settings))
 
         val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
@@ -394,6 +474,96 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun isVoiceReadHintsEnabled(): Boolean {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getBoolean(KEY_VOICE_READ_HINTS_ENABLED, false)
+    }
+
+    private fun isTalkBackEnabled(): Boolean {
+        val manager = getSystemService(ACCESSIBILITY_SERVICE) as? AccessibilityManager ?: return false
+        return manager.isEnabled && manager.isTouchExplorationEnabled
+    }
+
+    private fun canUseCustomSpeech(): Boolean {
+        return isVoiceReadHintsEnabled() && !isTalkBackEnabled()
+    }
+
+    private fun ensureTtsInitialized(onReady: (() -> Unit)? = null) {
+        if (tts != null && ttsReady) {
+            onReady?.invoke()
+            return
+        }
+
+        if (tts == null) {
+            tts = TextToSpeech(this) { status ->
+                ttsReady = status == TextToSpeech.SUCCESS
+                if (ttsReady) {
+                    tts?.language = resources.configuration.locales[0]
+                    onReady?.invoke()
+                }
+            }
+        }
+    }
+
+    private fun speakIfEnabled(message: String, force: Boolean = false) {
+        if (!canUseCustomSpeech()) return
+        val text = message.trim()
+        if (text.isEmpty()) return
+
+        val now = System.currentTimeMillis()
+        if (!force && text == lastSpokenMessage && (now - lastSpokenAtMs) < SPEECH_COOLDOWN_MS) return
+
+        ensureTtsInitialized {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "main_tts")
+            lastSpokenMessage = text
+            lastSpokenAtMs = now
+        }
+    }
+
+    private fun stopSpeech() {
+        tts?.stop()
+    }
+
+    private fun attachInfoTapBehavior(
+        view: View,
+        readTextProvider: () -> String,
+        onDoubleTapAction: () -> Unit
+    ) {
+        val detector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                onDoubleTapAction()
+                return true
+            }
+
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                onDoubleTapAction()
+                return true
+            }
+        })
+
+        view.setOnTouchListener { _, event ->
+            detector.onTouchEvent(event)
+        }
+    }
+
+    private fun attachLongPressReadAloud(view: View, customText: String? = null) {
+        view.setOnLongClickListener {
+            if (canUseCustomSpeech()) {
+                val message = customText ?: when (view) {
+                    is TextView -> view.text?.toString().orEmpty()
+                    is Button -> view.text?.toString().orEmpty()
+                    else -> view.contentDescription?.toString().orEmpty()
+                }
+                speakIfEnabled(message, force = true)
+                true
+            } else {
+                false
+            }
+        }
+    }
+
     override fun onStart() {
         super.onStart()
         LocalBroadcastManager.getInstance(this).registerReceiver(
@@ -405,6 +575,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         reconcileDisconnectedOverlay()
+        // Stop any ongoing TTS speech in case the user disabled it in Settings
+        if (!isVoiceReadHintsEnabled()) {
+            tts?.stop()
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -930,6 +1104,10 @@ class MainActivity : AppCompatActivity() {
                 statusLoadingDots.visibility = View.GONE
             }
         }
+
+        if (visual != DashboardStatusVisual.LOADING) {
+            speakIfEnabled(text)
+        }
     }
 
     private fun drainBuffer(characteristic: BluetoothGattCharacteristic, buffer: ByteArrayOutputStream) {
@@ -1047,6 +1225,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        stopSpeech()
+        tts?.shutdown()
+        tts = null
         super.onDestroy()
         cleanup()
     }
