@@ -55,7 +55,7 @@
     <string name="settings_voice_read_hints">Text-to-Speech</string>
     <string name="settings_voice_read_hints_desc">By activating this, the app reads key screen information aloud.</string>
     <string name="tts_dialog_title">Enable Text-to-Speech</string>
-    <string name="tts_dialog_message">When enabled: single tap on information reads it aloud, double tap opens details, and long press on action buttons reads their purpose.</string>
+    <string name="tts_dialog_message">When you enable this setting, long pressing any section will read it aloud.</string>
     <string name="tts_dialog_do_not_show_again">Do not show this again</string>
     <string name="tts_dialog_read_aloud">Read this aloud</string>
     <string name="tts_dialog_enable">Enable</string>

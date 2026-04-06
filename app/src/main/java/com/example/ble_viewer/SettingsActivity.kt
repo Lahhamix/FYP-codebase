@@ -20,6 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.google.android.material.button.MaterialButton
 import com.github.angads25.toggle.widget.LabeledSwitch
 import com.google.android.material.materialswitch.MaterialSwitch
 import java.util.Locale
@@ -287,29 +288,36 @@ class SettingsActivity : AppCompatActivity() {
     private fun showVoiceReadHintsDialog() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_tts_info, null)
+        TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
         val messageView = dialogView.findViewById<TextView>(R.id.tts_dialog_message)
         val doNotShowAgain = dialogView.findViewById<CheckBox>(R.id.tts_dialog_do_not_show_again)
         val speakerButton = dialogView.findViewById<ImageButton>(R.id.tts_dialog_speaker)
+        val cancelButton = dialogView.findViewById<MaterialButton>(R.id.tts_dialog_cancel_button)
+        val enableButton = dialogView.findViewById<MaterialButton>(R.id.tts_dialog_enable_button)
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .setCancelable(false)
-            .setNegativeButton(R.string.tts_dialog_cancel) { _, _ ->
-                setVoiceReadHintsSwitchChecked(false)
-                prefs.edit().putBoolean(KEY_VOICE_READ_HINTS_ENABLED, false).apply()
-                stopDialogSpeech()
-            }
-            .setPositiveButton(R.string.tts_dialog_enable) { _, _ ->
-                prefs.edit()
-                    .putBoolean(KEY_VOICE_READ_HINTS_ENABLED, true)
-                    .putBoolean(KEY_VOICE_READ_HINTS_DIALOG_SEEN, doNotShowAgain.isChecked)
-                    .apply()
-                stopDialogSpeech()
-            }
             .create()
 
+        cancelButton.setOnClickListener {
+            setVoiceReadHintsSwitchChecked(false)
+            prefs.edit().putBoolean(KEY_VOICE_READ_HINTS_ENABLED, false).apply()
+            stopDialogSpeech()
+            dialog.dismiss()
+        }
+
+        enableButton.setOnClickListener {
+            prefs.edit()
+                .putBoolean(KEY_VOICE_READ_HINTS_ENABLED, true)
+                .putBoolean(KEY_VOICE_READ_HINTS_DIALOG_SEEN, doNotShowAgain.isChecked)
+                .apply()
+            stopDialogSpeech()
+            dialog.dismiss()
+        }
+
         speakerButton.setOnClickListener {
-            speakSettingsText(buildVoiceReadHintsSpeech(messageView.text.toString()))
+            speakSettingsText(buildVoiceReadHintsSpeech(messageView.text.toString()), forcePreview = true)
         }
 
         dialog.setOnDismissListener {
@@ -455,8 +463,8 @@ class SettingsActivity : AppCompatActivity() {
         return getString(R.string.settings_app_tutorial) + ". " + getString(R.string.settings_app_tutorial_desc)
     }
 
-    private fun speakSettingsText(text: String) {
-        if (!isVoiceReadHintsEnabled()) {
+    private fun speakSettingsText(text: String, forcePreview: Boolean = false) {
+        if (!forcePreview && !isVoiceReadHintsEnabled()) {
             stopDialogSpeech()
             return
         }
@@ -569,6 +577,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showLanguagePicker() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_language_picker, null)
+        TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()

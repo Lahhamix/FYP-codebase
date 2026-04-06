@@ -627,11 +627,8 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="12dp"
-                    android:background="#DDE5ED" />
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#95ACBF" />
+
 
                 <LinearLayout
                     android:layout_width="match_parent"

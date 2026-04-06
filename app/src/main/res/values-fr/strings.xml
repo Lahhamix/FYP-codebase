@@ -86,7 +86,7 @@
     <string name="settings_voice_read_hints">Synthèse vocale</string>
     <string name="settings_voice_read_hints_desc">En activant cette option, l’application lit à voix haute les informations clés de l’écran.</string>
     <string name="tts_dialog_title">Activer la synthèse vocale</string>
-    <string name="tts_dialog_message">Une fois activée : un appui simple lit l’information, un double appui ouvre les détails, et un appui long sur les boutons d’action lit leur rôle.</string>
+    <string name="tts_dialog_message">Lorsque ce paramètre est activé, appuyez longuement sur n’importe quelle section pour l’entendre lue à voix haute.</string>
     <string name="tts_dialog_do_not_show_again">Ne plus afficher ceci</string>
     <string name="tts_dialog_read_aloud">Lire à voix haute</string>
     <string name="tts_dialog_enable">Activer</string>

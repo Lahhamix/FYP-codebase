@@ -1,19 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_margin="20dp"
+    android:background="@drawable/language_picker_dialog_bg"
+    android:layoutDirection="locale"
     android:orientation="vertical"
     android:padding="20dp">
 
-    <TextView
-        android:id="@+id/tts_dialog_title"
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/rubik_medium"
-        android:text="@string/tts_dialog_title"
-        android:textColor="#1A416B"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        >
+
+        <TextView
+            android:id="@+id/tts_dialog_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:gravity="start"
+            android:padding="2dp"
+            android:text="@string/tts_dialog_title"
+            android:textColor="#1A416B"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/tts_dialog_speaker"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/settings_icon_circle_bg"
+            android:contentDescription="@string/tts_dialog_read_aloud"
+            android:src="@drawable/ic_tts_speaker"
+            android:tint="#0E3B65" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -32,27 +58,78 @@
             android:textColor="#5F6D7B"
             android:textSize="14sp" />
 
-        <ImageButton
-            android:id="@+id/tts_dialog_speaker"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="10dp"
-            android:background="@drawable/settings_icon_circle_bg"
-            android:contentDescription="@string/tts_dialog_read_aloud"
-            android:padding="8dp"
-            android:src="@drawable/ic_tts_speaker"
-            android:tint="#0E3B65" />
     </LinearLayout>
 
     <CheckBox
         android:id="@+id/tts_dialog_do_not_show_again"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="5dp"
         android:buttonTint="#0D3B66"
         android:fontFamily="@font/roboto_medium"
+        android:layoutDirection="locale"
+        android:textDirection="locale"
         android:text="@string/tts_dialog_do_not_show_again"
         android:textColor="#2F3D4A"
         android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tts_dialog_cancel_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:ellipsize="none"
+            android:fontFamily="@font/rubik_medium"
+            android:gravity="center"
+            android:minHeight="50dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp"
+            android:text="@string/tts_dialog_cancel"
+            android:textAllCaps="false"
+            android:textColor="#2F5A80"
+            android:textSize="14sp"
+            android:lines="2"
+            app:backgroundTint="@android:color/white"
+            app:cornerRadius="18dp"
+            app:elevation="0dp"
+            app:rippleColor="#110D3B66"
+            app:strokeColor="#4E7EA8"
+            app:strokeWidth="2dp" />
+
+        <View
+            android:layout_width="22dp"
+            android:layout_height="1dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tts_dialog_enable_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="none"
+            android:fontFamily="@font/rubik_medium"
+            android:gravity="center"
+            android:minHeight="50dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp"
+            android:text="@string/tts_dialog_enable"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:lines="2"
+            app:backgroundTint="#0D3B66"
+            app:cornerRadius="18dp"
+            app:elevation="0dp"
+            app:rippleColor="#1AFFFFFF"
+            app:strokeWidth="0dp" />
+    </LinearLayout>
 
 </LinearLayout>
