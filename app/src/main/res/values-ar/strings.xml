@@ -104,6 +104,15 @@
     <string name="pressure_mode_pix">بكسل</string>
     <string name="pressure_mode_dynamic">ديناميكي</string>
     <string name="edit_profile">تعديل الملف</string>
+    <string name="edit_profile_name_hint">اسمك</string>
+    <string name="edit_profile_change_photo">تغيير صورة الملف الشخصي</string>
+    <string name="edit_profile_change_username">تغيير اسم المستخدم</string>
+    <string name="edit_profile_choose_gallery">تحميل من المعرض</string>
+    <string name="edit_profile_take_photo">التقاط صورة الآن</string>
+    <string name="edit_profile_crop_photo">قص الصورة</string>
+    <string name="edit_profile_apply">تطبيق</string>
+    <string name="toast_profile_updated">تم تحديث الملف الشخصي</string>
+    <string name="toast_profile_image_update_failed">تعذر تحديث صورة الملف الشخصي</string>
     <string name="sharing_export">المشاركة والتصدير</string>
     <string name="sharing_export_desc">شارك بياناتك مع العائلة أو الأطباء</string>
     <string name="share_report">مشاركة التقرير</string>

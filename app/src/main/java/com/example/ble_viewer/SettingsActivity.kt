@@ -3,6 +3,8 @@ package com.example.ble_viewer
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,7 +14,9 @@ import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
@@ -23,10 +27,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import com.google.android.material.button.MaterialButton
 import com.github.angads25.toggle.widget.LabeledSwitch
+import com.yalantis.ucrop.UCrop
+import java.io.File
+import java.io.FileOutputStream
 import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
@@ -39,6 +47,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val KEY_DEVICE_ALERTS_ENABLED = "device_alerts_enabled"
         private const val KEY_VOICE_READ_HINTS_ENABLED = "voice_read_hints_enabled"
         private const val KEY_VOICE_READ_HINTS_DIALOG_SEEN = "voice_read_hints_dialog_seen"
+        private const val KEY_PROFILE_IMAGE_PATH = "profile_image_path"
         private const val FEEDBACK_FORM_URL_EN = "https://docs.google.com/forms/d/e/1FAIpQLSe0C7NxZ-hUC-oVMoHSYUianMU36Q1E4xyMS07JrURUJOXjEw/viewform?usp=dialog"
         private const val FEEDBACK_FORM_URL_AR = "https://docs.google.com/forms/d/e/1FAIpQLSeV57vy8dmqPhhS2ElAWk40UaOpFfPHfTvdEUbzHOTVdCdsEQ/viewform?usp=publish-editor"
         private const val FEEDBACK_FORM_URL_FR = "https://docs.google.com/forms/d/e/1FAIpQLSfGYhRvRHMw5pOEZHiQuD2yoHH5n2Kx5rEdt7noJBoZb0n1QQ/viewform?usp=publish-editor"
@@ -46,6 +55,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private var suppressFinishAnimation = false
 
+    private lateinit var settingsProfileImage: ImageView
     private lateinit var settingsUsername: TextView
     private lateinit var settingsEmail: TextView
     private lateinit var languageValue: TextView
@@ -60,6 +70,9 @@ class SettingsActivity : AppCompatActivity() {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var pendingSpeechText: String? = null
+    private var editProfileDialogImageView: ImageView? = null
+    private var pendingProfileImagePath: String? = null
+    private var pendingCropSourceUri: Uri? = null
 
     private val postNotificationsPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -73,6 +86,41 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, false).apply()
             Toast.makeText(this, getString(R.string.toast_notifications_permission_denied), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private val pickProfileImageLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@registerForActivityResult
+        launchProfileCrop(uri)
+    }
+
+    private val takeProfilePhotoLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap ?: return@registerForActivityResult
+        val tempSourceUri = persistBitmapToCache(bitmap)
+        if (tempSourceUri == null) {
+            Toast.makeText(this, getString(R.string.toast_profile_image_update_failed), Toast.LENGTH_SHORT).show()
+            return@registerForActivityResult
+        }
+
+        launchProfileCrop(tempSourceUri)
+    }
+
+    private val cropProfileImageLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) return@registerForActivityResult
+        val outputUri = UCrop.getOutput(result.data ?: return@registerForActivityResult) ?: return@registerForActivityResult
+        val savedPath = persistProfileImageFromUri(outputUri)
+        if (savedPath == null) {
+            Toast.makeText(this, getString(R.string.toast_profile_image_update_failed), Toast.LENGTH_SHORT).show()
+            return@registerForActivityResult
+        }
+
+        pendingProfileImagePath = savedPath
+        editProfileDialogImageView?.setImageBitmap(BitmapFactory.decodeFile(savedPath))
     }
 
     private data class LanguageOption(
@@ -123,6 +171,7 @@ class SettingsActivity : AppCompatActivity() {
             pendingLanguageTransition = false
         }
 
+        settingsProfileImage = findViewById(R.id.settings_profile_image)
         settingsUsername = findViewById(R.id.settings_username)
         settingsEmail = findViewById(R.id.settings_email)
         languageValue = findViewById(R.id.settings_language_value)
@@ -133,6 +182,7 @@ class SettingsActivity : AppCompatActivity() {
         voiceReadHintsSwitch = findViewById(R.id.settings_voice_read_hints_switch)
         voiceReadHintsRow = findViewById(R.id.settings_voice_read_hints_row)
         updateUsername()
+        updateProfileImage()
         updateLanguageChip()
         setupAccessibilityToggles()
         setupReadableResourceRows()
@@ -148,7 +198,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.button_edit_profile).setOnClickListener {
-            Toast.makeText(this, getString(R.string.toast_edit_profile_coming_soon), Toast.LENGTH_SHORT).show()
+            showEditProfileDialog()
         }
         findViewById<Button>(R.id.button_edit_profile).setOnLongClickListener {
             if (isVoiceReadHintsEnabled()) {
@@ -256,6 +306,163 @@ class SettingsActivity : AppCompatActivity() {
         } else {
             settingsEmail.text = ""
             settingsEmail.visibility = GONE
+        }
+    }
+
+    private fun updateProfileImage() {
+        val imagePath = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString(KEY_PROFILE_IMAGE_PATH, null)
+        loadProfileImageOrDefault(settingsProfileImage, imagePath)
+    }
+
+    private fun showEditProfileDialog() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_profile, null)
+        TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
+
+        val profileImage = dialogView.findViewById<ImageView>(R.id.edit_profile_dialog_image)
+        val cameraButton = dialogView.findViewById<ImageButton>(R.id.edit_profile_dialog_camera_button)
+        val nameField = dialogView.findViewById<EditText>(R.id.edit_profile_dialog_name)
+        val cancelButton = dialogView.findViewById<MaterialButton>(R.id.edit_profile_dialog_cancel_button)
+        val applyButton = dialogView.findViewById<MaterialButton>(R.id.edit_profile_dialog_apply_button)
+
+        val currentName = prefs.getString("username", getString(R.string.settings_default_name))
+            ?: getString(R.string.settings_default_name)
+        val currentImagePath = prefs.getString(KEY_PROFILE_IMAGE_PATH, null)
+
+        nameField.setText(currentName)
+        pendingProfileImagePath = currentImagePath
+        editProfileDialogImageView = profileImage
+        loadProfileImageOrDefault(profileImage, currentImagePath)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        val openImagePicker = {
+            showProfileImageSourceOptions()
+        }
+
+        cameraButton.setOnClickListener { openImagePicker() }
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        applyButton.setOnClickListener {
+            val updatedName = nameField.text?.toString()?.trim().orEmpty()
+                .ifBlank { getString(R.string.settings_default_name) }
+
+            val saved = prefs.edit()
+                .putString("username", updatedName)
+                .putString(KEY_PROFILE_IMAGE_PATH, pendingProfileImagePath)
+                .commit()
+
+            if (!saved) {
+                Toast.makeText(this, getString(R.string.toast_profile_update_failed), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            updateUsername()
+            updateProfileImage()
+            Toast.makeText(this, getString(R.string.toast_profile_updated), Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        dialog.setOnDismissListener {
+            editProfileDialogImageView = null
+            pendingProfileImagePath = null
+            pendingCropSourceUri = null
+        }
+
+        dialog.show()
+    }
+
+    private fun showProfileImageSourceOptions() {
+        val options = arrayOf(
+            getString(R.string.edit_profile_choose_gallery),
+            getString(R.string.edit_profile_take_photo)
+        )
+
+        AlertDialog.Builder(this)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> pickProfileImageLauncher.launch("image/*")
+                    1 -> takeProfilePhotoLauncher.launch(null)
+                }
+            }
+            .show()
+    }
+
+    private fun launchProfileCrop(sourceUri: Uri) {
+        val destinationUri = FileProvider.getUriForFile(
+            this,
+            "${packageName}.fileprovider",
+            File(cacheDir, "profile_cropped_${System.currentTimeMillis()}.jpg")
+        )
+
+        pendingCropSourceUri = sourceUri
+        runCatching {
+            val cropIntent = UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(1f, 1f)
+                .withMaxResultSize(1024, 1024)
+                .withOptions(
+                    UCrop.Options().apply {
+                        setToolbarTitle(getString(R.string.edit_profile_crop_photo))
+                        setCircleDimmedLayer(true)
+                        setShowCropFrame(false)
+                        setShowCropGrid(false)
+                        setCompressionQuality(90)
+                    }
+                )
+                .getIntent(this)
+
+            cropProfileImageLauncher.launch(cropIntent)
+        }.onFailure {
+            // Fallback: keep app alive and apply the selected image without crop.
+            val savedPath = persistProfileImageFromUri(sourceUri)
+            if (savedPath != null) {
+                pendingProfileImagePath = savedPath
+                editProfileDialogImageView?.setImageBitmap(BitmapFactory.decodeFile(savedPath))
+            } else {
+                Toast.makeText(this, getString(R.string.toast_profile_image_update_failed), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun persistProfileImageFromUri(uri: Uri): String? {
+        val targetFile = File(filesDir, "profile_image.jpg")
+        return runCatching {
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(targetFile, false).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return null
+            targetFile.absolutePath
+        }.getOrNull()
+    }
+
+    private fun persistBitmapToCache(bitmap: Bitmap): Uri? {
+        val targetFile = File(cacheDir, "profile_source_${System.currentTimeMillis()}.jpg")
+        return runCatching {
+            FileOutputStream(targetFile, false).use { output ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
+            }
+            FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                targetFile
+            )
+        }.getOrNull()
+    }
+
+    private fun loadProfileImageOrDefault(target: ImageView, imagePath: String?) {
+        val file = imagePath?.let(::File)
+        if (file != null && file.exists()) {
+            target.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
+        } else {
+            target.setImageResource(R.drawable.profile)
         }
     }
 

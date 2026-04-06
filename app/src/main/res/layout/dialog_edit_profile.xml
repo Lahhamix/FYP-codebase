@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="20dp"
+    android:background="@drawable/language_picker_dialog_bg"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/edit_profile_dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/edit_profile"
+        android:textColor="#1A416B"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <FrameLayout
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/edit_profile_dialog_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/profile" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <ImageButton
+            android:id="@+id/edit_profile_dialog_camera_button"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="top|end"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/edit_profile_change_photo"
+            android:layout_marginTop="-2dp"
+            android:layout_marginEnd="-2dp"
+            android:padding="0dp"
+            android:scaleType="center"
+            android:src="@android:drawable/ic_menu_edit"
+            android:tint="#0E3B65" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/edit_profile_dialog_username_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/roboto_medium"
+        android:text="@string/edit_profile_change_username"
+        android:textColor="#2F3D4A"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/edit_profile_dialog_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/settings_outline_button_bg"
+        android:hint="@string/edit_profile_name_hint"
+        android:imeOptions="actionDone"
+        android:inputType="textPersonName"
+        android:maxLines="1"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="12dp"
+        android:textColor="#1A416B"
+        android:textColorHint="#8F9AA6"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/edit_profile_dialog_cancel_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/rubik_medium"
+            android:gravity="center"
+            android:minHeight="50dp"
+            android:text="@string/tts_dialog_cancel"
+            android:textAllCaps="false"
+            android:textColor="#2F5A80"
+            android:textSize="14sp"
+            app:backgroundTint="@android:color/white"
+            app:cornerRadius="18dp"
+            app:elevation="0dp"
+            app:rippleColor="#110D3B66"
+            app:strokeColor="#4E7EA8"
+            app:strokeWidth="2dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/edit_profile_dialog_apply_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/rubik_medium"
+            android:gravity="center"
+            android:minHeight="50dp"
+            android:text="@string/edit_profile_apply"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            app:backgroundTint="#0D3B66"
+            app:cornerRadius="18dp"
+            app:elevation="0dp"
+            app:rippleColor="#1AFFFFFF"
+            app:strokeWidth="0dp" />
+    </LinearLayout>
+
+</LinearLayout>

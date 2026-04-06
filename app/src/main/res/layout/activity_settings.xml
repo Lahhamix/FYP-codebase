@@ -77,8 +77,8 @@
                     android:orientation="horizontal">
 
                     <FrameLayout
-                        android:layout_width="68dp"
-                        android:layout_height="68dp">
+                        android:layout_width="80dp"
+                        android:layout_height="80dp">
 
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/profile_card"
@@ -91,6 +91,7 @@
                             app:layout_constraintTop_toTopOf="parent">
 
                             <ImageView
+                                android:id="@+id/settings_profile_image"
                                 android:layout_width="match_parent"
                                 android:layout_height="80dp"
                                 android:scaleType="centerCrop"

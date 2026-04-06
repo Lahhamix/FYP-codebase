@@ -87,6 +87,15 @@
     <string name="settings_text_size_large">Grande</string>
     <string name="settings_text_size_standard">Standard</string>
     <string name="settings_text_size_extra_large">Très Grande</string>
+    <string name="edit_profile_name_hint">Votre nom</string>
+    <string name="edit_profile_change_photo">Changer la photo de profil</string>
+    <string name="edit_profile_change_username">Changer le nom d’utilisateur</string>
+    <string name="edit_profile_choose_gallery">Importer depuis la galerie</string>
+    <string name="edit_profile_take_photo">Prendre une photo maintenant</string>
+    <string name="edit_profile_crop_photo">Rogner la photo</string>
+    <string name="edit_profile_apply">Appliquer</string>
+    <string name="toast_profile_updated">Profil mis à jour</string>
+    <string name="toast_profile_image_update_failed">Impossible de mettre à jour la photo de profil</string>
     <string name="settings_voice_read_hints">Synthèse vocale</string>
     <string name="settings_voice_read_hints_desc">En activant cette option, l’application lit à voix haute les informations clés de l’écran.</string>
     <string name="tts_dialog_title">Activer la synthèse vocale</string>

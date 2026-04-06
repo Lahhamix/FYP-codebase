@@ -12,6 +12,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.bluetooth.*
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -68,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var reconnectInlineButton: Button
     private lateinit var scanDevicesInlineButton: Button
     private lateinit var toolbarUsername: TextView
+    private lateinit var toolbarProfileImage: ImageView
     private lateinit var wearableDashboardCard: View
     private lateinit var currentVitalsCard: View
     private lateinit var heartRateText: TextView
@@ -119,6 +121,7 @@ class MainActivity : AppCompatActivity() {
         private const val PERIPHERAL_PUBLIC_KEY_LENGTH = 65
         private const val TAG = "BLE_VIEWER_MAIN"
         private const val PREFS_NAME = "SolematePrefs"
+        private const val KEY_PROFILE_IMAGE_PATH = "profile_image_path"
         private const val KEY_DEVICE_ALERTS_ENABLED = "device_alerts_enabled"
         private const val KEY_VOICE_READ_HINTS_ENABLED = "voice_read_hints_enabled"
         private const val SPEECH_COOLDOWN_MS = 1200L
@@ -226,6 +229,7 @@ class MainActivity : AppCompatActivity() {
         reconnectInlineButton = findViewById(R.id.reconnect_inline_button)
         scanDevicesInlineButton = findViewById(R.id.scan_devices_inline_button)
         toolbarUsername = findViewById(R.id.toolbar_username)
+        toolbarProfileImage = findViewById(R.id.toolbar_profile_image)
         wearableDashboardCard = findViewById(R.id.wearableDashboardCard)
         currentVitalsCard = findViewById(R.id.currentVitalsCard)
         heartRateText = findViewById(R.id.heartRateText)
@@ -261,6 +265,7 @@ class MainActivity : AppCompatActivity() {
         spo2Text.text = formatValueWithUnit("--", "%")
 
         updateToolbarUsername()
+        updateToolbarProfileImage()
         disconnectedPanel.bringToFront()
         setDisconnectedMode(true)
 
@@ -586,6 +591,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        updateToolbarUsername()
+        updateToolbarProfileImage()
         reconcileDisconnectedOverlay()
         // Stop any ongoing TTS speech in case the user disabled it in Settings
         if (!isVoiceReadHintsEnabled()) {
@@ -1265,6 +1272,18 @@ class MainActivity : AppCompatActivity() {
     private fun updateToolbarUsername() {
         val username = getSharedPreferences("SolematePrefs", MODE_PRIVATE).getString("username", "Username")
         toolbarUsername.text = username
+    }
+
+    private fun updateToolbarProfileImage() {
+        val imagePath = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString(KEY_PROFILE_IMAGE_PATH, null)
+        val imageFile = imagePath?.let(::File)
+
+        if (imageFile != null && imageFile.exists()) {
+            toolbarProfileImage.setImageBitmap(BitmapFactory.decodeFile(imageFile.absolutePath))
+        } else {
+            toolbarProfileImage.setImageResource(R.drawable.profile)
+        }
     }
 
     private fun heartRateState(bpm: Int): String {

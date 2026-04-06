@@ -20,6 +20,16 @@
     <string name="settings_default_name">Jane Salam</string>
     <string name="settings_default_email" translatable="false">jane.salam@example.cc</string>
     <string name="edit_profile">Edit Profile</string>
+    <string name="edit_profile_name_hint">Your name</string>
+    <string name="edit_profile_change_photo">Change profile photo</string>
+    <string name="edit_profile_change_username">Change username</string>
+    <string name="edit_profile_choose_gallery">Upload from gallery</string>
+    <string name="edit_profile_take_photo">Take photo now</string>
+    <string name="edit_profile_crop_photo">Crop photo</string>
+    <string name="edit_profile_apply">Apply</string>
+    <string name="toast_profile_updated">Profile updated</string>
+    <string name="toast_profile_update_failed">Could not update profile</string>
+    <string name="toast_profile_image_update_failed">Could not update profile image</string>
     <string name="sign_out">Sign out</string>
 
     <string name="settings_languages">Languages</string>

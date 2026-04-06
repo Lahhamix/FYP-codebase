@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
+import java.io.File
 
 class WelcomeActivity : AppCompatActivity() {
 
@@ -21,6 +22,14 @@ class WelcomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        if (isFreshInstall()) {
+            prefs.edit()
+                .putBoolean("is_first_launch", true)
+                .putBoolean(KEY_IS_LOGGED_IN, false)
+                .putBoolean(KEY_REMEMBER_ME, false)
+                .apply()
+        }
+
         val isFirstLaunch = prefs.getBoolean("is_first_launch", true)
         val rememberMe = prefs.getBoolean(KEY_REMEMBER_ME, false)
         val isLoggedIn = prefs.getBoolean(KEY_IS_LOGGED_IN, false)
@@ -75,5 +84,12 @@ class WelcomeActivity : AppCompatActivity() {
             startActivity(Intent(this, nextActivity))
             finish()
         }
+    }
+
+    private fun isFreshInstall(): Boolean {
+        val marker = File(noBackupFilesDir, "install_marker")
+        if (marker.exists()) return false
+        marker.writeText("1")
+        return true
     }
 }

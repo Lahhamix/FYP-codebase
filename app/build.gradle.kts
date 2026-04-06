@@ -54,6 +54,7 @@ dependencies {
     implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
     implementation("com.google.android.gms:play-services-auth:21.1.1")
     implementation("com.github.angads25:toggle:1.1.0")
+    implementation("com.github.yalantis:ucrop:2.2.8")
 
     // Charting library
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
