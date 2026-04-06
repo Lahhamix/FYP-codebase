@@ -46,6 +46,10 @@
     <string name="settings_notifications_desc">Control app messages and device alerts.</string>
     <string name="settings_device_alerts">Device Alerts</string>
     <string name="settings_device_alerts_desc">Vibrations and sounds from the application</string>
+    <string name="device_alerts_notification_channel_name">Device Alerts</string>
+    <string name="device_alerts_notification_channel_desc">Alerts flagged by your SoleMate wearable.</string>
+    <string name="device_alerts_notification_title">SoleMate Alert</string>
+    <string name="toast_notifications_permission_denied">Notification permission denied. Device alerts remain off.</string>
 
     <string name="settings_accessibility">Accessibility</string>
     <string name="settings_text_size">Text Size</string>

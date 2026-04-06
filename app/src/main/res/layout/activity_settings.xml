@@ -509,16 +509,17 @@
                             android:textSize="13sp" />
                     </LinearLayout>
 
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/settings_biometric_switch"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        android:minWidth="0dp"
-                        android:minHeight="0dp"
-                        android:showText="false"
-                        android:textOn=""
-                        android:textOff="" />
+                    <com.github.angads25.toggle.widget.LabeledSwitch
+                        android:id="@+id/settings_device_alerts_switch"
+                        android:layout_width="60dp"
+                        android:layout_height="36dp"
+                        android:textSize="0sp"
+                        app:colorBorder="#D5DAE0"
+                        app:colorOff="#FFFFFF"
+                        app:colorOn="#0D3B66"
+                        app:on="false"
+                        app:textOff=""
+                        app:textOn="" />
                 </LinearLayout>
             </LinearLayout>
 

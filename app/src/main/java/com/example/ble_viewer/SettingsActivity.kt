@@ -1,7 +1,10 @@
 package com.example.ble_viewer
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.view.LayoutInflater
@@ -16,13 +19,14 @@ import android.widget.TextView
 import android.widget.Toast
 import android.view.View.GONE
 import android.view.View.VISIBLE
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import com.google.android.material.button.MaterialButton
 import com.github.angads25.toggle.widget.LabeledSwitch
-import com.google.android.material.materialswitch.MaterialSwitch
 import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
@@ -48,13 +52,28 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var settingsScrollView: View
     private lateinit var textSizeSlider: SeekBar
     private lateinit var textSizeValue: TextView
-    private lateinit var deviceAlertsSwitch: MaterialSwitch
+    private lateinit var deviceAlertsSwitch: LabeledSwitch
     private lateinit var voiceReadHintsSwitch: LabeledSwitch
     private lateinit var voiceReadHintsRow: LinearLayout
+    private var suppressDeviceAlertsToggleCallback = false
     private var suppressVoiceReadToggleCallback = false
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var pendingSpeechText: String? = null
+
+    private val postNotificationsPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (isGranted) {
+            setDeviceAlertsSwitchChecked(true)
+            prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, true).apply()
+        } else {
+            setDeviceAlertsSwitchChecked(false)
+            prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, false).apply()
+            Toast.makeText(this, getString(R.string.toast_notifications_permission_denied), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private data class LanguageOption(
         val tag: String,
@@ -110,7 +129,7 @@ class SettingsActivity : AppCompatActivity() {
         settingsScrollView = findViewById(R.id.settings_scroll_view)
         textSizeSlider = findViewById(R.id.text_size_slider)
         textSizeValue = findViewById(R.id.settings_text_size_value)
-        deviceAlertsSwitch = findViewById(R.id.settings_biometric_switch)
+        deviceAlertsSwitch = findViewById(R.id.settings_device_alerts_switch)
         voiceReadHintsSwitch = findViewById(R.id.settings_voice_read_hints_switch)
         voiceReadHintsRow = findViewById(R.id.settings_voice_read_hints_row)
         updateUsername()
@@ -249,9 +268,19 @@ class SettingsActivity : AppCompatActivity() {
     private fun setupAccessibilityToggles() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
-        deviceAlertsSwitch.isChecked = prefs.getBoolean(KEY_DEVICE_ALERTS_ENABLED, true)
-        deviceAlertsSwitch.setOnCheckedChangeListener { _, isChecked ->
+        deviceAlertsSwitch.setOn(prefs.getBoolean(KEY_DEVICE_ALERTS_ENABLED, true))
+        deviceAlertsSwitch.setOnToggledListener { _, isChecked ->
+            if (suppressDeviceAlertsToggleCallback) return@setOnToggledListener
+
+            if (isChecked && shouldRequestPostNotificationsPermission()) {
+                postNotificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return@setOnToggledListener
+            }
+
             prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, isChecked).apply()
+        }
+        findViewById<LinearLayout>(R.id.settings_device_alerts_row).setOnClickListener {
+            deviceAlertsSwitch.performClick()
         }
         findViewById<LinearLayout>(R.id.settings_device_alerts_row).setOnLongClickListener {
             if (isVoiceReadHintsEnabled()) {
@@ -331,6 +360,17 @@ class SettingsActivity : AppCompatActivity() {
         suppressVoiceReadToggleCallback = true
         voiceReadHintsSwitch.setOn(checked)
         suppressVoiceReadToggleCallback = false
+    }
+
+    private fun setDeviceAlertsSwitchChecked(checked: Boolean) {
+        suppressDeviceAlertsToggleCallback = true
+        deviceAlertsSwitch.setOn(checked)
+        suppressDeviceAlertsToggleCallback = false
+    }
+
+    private fun shouldRequestPostNotificationsPermission(): Boolean {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     }
 
     private fun setupSecurityAndAccessibilityTts() {

@@ -92,6 +92,10 @@
     <string name="gyro_data">الجيروسكوب: % $s1</string>
     <string name="dashboard">لوحة التحكم</string>
     <string name="settings_device_alerts">تنبيهات الجهاز</string>
+    <string name="device_alerts_notification_channel_name">تنبيهات الجهاز</string>
+    <string name="device_alerts_notification_channel_desc">تنبيهات يتم رصدها من جهاز SoleMate الخاص بك.</string>
+    <string name="device_alerts_notification_title">تنبيه SoleMate</string>
+    <string name="toast_notifications_permission_denied">تم رفض إذن الإشعارات. ستبقى تنبيهات الجهاز متوقفة.</string>
     <string name="settings_app_tutorial_desc">دليل مرئي سريع لـ SoleMate</string>
     <string name="settings_device_manual">دليل المستخدم للجهاز</string>
     <string name="disconnected">غير متصل</string>

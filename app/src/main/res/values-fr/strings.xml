@@ -78,6 +78,10 @@
     <string name="settings_notifications_desc">Contrôlez les messages des applications et les alertes de l\'appareil.</string>
     <string name="settings_device_alerts">Alertes de périphérique</string>
     <string name="settings_device_alerts_desc">Vibrations et sons de l\'application</string>
+    <string name="device_alerts_notification_channel_name">Alertes de périphérique</string>
+    <string name="device_alerts_notification_channel_desc">Alertes signalées par votre appareil SoleMate.</string>
+    <string name="device_alerts_notification_title">Alerte SoleMate</string>
+    <string name="toast_notifications_permission_denied">Autorisation des notifications refusée. Les alertes de périphérique restent désactivées.</string>
     <string name="settings_accessibility">Accessibilité</string>
     <string name="settings_text_size">Taille du texte</string>
     <string name="settings_text_size_large">Grande</string>

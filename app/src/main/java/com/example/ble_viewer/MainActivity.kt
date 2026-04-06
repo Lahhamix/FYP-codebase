@@ -2,6 +2,9 @@ package com.example.ble_viewer
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
@@ -34,6 +37,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
@@ -90,6 +95,8 @@ class MainActivity : AppCompatActivity() {
     private var ttsReady = false
     private var lastSpokenMessage: String? = null
     private var lastSpokenAtMs: Long = 0L
+    private var lastAlertNotificationMessage: String? = null
+    private var lastAlertNotificationAtMs: Long = 0L
 
     // --- Data Logging Members ---
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -112,8 +119,12 @@ class MainActivity : AppCompatActivity() {
         private const val PERIPHERAL_PUBLIC_KEY_LENGTH = 65
         private const val TAG = "BLE_VIEWER_MAIN"
         private const val PREFS_NAME = "SolematePrefs"
+        private const val KEY_DEVICE_ALERTS_ENABLED = "device_alerts_enabled"
         private const val KEY_VOICE_READ_HINTS_ENABLED = "voice_read_hints_enabled"
         private const val SPEECH_COOLDOWN_MS = 1200L
+        private const val DEVICE_ALERTS_CHANNEL_ID = "solemate_device_alerts"
+        private const val DEVICE_ALERTS_NOTIFICATION_ID = 1001
+        private const val ALERT_NOTIFICATION_COOLDOWN_MS = 12_000L
         val pressureCharUuid = UUID.fromString("9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00")
         const val PRESSURE_MATRIX_ENCRYPTION_ENABLED = true
     }
@@ -196,6 +207,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        createDeviceAlertsNotificationChannel()
 
         val toolbar: MaterialToolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -1097,6 +1109,7 @@ class MainActivity : AppCompatActivity() {
                 statusIcon.imageTintList = null
                 statusIcon.visibility = View.VISIBLE
                 statusLoadingDots.visibility = View.GONE
+                maybeShowDeviceAlertNotification(text)
             }
             DashboardStatusVisual.TEXT_ONLY -> {
                 statusText.setTextColor(ContextCompat.getColor(this, android.R.color.white))
@@ -1108,6 +1121,65 @@ class MainActivity : AppCompatActivity() {
         if (visual != DashboardStatusVisual.LOADING) {
             speakIfEnabled(text)
         }
+    }
+
+    private fun createDeviceAlertsNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+
+        val channel = NotificationChannel(
+            DEVICE_ALERTS_CHANNEL_ID,
+            getString(R.string.device_alerts_notification_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = getString(R.string.device_alerts_notification_channel_desc)
+        }
+
+        val manager = getSystemService(NotificationManager::class.java)
+        manager?.createNotificationChannel(channel)
+    }
+
+    private fun maybeShowDeviceAlertNotification(alertMessage: String) {
+        if (!isDeviceAlertsEnabled()) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        if (alertMessage == lastAlertNotificationMessage && now - lastAlertNotificationAtMs < ALERT_NOTIFICATION_COOLDOWN_MS) {
+            return
+        }
+
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, DEVICE_ALERTS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_circle_alert_black)
+            .setContentTitle(getString(R.string.device_alerts_notification_title))
+            .setContentText(alertMessage)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        NotificationManagerCompat.from(this).notify(DEVICE_ALERTS_NOTIFICATION_ID, notification)
+        lastAlertNotificationMessage = alertMessage
+        lastAlertNotificationAtMs = now
+    }
+
+    private fun isDeviceAlertsEnabled(): Boolean {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getBoolean(KEY_DEVICE_ALERTS_ENABLED, true)
     }
 
     private fun drainBuffer(characteristic: BluetoothGattCharacteristic, buffer: ByteArrayOutputStream) {
