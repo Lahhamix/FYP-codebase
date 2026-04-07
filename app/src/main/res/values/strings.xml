@@ -96,6 +96,12 @@
     <string name="settings_contact_support_desc">Call or chat with SoleMate help</string>
     <string name="settings_privacy_policy">Privacy Policy</string>
     <string name="settings_terms_of_use">Terms of Use</string>
+    <string name="terms_dialog_title">Terms of Use</string>
+    <string name="terms_dialog_close">Close</string>
+    <string name="terms_acceptance">1. Acceptance of Terms - By accessing or using the app, the user agrees to the Terms of Use.</string>
+    <string name="terms_no_medical">2. No Medical or Emergency Service - The app does not provide medical advice or replace professional healthcare.</string>
+    <string name="terms_user_responsibilities">3. User Responsibilities - The user is responsible for providing accurate information and using the app responsibly.</string>
+    <string name="terms_last_updated">Last updated: April, 2026</string>
     <string name="settings_emergency_note">If you are experiencing a medical emergency, please call 140 immediately.</string>
     <string name="settings_app_version">App Version 1.0.0 (Build 1)</string>
     <string name="settings_copyright" translatable="false">© 2026 SoleMate Health Inc.</string>

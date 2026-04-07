@@ -253,6 +253,10 @@ class SettingsActivity : AppCompatActivity() {
             true
         }
 
+        findViewById<LinearLayout>(R.id.settings_terms_of_use_row).setOnClickListener {
+            showTermsOfUseDialog()
+        }
+
         findViewById<LinearLayout>(R.id.nav_home).setOnClickListener {
             finish()
         }
@@ -558,6 +562,24 @@ class SettingsActivity : AppCompatActivity() {
 
         dialog.setOnDismissListener {
             stopDialogSpeech()
+        }
+
+        dialog.show()
+    }
+
+    private fun showTermsOfUseDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_terms_of_use, null)
+        TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
+
+        val closeButton = dialogView.findViewById<MaterialButton>(R.id.terms_dialog_close_button)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
         }
 
         dialog.show()
