@@ -106,7 +106,7 @@
             android:layout_marginBottom="10dp"
             android:background="@drawable/auth_input_outline"
             android:fontFamily="@font/rubik_medium"
-            android:hint="Username"
+            android:hint="@string/username"
             android:textCursorDrawable="@drawable/text_cursor"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
@@ -133,15 +133,18 @@
             android:drawableEnd="@drawable/ic_eye_closed"
             android:drawablePadding="8dp"
             android:fontFamily="@font/rubik_medium"
-            android:hint="Password"
+            android:gravity="start|center_vertical"
+            android:hint="@string/password"
             android:inputType="textPassword"
-            android:textCursorDrawable="@drawable/text_cursor"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:singleLine="true"
-            android:textSize="15sp"
+            android:textAlignment="viewStart"
             android:textColor="@color/dark_blue"
-            android:textColorHint="@color/text_hint" />
+            android:textColorHint="@color/text_hint"
+            android:textCursorDrawable="@drawable/text_cursor"
+            android:textDirection="locale"
+            android:textSize="15sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -160,15 +163,18 @@
             android:drawableEnd="@drawable/ic_eye_closed"
             android:drawablePadding="8dp"
             android:fontFamily="@font/rubik_medium"
-            android:hint="Confirm Password"
+            android:gravity="start|center_vertical"
+            android:hint="@string/confirm_password"
             android:inputType="textPassword"
-            android:textCursorDrawable="@drawable/text_cursor"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textSize="15sp"
             android:singleLine="true"
+            android:textAlignment="viewStart"
             android:textColor="@color/dark_blue"
-            android:textColorHint="@color/text_hint" />
+            android:textColorHint="@color/text_hint"
+            android:textCursorDrawable="@drawable/text_cursor"
+            android:textDirection="locale"
+            android:textSize="15sp" />
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton

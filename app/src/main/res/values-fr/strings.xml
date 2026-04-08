@@ -92,6 +92,7 @@
     <string name="edit_profile_change_username">Changer le nom d’utilisateur</string>
     <string name="edit_profile_choose_gallery">Importer depuis la galerie</string>
     <string name="edit_profile_take_photo">Prendre une photo maintenant</string>
+    <string name="edit_profile_remove_photo">Supprimer la photo</string>
     <string name="edit_profile_crop_photo">Rogner la photo</string>
     <string name="edit_profile_apply">Appliquer</string>
     <string name="toast_profile_updated">Profil mis à jour</string>
@@ -158,6 +159,7 @@
     <string name="gait_edema_assessment">Évaluation de l’œdème</string>
     <string name="gait_edema_calibrating">Étalonnage en cours...</string>
     <string name="language_picker_accessibility">Changer la langue</string>
+    <string name="password">Mot de Passe</string>
     <string name="confirm_password">Confirmer le mot de passe</string>
     <string name="toast_connection_failed">Échec de la connexion : %1$s</string>
     <string name="about_solemate_desc">SoleMate est un prototype portable développé dans le cadre du projet de fin d’études. Il transmet des données de capteurs chiffrées via BLE, notamment la fréquence cardiaque et la saturation en oxygène (SpO2), et inclura bientôt des analyses de la marche et des informations sur la mobilité</string>

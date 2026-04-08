@@ -113,8 +113,8 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/rubik_medium"
                             android:text="@string/settings_default_name"
-                            android:textColor="#1A416B"
-                            android:textSize="34sp"
+                            android:textColor="@color/blue"
+                            android:textSize="24sp"
                             android:textStyle="bold" />
 
                         <TextView

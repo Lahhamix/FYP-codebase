@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="20dp"
-    android:background="@drawable/language_picker_dialog_bg"
+    android:background="@drawable/tts_info_dialog_bg"
     android:layoutDirection="locale"
     android:orientation="vertical"
     android:padding="20dp">

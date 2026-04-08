@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.drawable.ColorDrawable
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +38,7 @@ import com.yalantis.ucrop.UCrop
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
+import android.widget.FrameLayout
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -325,7 +328,7 @@ class SettingsActivity : AppCompatActivity() {
         TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
 
         val profileImage = dialogView.findViewById<ImageView>(R.id.edit_profile_dialog_image)
-        val cameraButton = dialogView.findViewById<ImageButton>(R.id.edit_profile_dialog_camera_button)
+        val cameraButton = dialogView.findViewById<FrameLayout>(R.id.edit_profile_dialog_camera_button)
         val nameField = dialogView.findViewById<EditText>(R.id.edit_profile_dialog_name)
         val cancelButton = dialogView.findViewById<MaterialButton>(R.id.edit_profile_dialog_cancel_button)
         val applyButton = dialogView.findViewById<MaterialButton>(R.id.edit_profile_dialog_apply_button)
@@ -343,6 +346,8 @@ class SettingsActivity : AppCompatActivity() {
             .setView(dialogView)
             .setCancelable(false)
             .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         val openImagePicker = {
             showProfileImageSourceOptions()
@@ -386,17 +391,27 @@ class SettingsActivity : AppCompatActivity() {
     private fun showProfileImageSourceOptions() {
         val options = arrayOf(
             getString(R.string.edit_profile_choose_gallery),
-            getString(R.string.edit_profile_take_photo)
+            getString(R.string.edit_profile_take_photo),
+            getString(R.string.edit_profile_remove_photo)
         )
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> pickProfileImageLauncher.launch("image/*")
                     1 -> takeProfilePhotoLauncher.launch(null)
+                    2 -> {
+                        pendingProfileImagePath = null
+                        editProfileDialogImageView?.let {
+                            loadProfileImageOrDefault(it, null)
+                        }
+                    }
                 }
             }
-            .show()
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(R.drawable.rounded_dialog_bg)
+        dialog.show()
     }
 
     private fun launchProfileCrop(sourceUri: Uri) {
@@ -413,10 +428,23 @@ class SettingsActivity : AppCompatActivity() {
                 .withMaxResultSize(1024, 1024)
                 .withOptions(
                     UCrop.Options().apply {
+                        val appBlue = ContextCompat.getColor(this@SettingsActivity, R.color.blue)
+                        val appBlueDark = ContextCompat.getColor(this@SettingsActivity, R.color.dark_blue)
+                        val white = ContextCompat.getColor(this@SettingsActivity, R.color.white)
+
                         setToolbarTitle(getString(R.string.edit_profile_crop_photo))
-                        setCircleDimmedLayer(true)
-                        setShowCropFrame(false)
-                        setShowCropGrid(false)
+                        setCircleDimmedLayer(false)
+                        setShowCropFrame(true)
+                        setShowCropGrid(true)
+                        setToolbarColor(appBlue)
+                        setStatusBarColor(appBlueDark)
+                        setToolbarWidgetColor(white)
+                        setActiveControlsWidgetColor(appBlue)
+                        setDimmedLayerColor(Color.parseColor("#B3000000"))
+                        setCropFrameColor(white)
+                        setCropGridColor(white)
+                        setCropGridStrokeWidth(1)
+                        setCropFrameStrokeWidth(3)
                         setCompressionQuality(90)
                     }
                 )
@@ -539,6 +567,9 @@ class SettingsActivity : AppCompatActivity() {
             .setView(dialogView)
             .setCancelable(false)
             .create()
+
+        // Ensure the custom rounded background in dialog_tts_info is visible.
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         cancelButton.setOnClickListener {
             setVoiceReadHintsSwitchChecked(false)

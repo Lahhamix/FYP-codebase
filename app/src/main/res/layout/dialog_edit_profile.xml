@@ -5,6 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_margin="20dp"
     android:background="@drawable/language_picker_dialog_bg"
+    android:layoutDirection="locale"
     android:orientation="vertical"
     android:padding="20dp">
 
@@ -38,36 +39,42 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <ImageButton
+        <FrameLayout
             android:id="@+id/edit_profile_dialog_camera_button"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="top|end"
-            android:background="@android:color/transparent"
-            android:contentDescription="@string/edit_profile_change_photo"
-            android:layout_marginTop="-2dp"
-            android:layout_marginEnd="-2dp"
-            android:padding="0dp"
-            android:scaleType="center"
-            android:src="@android:drawable/ic_menu_edit"
-            android:tint="#0E3B65" />
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/edit_profile_banner_bg"
+            android:clickable="true"
+            android:focusable="true"
+            app:cornerRadius="18dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_camera"
+                app:tint="@android:color/white" />
+        </FrameLayout>
     </FrameLayout>
 
     <TextView
         android:id="@+id/edit_profile_dialog_username_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
         android:fontFamily="@font/roboto_medium"
         android:text="@string/edit_profile_change_username"
+
         android:textColor="#2F3D4A"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textSize="14sp" />
 
     <EditText
         android:id="@+id/edit_profile_dialog_name"
-        android:layout_width="match_parent"
+        android:layout_width="218dp"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
         android:layout_marginTop="8dp"
         android:background="@drawable/settings_outline_button_bg"
         android:hint="@string/edit_profile_name_hint"

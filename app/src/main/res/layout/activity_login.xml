@@ -128,14 +128,17 @@
             android:drawableEnd="@drawable/ic_eye_closed"
             android:drawablePadding="8dp"
             android:fontFamily="@font/rubik_medium"
+            android:gravity="start|center_vertical"
             android:hint="@string/password"
             android:inputType="textPassword"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:singleLine="true"
+            android:textAlignment="viewStart"
             android:textColor="@color/blue"
             android:textColorHint="@color/text_hint"
             android:textCursorDrawable="@drawable/text_cursor"
+            android:textDirection="locale"
             android:textSize="15sp" />
 
 

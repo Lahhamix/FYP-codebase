@@ -71,6 +71,7 @@
     <string name="system_ready">الجهاز جاهز</string>
     <string name="check_bluetooth_connection">التحقق من اتصال البلوتوث</string>
     <string name="settings_language_picker_title">اختيار اللغة</string>
+    <string name="password">كلمة المرور</string>
     <string name="confirm_password">تأكيد كلمة المرور</string>
     <string name="scanning">جارٍ البحث...</string>
     <string name="connecting">جارٍ الاتصال بـ %1$s...</string>
@@ -109,6 +110,7 @@
     <string name="edit_profile_change_username">تغيير اسم المستخدم</string>
     <string name="edit_profile_choose_gallery">تحميل من المعرض</string>
     <string name="edit_profile_take_photo">التقاط صورة الآن</string>
+    <string name="edit_profile_remove_photo">إزالة الصورة</string>
     <string name="edit_profile_crop_photo">قص الصورة</string>
     <string name="edit_profile_apply">تطبيق</string>
     <string name="toast_profile_updated">تم تحديث الملف الشخصي</string>

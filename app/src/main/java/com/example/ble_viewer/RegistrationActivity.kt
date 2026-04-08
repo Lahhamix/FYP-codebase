@@ -165,8 +165,14 @@ class RegistrationActivity : AppCompatActivity() {
             if (event.action == MotionEvent.ACTION_UP) {
                 val drawableEnd = 2
                 val endDrawable = editText.compoundDrawablesRelative[drawableEnd] ?: return@setOnTouchListener false
-                val iconStart = editText.width - editText.paddingEnd - endDrawable.bounds.width()
-                if (event.x >= iconStart) {
+                val iconWidth = endDrawable.bounds.width()
+                val isRtl = editText.layoutDirection == View.LAYOUT_DIRECTION_RTL
+                val touchedIcon = if (isRtl) {
+                    event.x <= (editText.paddingStart + iconWidth)
+                } else {
+                    event.x >= (editText.width - editText.paddingEnd - iconWidth)
+                }
+                if (touchedIcon) {
                     isVisible = !isVisible
                     editText.inputType = if (isVisible) {
                         editText.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_eye_open, 0)
