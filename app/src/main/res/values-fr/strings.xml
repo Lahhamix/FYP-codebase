@@ -131,6 +131,17 @@
     <string name="available_devices">Appareils disponibles</string>
     <string name="sign_in">Se connecter</string>
     <string name="sign_up">Créer un compte</string>
+    <string name="forgot_password">Mot de passe oublié ?</string>
+    <string name="forgot_password_title">Réinitialiser le mot de passe</string>
+    <string name="forgot_password_subtitle">Saisissez votre nom d’utilisateur ou votre e-mail, puis choisissez un nouveau mot de passe.</string>
+    <string name="forgot_password_identifier_label">E-mail ou nom d’utilisateur</string>
+    <string name="forgot_password_identifier_hint">Entrez votre nom d’utilisateur ou votre e-mail</string>
+    <string name="forgot_password_new_password_hint">Entrez votre nouveau mot de passe</string>
+    <string name="forgot_password_confirm_hint">Confirmez votre nouveau mot de passe</string>
+    <string name="forgot_password_save">Enregistrer le mot de passe</string>
+    <string name="forgot_password_cancel">Annuler</string>
+    <string name="toast_forgot_password_updated">Mot de passe mis à jour. Veuillez vous reconnecter.</string>
+    <string name="toast_forgot_password_account_not_found">Aucun compte local correspondant trouvé.</string>
     <string name="sign_in_google">Se connecter avec Google</string>
     <string name="sign_up_google">Créer un Compte avec Google</string>
     <string name="history_30s">Historique des 30 secondes</string>

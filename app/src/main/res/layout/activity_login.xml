@@ -141,6 +141,19 @@
             android:textDirection="locale"
             android:textSize="15sp" />
 
+        <TextView
+            android:id="@+id/forgot_password_link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/rubik_medium"
+            android:paddingVertical="4dp"
+            android:text="@string/forgot_password"
+            android:textColor="#A0A8B2"
+            android:textSize="13sp" />
+
 
         <CheckBox
             android:id="@+id/remember_me_checkbox"

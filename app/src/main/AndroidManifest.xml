@@ -30,6 +30,9 @@
             android:name=".LoginActivity"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
+            android:name=".ForgotPasswordActivity"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
             android:name=".RegistrationActivity"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity

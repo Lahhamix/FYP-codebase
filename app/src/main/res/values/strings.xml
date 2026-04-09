@@ -148,6 +148,17 @@
     <string name="confirm_password">Confirm Password</string>
     <string name="sign_in">Sign in</string>
     <string name="sign_up">Sign up</string>
+    <string name="forgot_password">Forgot your password ?</string>
+    <string name="forgot_password_title">Reset Password</string>
+    <string name="forgot_password_subtitle">Enter your username or email, then choose a new password.</string>
+    <string name="forgot_password_identifier_label">Email or Username</string>
+    <string name="forgot_password_identifier_hint">Enter your username or email</string>
+    <string name="forgot_password_new_password_hint">Enter your new password</string>
+    <string name="forgot_password_confirm_hint">Confirm your new password</string>
+    <string name="forgot_password_save">Save Password</string>
+    <string name="forgot_password_cancel">Cancel</string>
+    <string name="toast_forgot_password_updated">Password updated. Please sign in again.</string>
+    <string name="toast_forgot_password_account_not_found">No matching local account found.</string>
     <string name="dont_have_account">"Do not have an account?   "</string>
     <string name="already_have_account">"Already have an account?  "</string>
     <string name="or">or</string>

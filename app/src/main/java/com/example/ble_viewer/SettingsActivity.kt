@@ -215,10 +215,6 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Button>(R.id.button_sign_out).setOnClickListener {
             val prefs = getSharedPreferences("SolematePrefs", MODE_PRIVATE)
             prefs.edit()
-                .remove("username")
-                .remove("google_email")
-                .remove("google_id")
-                .remove("auth_provider")
                 .remove("is_logged_in")
                 .remove("remember_me")
                 .apply()

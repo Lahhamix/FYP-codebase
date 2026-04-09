@@ -63,6 +63,7 @@ class LoginActivity : AppCompatActivity() {
         val loginButton: Button = findViewById(R.id.login_button)
         val usernameEdit: EditText = findViewById(R.id.login_email_edittext)
         val passwordEdit: EditText = findViewById(R.id.login_password_edittext)
+        val forgotPasswordLink: TextView = findViewById(R.id.forgot_password_link)
         val rememberMeCheck: CheckBox = findViewById(R.id.remember_me_checkbox)
         val googleLoginButton: Button = findViewById(R.id.google_login_button)
         val signUpLink: TextView = findViewById(R.id.signup_link)
@@ -97,6 +98,10 @@ class LoginActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, getString(R.string.toast_incorrect_credentials), Toast.LENGTH_SHORT).show()
             }
+        }
+
+        forgotPasswordLink.setOnClickListener {
+            startActivity(Intent(this, ForgotPasswordActivity::class.java))
         }
 
         googleLoginButton.setOnClickListener {
