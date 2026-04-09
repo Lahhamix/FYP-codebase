@@ -41,6 +41,12 @@
     <string name="settings_accessibility">إمكانية الوصول</string>
     <string name="gait_acceleration_data">بيانات التسارع</string>
     <string name="settings_terms_of_use">شروط الاستخدام</string>
+    <string name="terms_dialog_title">شروط الاستخدام</string>
+    <string name="terms_dialog_close">إغلاق</string>
+    <string name="terms_acceptance">1. قبول الشروط - من خلال الوصول إلى التطبيق أو استخدامه، يوافق المستخدم على شروط الاستخدام.</string>
+    <string name="terms_no_medical">2. لا توجد خدمة طبية أو طوارئ - التطبيق لا يقدم نصائح طبية ولا يُعد بديلاً عن الرعاية الصحية المهنية.</string>
+    <string name="terms_user_responsibilities">3. مسؤوليات المستخدم - المستخدم مسؤول عن تقديم معلومات دقيقة واستخدام التطبيق بشكل مسؤول.</string>
+    <string name="terms_last_updated">آخر تحديث: أبريل 2026</string>
     <string name="settings_emergency_note">إذا كنت تعاني من حالة طبية طارئة، يُرجى الاتصال فورًا على 140</string>
     <string name="settings_app_version">إصدار التطبيق 1.0.0 (البنية 1)</string>
     <string name="language_english">الإنجليزية</string>
