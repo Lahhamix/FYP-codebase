@@ -77,8 +77,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spo2Text: TextView
     private lateinit var spo2Status: TextView
     private lateinit var spo2Card: View
+    private lateinit var stepsCard: View
+    private lateinit var stepsText: TextView
+    private lateinit var stepsMotionStatus: TextView
     private lateinit var bpCard: View
-    private lateinit var swellingText: TextView
     private lateinit var swellingStatus: TextView
     private lateinit var swellingCard: View
     private lateinit var ataxiaCard: View
@@ -139,8 +141,8 @@ class MainActivity : AppCompatActivity() {
     private val phonePublicKeyCharUuid = UUID.fromString("9a8b1002-6d5e-4c10-b6d9-1f25c09d9e00")
     private val peripheralPublicKeyCharUuid = UUID.fromString("9a8b1003-6d5e-4c10-b6d9-1f25c09d9e00")
 
-    private val accelCharUuid = UUID.fromString("9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00")
-    private val gyroCharUuid = UUID.fromString("9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00")
+    private val stepsCharUuid = UUID.fromString("9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00")
+    private val motionCharUuid = UUID.fromString("9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00")
     private val heartRateCharUuid = UUID.fromString("9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00")
     private val spo2CharUuid = UUID.fromString("9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00")
     private val edemaCharUuid = UUID.fromString("9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00")
@@ -148,8 +150,14 @@ class MainActivity : AppCompatActivity() {
     private val notificationQueue = ConcurrentLinkedQueue<BluetoothGattCharacteristic>()
     private var isProcessingQueue = false
     private val characteristicBuffers = mutableMapOf<UUID, ByteArrayOutputStream>()
+    /** Serializes notify chunk reassembly (must match Arduino length-prefix + AES ciphertext framing). */
+    private val bleNotifyAssemblyLock = Any()
     private val maxPayloadLength = 80
+    /** Request ATT MTU only after CCCD setup — calling requestMtu in onServicesDiscovered breaks some stacks (stuck on Discovering). */
+    private var attMtuRequestedThisSession = false
     private var keyExchangeTimeoutRunnable: Runnable? = null
+    /** Must be cancelled on disconnect/cleanup — otherwise a stale runnable calls discoverServices() on the wrong GATT after reconnect. */
+    private var discoverServicesRunnable: Runnable? = null
     private val loadingDotFrames = listOf("", ".", "..", "...")
     private var loadingDotIndex = 0
 
@@ -177,32 +185,45 @@ class MainActivity : AppCompatActivity() {
             val uuidString = intent.getStringExtra(EXTRA_UUID_STRING) ?: return
             val encryptedBytes = intent.getByteArrayExtra(EXTRA_DECRYPTED_DATA) ?: return
 
-            try {
-                val uuid = UUID.fromString(uuidString)
-                when (uuid) {
-                    heartRateCharUuid -> {
-                        val bpm = AESCrypto.decryptHeartRate(encryptedBytes).trim().toIntOrNull() ?: return
-                        latestBpm = bpm
-                        heartRateText.text = formatValueWithUnit(bpm.toString(), "BPM")
-                        heartStatus.text = heartRateState(bpm)
+            // GATT can deliver on a binder thread; LocalBroadcast may invoke off the main thread — match HR/SpO2 UI safety
+            runOnUiThread {
+                try {
+                    // String match avoids UUID parse / equality quirks vs BLE stack string format
+                    when (uuidString) {
+                        heartRateCharUuid.toString() -> {
+                            val bpm = AESCrypto.decryptHeartRate(encryptedBytes).trim().toIntOrNull() ?: return@runOnUiThread
+                            latestBpm = bpm
+                            heartRateText.text = formatValueWithUnit(bpm.toString(), "BPM")
+                            heartStatus.text = heartRateState(bpm)
+                        }
+                        spo2CharUuid.toString() -> {
+                            val spo2 = AESCrypto.decryptSpO2(encryptedBytes).trim().toDoubleOrNull() ?: return@runOnUiThread
+                            latestSpo2 = spo2
+                            spo2Text.text = formatValueWithUnit(String.format(Locale.US, "%.1f", spo2), "%")
+                            spo2Status.text = spo2State(spo2)
+                        }
+                        edemaCharUuid.toString() -> {
+                            val edemaPayload = AESCrypto.decryptFlex(encryptedBytes).trim()
+                            if (edemaPayload.startsWith("DECRYPT_ERROR")) return@runOnUiThread
+                            val edema = edemaPayload.split(",").firstOrNull()?.trim().orEmpty()
+                            if (edema.isEmpty()) return@runOnUiThread
+                            latestEdema = edema
+                            swellingStatus.text = swellingState(edema)
+                        }
+                        stepsCharUuid.toString() -> {
+                            val steps = AESCrypto.decryptSteps(encryptedBytes).trim()
+                            if (steps.isEmpty() || steps.startsWith("DECRYPT_ERROR")) return@runOnUiThread
+                            stepsText.text = steps
+                        }
+                        motionCharUuid.toString() -> {
+                            val raw = AESCrypto.decryptMotion(encryptedBytes).trim()
+                            if (raw.isEmpty() || raw.startsWith("DECRYPT_ERROR")) return@runOnUiThread
+                            stepsMotionStatus.text = motionStatusLabel(raw)
+                        }
                     }
-                    spo2CharUuid -> {
-                        val spo2 = AESCrypto.decryptSpO2(encryptedBytes).trim().toDoubleOrNull() ?: return
-                        latestSpo2 = spo2
-                        spo2Text.text = formatValueWithUnit(String.format(Locale.US, "%.1f", spo2), "%")
-                        spo2Status.text = spo2State(spo2)
-                    }
-                    edemaCharUuid -> {
-                        val edemaPayload = AESCrypto.decryptFlex(encryptedBytes).trim()
-                        val edema = edemaPayload.split(",").firstOrNull()?.trim().orEmpty()
-                        if (edema.isEmpty()) return
-                        latestEdema = edema
-                        swellingText.text = edema.replaceFirstChar { it.uppercaseChar() }
-                        swellingStatus.text = swellingState(edema)
-                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to process sensor data on dashboard: ${e.message}")
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to process sensor data on dashboard: ${e.message}")
             }
         }
     }
@@ -237,8 +258,10 @@ class MainActivity : AppCompatActivity() {
         spo2Text = findViewById(R.id.spo2Text)
         spo2Status = findViewById(R.id.spo2Status)
         spo2Card = findViewById(R.id.spo2Card)
+        stepsCard = findViewById(R.id.stepsCard)
+        stepsText = findViewById(R.id.stepsText)
+        stepsMotionStatus = findViewById(R.id.stepsMotionStatus)
         bpCard = findViewById(R.id.bpCard)
-        swellingText = findViewById(R.id.swellingText)
         swellingStatus = findViewById(R.id.swellingStatus)
         swellingCard = findViewById(R.id.swellingCard)
         ataxiaCard = findViewById(R.id.ataxiaCard)
@@ -252,6 +275,7 @@ class MainActivity : AppCompatActivity() {
             deviceContent,
             vitalSignsCard,
             currentVitalsCard,
+            stepsCard,
             spo2Card,
             bpCard,
             swellingCard,
@@ -263,6 +287,8 @@ class MainActivity : AppCompatActivity() {
 
         heartRateText.text = formatValueWithUnit("--", "BPM")
         spo2Text.text = formatValueWithUnit("--", "%")
+        stepsText.text = "--"
+        stepsMotionStatus.text = getString(R.string.motion_static)
 
         updateToolbarUsername()
         updateToolbarProfileImage()
@@ -294,10 +320,17 @@ class MainActivity : AppCompatActivity() {
             view = currentVitalsCard,
             readTextProvider = {
                 val heart = heartRateText.text?.toString()?.trim().orEmpty()
-                val oxygen = spo2Text.text?.toString()?.trim().orEmpty()
-                getString(R.string.current_vitals) + ": " +
-                    getString(R.string.heart_rate_label) + " " + heart + ", " +
-                    getString(R.string.oxygen_saturation) + " " + oxygen
+                getString(R.string.heart_rate_label) + " " + heart
+            },
+            onDoubleTapAction = openReadings
+        )
+
+        attachInfoTapBehavior(
+            view = stepsCard,
+            readTextProvider = {
+                val steps = stepsText.text?.toString()?.trim().orEmpty()
+                val motion = stepsMotionStatus.text?.toString()?.trim().orEmpty()
+                getString(R.string.dashboard_steps_label) + " " + steps + ", " + motion
             },
             onDoubleTapAction = openReadings
         )
@@ -323,9 +356,8 @@ class MainActivity : AppCompatActivity() {
         // Add long-press TTS for BP, Swelling, and Ataxia cards
         bpCard.setOnLongClickListener {
             if (canUseCustomSpeech()) {
-                val bpText = bpCard.findViewById<TextView>(R.id.bpText)?.text?.toString() ?: ""
                 val bpStatus = bpCard.findViewById<TextView>(R.id.bpStatus)?.text?.toString() ?: ""
-                speakIfEnabled("Blood Pressure: $bpStatus $bpText", force = true)
+                speakIfEnabled("Blood Pressure: $bpStatus", force = true)
                 true
             } else {
                 false
@@ -334,8 +366,8 @@ class MainActivity : AppCompatActivity() {
         
         swellingCard.setOnLongClickListener {
             if (canUseCustomSpeech()) {
-                val swellingValue = swellingText.text?.toString() ?: ""
-                speakIfEnabled("Swelling: $swellingValue", force = true)
+                val status = swellingStatus.text?.toString() ?: ""
+                speakIfEnabled("Swelling: $status", force = true)
                 true
             } else {
                 false
@@ -344,8 +376,19 @@ class MainActivity : AppCompatActivity() {
         
         ataxiaCard.setOnLongClickListener {
             if (canUseCustomSpeech()) {
-                val ataxiaValue = ataxiaCard.findViewById<TextView>(R.id.ataxiaText)?.text?.toString() ?: ""
-                speakIfEnabled("Ataxia: $ataxiaValue", force = true)
+                val status = ataxiaCard.findViewById<TextView>(R.id.ataxiaStatus)?.text?.toString() ?: ""
+                speakIfEnabled("Ataxia: $status", force = true)
+                true
+            } else {
+                false
+            }
+        }
+
+        stepsCard.setOnLongClickListener {
+            if (canUseCustomSpeech()) {
+                val s = stepsText.text?.toString() ?: ""
+                val m = stepsMotionStatus.text?.toString() ?: ""
+                speakIfEnabled("Steps: $s. $m", force = true)
                 true
             } else {
                 false
@@ -711,8 +754,13 @@ class MainActivity : AppCompatActivity() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 isDeviceConnected = false
+                discoverServicesRunnable?.let { uiHandler.removeCallbacks(it) }
+                discoverServicesRunnable = null
                 gatt.close()
-                runOnUiThread { 
+                if (bluetoothGatt == gatt) {
+                    bluetoothGatt = null
+                }
+                runOnUiThread {
                     updateDashboardStatus("Disconnected", DashboardStatusVisual.TEXT_ONLY)
                     setDisconnectedMode(true)
                     broadcastDisconnection()
@@ -723,15 +771,25 @@ class MainActivity : AppCompatActivity() {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 isDeviceConnected = true
                 runOnUiThread { setDisconnectedMode(false) }
-                uiHandler.postDelayed({
+                discoverServicesRunnable?.let { uiHandler.removeCallbacks(it) }
+                discoverServicesRunnable = Runnable {
+                    // Reconnect / app resume: ignore if this GATT was replaced or closed
+                    if (!isDeviceConnected || bluetoothGatt == null || bluetoothGatt != gatt) {
+                        return@Runnable
+                    }
                     runOnUiThread {
                         updateDashboardStatus(getString(R.string.connected_discovering), DashboardStatusVisual.LOADING)
                     }
-                    gatt.discoverServices()
-                }, 800)
+                    if (bluetoothGatt == gatt) {
+                        gatt.discoverServices()
+                    }
+                }
+                uiHandler.postDelayed(discoverServicesRunnable!!, 600)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 isDeviceConnected = false
-                runOnUiThread { 
+                discoverServicesRunnable?.let { uiHandler.removeCallbacks(it) }
+                discoverServicesRunnable = null
+                runOnUiThread {
                     updateDashboardStatus(getString(R.string.disconnected), DashboardStatusVisual.TEXT_ONLY)
                     setDisconnectedMode(true)
                     broadcastDisconnection()
@@ -741,48 +799,61 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                val keyService = gatt.getService(keyExchangeServiceUuid)
-                if (keyService == null) {
-                    runOnUiThread { 
-                        setDisconnectedMode(false)
-                        updateDashboardStatus(getLocalizedConnectedLabel(), DashboardStatusVisual.CHECK)
-                    }
-                    AESCrypto.initWithLegacyKeys()
-                    isKeyExchangeInProgress = false
-                    setupDataNotifications(gatt)
-                    return
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                Log.e(TAG, "Service discovery failed status=$status")
+                runOnUiThread {
+                    updateDashboardStatus(
+                        getString(R.string.connected_discovering) + " (failed)",
+                        DashboardStatusVisual.TEXT_ONLY
+                    )
+                    Toast.makeText(
+                        this@MainActivity,
+                        "BLE service discovery failed ($status). Try reconnecting.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-                
-                // Device has key exchange service - attempt key exchange
-                val phoneKeyChar = keyService.getCharacteristic(phonePublicKeyCharUuid)
-                if (phoneKeyChar != null && keyExchangeManager != null) {
-                    isKeyExchangeInProgress = true
-                    phoneKeyChar.value = keyExchangeManager!!.publicKeyBytes
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        gatt.writeCharacteristic(phoneKeyChar, keyExchangeManager!!.publicKeyBytes, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
-                    } else {
-                        gatt.writeCharacteristic(phoneKeyChar)
-                    }
-                    // Set a timeout for key exchange - if no response in 3 seconds, proceed with legacy mode
-                    keyExchangeTimeoutRunnable = Runnable {
-                        if (isKeyExchangeInProgress) {
-                            Log.w(TAG, "Key exchange timeout - falling back to legacy mode")
-                            isKeyExchangeInProgress = false
-                            AESCrypto.initWithLegacyKeys()
-                            setupDataNotifications(gatt)
-                        }
-                    }
-                    uiHandler.postDelayed(keyExchangeTimeoutRunnable!!, 3000)
-                    return
-                }
-                
-                // Fallback: key exchange service exists but we can't access the characteristic
-                Log.w(TAG, "Cannot access key exchange characteristic - falling back to legacy mode")
-                isKeyExchangeInProgress = false
-                AESCrypto.initWithLegacyKeys()
-                setupDataNotifications(gatt)
+                return
             }
+            val keyService = gatt.getService(keyExchangeServiceUuid)
+            if (keyService == null) {
+                runOnUiThread {
+                    setDisconnectedMode(false)
+                    updateDashboardStatus(getLocalizedConnectedLabel(), DashboardStatusVisual.CHECK)
+                }
+                AESCrypto.initWithLegacyKeys()
+                isKeyExchangeInProgress = false
+                setupDataNotifications(gatt)
+                return
+            }
+
+            // Device has key exchange service - attempt key exchange
+            val phoneKeyChar = keyService.getCharacteristic(phonePublicKeyCharUuid)
+            if (phoneKeyChar != null && keyExchangeManager != null) {
+                isKeyExchangeInProgress = true
+                phoneKeyChar.value = keyExchangeManager!!.publicKeyBytes
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    gatt.writeCharacteristic(phoneKeyChar, keyExchangeManager!!.publicKeyBytes, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+                } else {
+                    gatt.writeCharacteristic(phoneKeyChar)
+                }
+                // Set a timeout for key exchange - if no response in 3 seconds, proceed with legacy mode
+                keyExchangeTimeoutRunnable = Runnable {
+                    if (isKeyExchangeInProgress) {
+                        Log.w(TAG, "Key exchange timeout - falling back to legacy mode")
+                        isKeyExchangeInProgress = false
+                        AESCrypto.initWithLegacyKeys()
+                        setupDataNotifications(gatt)
+                    }
+                }
+                uiHandler.postDelayed(keyExchangeTimeoutRunnable!!, 3000)
+                return
+            }
+
+            // Fallback: key exchange service exists but we can't access the characteristic
+            Log.w(TAG, "Cannot access key exchange characteristic - falling back to legacy mode")
+            isKeyExchangeInProgress = false
+            AESCrypto.initWithLegacyKeys()
+            setupDataNotifications(gatt)
         }
 
         override fun onCharacteristicWrite(
@@ -855,17 +926,38 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        /**
+         * API 33+: notification bytes are delivered here — [BluetoothGattCharacteristic.getValue] may be empty/stale.
+         * Without this overload, framed ciphertext for some characteristics may never decode (steps/motion vs HR/SpO2).
+         */
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            dispatchCharacteristicChanged(gatt, characteristic, value)
+        }
+
+        @Suppress("DEPRECATION")
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            // Handle device public key response during key exchange
+            // API 33+: bytes are delivered via the 3-arg overload above (avoid double-dispatch).
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return
+            val bytes = characteristic.value ?: return
+            dispatchCharacteristicChanged(gatt, characteristic, bytes)
+        }
+
+        private fun dispatchCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            bytes: ByteArray
+        ) {
             if (isKeyExchangeInProgress && characteristic.uuid == peripheralPublicKeyCharUuid) {
-                val devicePubKeyBytes = characteristic.value ?: ByteArray(0)
-                completeKeyExchange(gatt, devicePubKeyBytes)
+                completeKeyExchange(gatt, bytes)
                 return
             }
-            
-            if(isKeyExchangeInProgress) return
-            val bytes = characteristic.value ?: return
-            
+
+            if (isKeyExchangeInProgress) return
+
             if (characteristic.uuid == pressureCharUuid) {
                 val intent = Intent(ACTION_SENSOR_DATA).apply {
                     putExtra(EXTRA_UUID_STRING, characteristic.uuid.toString())
@@ -874,10 +966,12 @@ class MainActivity : AppCompatActivity() {
                 LocalBroadcastManager.getInstance(this@MainActivity).sendBroadcast(intent)
                 return
             }
-            
-            val buffer = characteristicBuffers.getOrPut(characteristic.uuid) { ByteArrayOutputStream() }
-            buffer.write(bytes)
-            drainBuffer(characteristic, buffer)
+
+            synchronized(bleNotifyAssemblyLock) {
+                val buffer = characteristicBuffers.getOrPut(characteristic.uuid) { ByteArrayOutputStream() }
+                buffer.write(bytes)
+                drainBuffer(characteristic, buffer)
+            }
         }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
@@ -931,8 +1025,8 @@ class MainActivity : AppCompatActivity() {
         }
         
         val characteristics = listOf(
-            imuService.getCharacteristic(accelCharUuid),
-            imuService.getCharacteristic(gyroCharUuid),
+            imuService.getCharacteristic(stepsCharUuid),
+            imuService.getCharacteristic(motionCharUuid),
             imuService.getCharacteristic(heartRateCharUuid),
             imuService.getCharacteristic(spo2CharUuid),
             imuService.getCharacteristic(edemaCharUuid),
@@ -963,6 +1057,15 @@ class MainActivity : AppCompatActivity() {
                 }
                 updateDashboardStatus(getString(R.string.system_ready), DashboardStatusVisual.CHECK)
                 startDataLogging()
+                // After notifications are enabled, negotiate MTU (safer than in onServicesDiscovered for many phones)
+                if (!attMtuRequestedThisSession && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && bluetoothGatt == gatt) {
+                    attMtuRequestedThisSession = true
+                    try {
+                        gatt.requestMtu(247)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "requestMtu failed: ${e.message}")
+                    }
+                }
             }
             return
         }
@@ -997,12 +1100,16 @@ class MainActivity : AppCompatActivity() {
     private fun cleanup() {
         isDeviceConnected = false
         uiHandler.removeCallbacks(loadingDotsRunnable)
+        discoverServicesRunnable?.let { uiHandler.removeCallbacks(it) }
+        discoverServicesRunnable = null
         keyExchangeTimeoutRunnable?.let { uiHandler.removeCallbacks(it) }
         keyExchangeTimeoutRunnable = null
         notificationQueue.clear()
         isProcessingQueue = false
-        characteristicBuffers.values.forEach { it.reset() }
-        characteristicBuffers.clear()
+        synchronized(bleNotifyAssemblyLock) {
+            characteristicBuffers.values.forEach { it.reset() }
+            characteristicBuffers.clear()
+        }
         bluetoothGatt?.close()
         bluetoothGatt = null
         stopDataLogging()
@@ -1193,7 +1300,19 @@ class MainActivity : AppCompatActivity() {
         while (buffer.size() > 0) {
             val packet = buffer.toByteArray()
             val payloadLength = packet[0].toInt() and 0xFF
+            // Wait until a full frame is present before validating (avoid partial chunks on default MTU)
             if (packet.size - 1 < payloadLength) return
+            if (payloadLength <= 0 || payloadLength > maxPayloadLength) {
+                Log.w(TAG, "BLE framing: invalid ciphertext length $payloadLength for ${characteristic.uuid}; clearing buffer")
+                buffer.reset()
+                return
+            }
+            // Arduino AES-CBC ciphertext length is always a multiple of 16 (PKCS-padded plaintext)
+            if (payloadLength % 16 != 0) {
+                Log.w(TAG, "BLE framing: length $payloadLength not AES-aligned for ${characteristic.uuid}; clearing buffer")
+                buffer.reset()
+                return
+            }
             val messageBytes = packet.copyOfRange(1, payloadLength + 1)
             val remainingBytes = packet.copyOfRange(payloadLength + 1, packet.size)
             buffer.reset()
@@ -1283,6 +1402,13 @@ class MainActivity : AppCompatActivity() {
             toolbarProfileImage.setImageBitmap(BitmapFactory.decodeFile(imageFile.absolutePath))
         } else {
             toolbarProfileImage.setImageResource(R.drawable.profile)
+        }
+    }
+
+    private fun motionStatusLabel(raw: String): String {
+        return when (raw.trim()) {
+            "1" -> getString(R.string.motion_in_motion)
+            else -> getString(R.string.motion_static)
         }
     }
 

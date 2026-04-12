@@ -14,8 +14,8 @@ object AESCrypto {
     // These will be populated by the init function after the key exchange
     private lateinit var heartRateKey: SecretKeySpec
     private lateinit var spo2Key: SecretKeySpec
-    private lateinit var accelKey: SecretKeySpec
-    private lateinit var gyroKey: SecretKeySpec
+    private lateinit var stepsKey: SecretKeySpec
+    private lateinit var motionKey: SecretKeySpec
     private lateinit var flexKey: SecretKeySpec
     private lateinit var pressureKey: SecretKeySpec
 
@@ -23,8 +23,8 @@ object AESCrypto {
     // These MUST match the values in the Arduino code.
     private val heartRateIV = IvParameterSpec(ByteArray(16) { (0x20 + it).toByte() })
     private val spo2IV = IvParameterSpec(ByteArray(16) { (0x30 + it).toByte() })
-    private val accelIV = IvParameterSpec(ByteArray(16) { (0x00 + it).toByte() })
-    private val gyroIV = IvParameterSpec(ByteArray(16) { (0x10 + it).toByte() })
+    private val stepsIV = IvParameterSpec(ByteArray(16) { (0x00 + it).toByte() })
+    private val motionIV = IvParameterSpec(ByteArray(16) { (0x10 + it).toByte() })
     private val flexIV = IvParameterSpec(ByteArray(16) { (0x40 + it).toByte() })
     private val pressureIV = IvParameterSpec(ByteArray(16) { (0x50 + it).toByte() })
 
@@ -41,13 +41,13 @@ object AESCrypto {
             0x53, 0x70, 0x4F, 0x32, 0x4B, 0x65, 0x79, 0x31,
             0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39
         ), "AES")
-        accelKey = SecretKeySpec(byteArrayOf(
-            0x41, 0x63, 0x63, 0x65, 0x6C, 0x4B, 0x65, 0x79,
+        stepsKey = SecretKeySpec(byteArrayOf(
+            0x53, 0x74, 0x65, 0x70, 0x73, 0x4B, 0x65, 0x79,
             0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38
         ), "AES")
-        gyroKey = SecretKeySpec(byteArrayOf(
-            0x47, 0x79, 0x72, 0x6F, 0x4B, 0x65, 0x79, 0x31,
-            0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39
+        motionKey = SecretKeySpec(byteArrayOf(
+            0x4D, 0x6F, 0x74, 0x69, 0x6F, 0x6E, 0x4B, 0x65,
+            0x79, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37
         ), "AES")
         flexKey = SecretKeySpec(byteArrayOf(
             0x46, 0x6C, 0x65, 0x78, 0x4B, 0x65, 0x79, 0x31,
@@ -70,8 +70,8 @@ object AESCrypto {
         // from the same shared secret. This is a standard and secure practice.
         heartRateKey = SecretKeySpec(deriveKey(sharedSecret, "HEART_RATE"), "AES")
         spo2Key = SecretKeySpec(deriveKey(sharedSecret, "SPO2"), "AES")
-        accelKey = SecretKeySpec(deriveKey(sharedSecret, "ACCEL"), "AES")
-        gyroKey = SecretKeySpec(deriveKey(sharedSecret, "GYRO"), "AES")
+        stepsKey = SecretKeySpec(deriveKey(sharedSecret, "STEPS"), "AES")
+        motionKey = SecretKeySpec(deriveKey(sharedSecret, "MOTION"), "AES")
         flexKey = SecretKeySpec(deriveKey(sharedSecret, "FLEX"), "AES")
         pressureKey = SecretKeySpec(deriveKey(sharedSecret, "PRESSURE"), "AES")
         isInitialized = true
@@ -115,8 +115,8 @@ object AESCrypto {
     // Public-facing decryption functions
     fun decryptHeartRate(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, heartRateKey, heartRateIV)
     fun decryptSpO2(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, spo2Key, spo2IV)
-    fun decryptAccel(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, accelKey, accelIV)
-    fun decryptGyro(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, gyroKey, gyroIV)
+    fun decryptSteps(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, stepsKey, stepsIV)
+    fun decryptMotion(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, motionKey, motionIV)
     fun decryptFlex(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, flexKey, flexIV)
     
     // Binary decryption for pressure matrix (decrypts 16-byte encrypted payload, returns 12-byte decrypted)

@@ -54,6 +54,8 @@
     <string name="dialog_connection_lost">Connexion perdue</string>
     <string name="dialog_wearable_disconnected">L\'appareil portable a été déconnecté.</string>
     <string name="dashboard_bp_class_label">PA Classification</string>
+    <string name="dashboard_bp_range_label">PLAGE PA</string>
+    <string name="dashboard_status_pending">En attente</string>
     <string name="dashboard_swelling_label">GONFLEMENT</string>
     <string name="dashboard_ataxia_label">ATAXIE</string>
     <string name="permissions_not_granted">Autorisations non accordées. L’application ne peut pas fonctionner sans elles</string>

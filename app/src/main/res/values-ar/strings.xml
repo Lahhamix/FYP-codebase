@@ -72,6 +72,8 @@
     <string name="toast_bluetooth_permission_reconnect">إذن البلوتوث مطلوب لإعادة الاتصال</string>
     <string name="bp_classification">ضغط الدم</string>
     <string name="dashboard_bp_class_label">ضغط الدم</string>
+    <string name="dashboard_bp_range_label">نطاق ضغط الدم</string>
+    <string name="dashboard_status_pending">قيد الانتظار</string>
     <string name="plantar_pressure">ضغط باطن القدم</string>
     <string name="open_heatmap_calibrate">فتح خريطة الحرارة وإجراء المعايرة</string>
     <string name="calibrate">معايرة</string>

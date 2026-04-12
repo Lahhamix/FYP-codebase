@@ -1,14 +1,15 @@
 #include "encryption.h"
 #include "key_exchange.h"
 #include <string.h>
+#include "serial_log.h"
 
-// IVs - MUST match AESCrypto.kt exactly (accel: 0x00..0x0F, gyro: 0x10..0x1F, etc.)
-static const uint8_t accelIV[16] = {
+// IVs - MUST match AESCrypto.kt exactly (steps: 0x00..0x0F, motion: 0x10..0x1F, etc.)
+static const uint8_t stepsIV[16] = {
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
-static const uint8_t gyroIV[16] = {
+static const uint8_t motionIV[16] = {
   0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
   0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F
 };
@@ -34,8 +35,8 @@ static const uint8_t pressureIV[16] = {
 };
 
 // Keys from key exchange (populated after ECDH)
-static uint8_t accelKey[16];
-static uint8_t gyroKey[16];
+static uint8_t stepsKey[16];
+static uint8_t motionKey[16];
 static uint8_t heartRateKey[16];
 static uint8_t spo2Key[16];
 static uint8_t flexKey[16];
@@ -48,18 +49,18 @@ CBC<AES128> cbc;
 
 void encryption_init_from_key_exchange() {
   if (!key_exchange_is_complete()) {
-    Serial.println("[ENCRYPTION] Key exchange not complete, cannot init.");
+    LOG_ENCRYPT(Serial.println("[ENCRYPTION] Key exchange not complete, cannot init."));
     return;
   }
-  key_exchange_get_accel_key(accelKey);
-  key_exchange_get_gyro_key(gyroKey);
+  key_exchange_get_steps_key(stepsKey);
+  key_exchange_get_motion_key(motionKey);
   key_exchange_get_heart_rate_key(heartRateKey);
   key_exchange_get_spo2_key(spo2Key);
   key_exchange_get_flex_key(flexKey);
   key_exchange_get_pressure_key(pressureKey);
   encryptionReady = true;
-  cbc.setKey(accelKey, 16);
-  cbc.setIV(accelIV, 16);
+  cbc.setKey(stepsKey, 16);
+  cbc.setIV(stepsIV, 16);
 }
 
 void encryption_init() {
@@ -95,14 +96,14 @@ bool encryptWithKeyIV(const String& plaintext, const uint8_t* key, const uint8_t
     return false;
   }
   if (plaintext.length() == 0) {
-    Serial.println("ERROR: Empty plaintext");
+    LOG_ENCRYPT(Serial.println("ERROR: Empty plaintext"));
     return false;
   }
 
   size_t plaintextLen = plaintext.length();
   const size_t MAX_PLAINTEXT = 64;
   if (plaintextLen > MAX_PLAINTEXT) {
-    Serial.println("ERROR: Plaintext too long");
+    LOG_ENCRYPT(Serial.println("ERROR: Plaintext too long"));
     return false;
   }
 
@@ -114,7 +115,7 @@ bool encryptWithKeyIV(const String& plaintext, const uint8_t* key, const uint8_t
   uint8_t paddedData[MAX_PLAINTEXT + 16];
   size_t actualPaddedLen = addPKCS5Padding(plaintextBytes, plaintextLen, paddedData, MAX_PLAINTEXT + 16);
   if (actualPaddedLen == 0 || actualPaddedLen > sizeof(payload.data)) {
-    Serial.println("ERROR: Padding failed or output too large");
+    LOG_ENCRYPT(Serial.println("ERROR: Padding failed or output too large"));
     return false;
   }
 
@@ -125,12 +126,12 @@ bool encryptWithKeyIV(const String& plaintext, const uint8_t* key, const uint8_t
   return true;
 }
 
-bool encryptAccel(const String& plaintext, EncryptedPayload& payload) {
-  return encryptWithKeyIV(plaintext, accelKey, accelIV, payload);
+bool encryptSteps(const String& plaintext, EncryptedPayload& payload) {
+  return encryptWithKeyIV(plaintext, stepsKey, stepsIV, payload);
 }
 
-bool encryptGyro(const String& plaintext, EncryptedPayload& payload) {
-  return encryptWithKeyIV(plaintext, gyroKey, gyroIV, payload);
+bool encryptMotion(const String& plaintext, EncryptedPayload& payload) {
+  return encryptWithKeyIV(plaintext, motionKey, motionIV, payload);
 }
 
 bool encryptHeartRate(const String& plaintext, EncryptedPayload& payload) {

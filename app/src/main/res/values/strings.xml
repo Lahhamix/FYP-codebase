@@ -223,10 +223,10 @@
     <string name="loading_dots">...</string>
 
     <!-- Gait Analysis Strings -->
-    <string name="gait_acceleration_data">Acceleration Data</string>
-    <string name="gait_acceleration_desc">Real-time acceleration data from IMU sensor</string>
-    <string name="gait_gyroscope_data">Gyroscope Data</string>
-    <string name="gait_gyroscope_desc">Real-time rotational data from IMU sensor</string>
+    <string name="gait_steps_data">Step count</string>
+    <string name="gait_steps_desc">Total steps from IMU (same encrypted channel as the dashboard)</string>
+    <string name="gait_motion_data">Motion state</string>
+    <string name="gait_motion_desc">Static vs in motion from IMU</string>
     <string name="gait_edema_assessment">Edema Assessment</string>
     <string name="gait_edema_calibrating">Calibrating...</string>
     <string name="gait_edema_severe">SEVERE</string>
@@ -243,7 +243,12 @@
     <string name="dashboard_heart_rate_label">HEART RATE</string>
     <string name="dashboard_spo2_label" translatable="false">SPO2</string>
     <string name="dashboard_bp_class_label">BP Classification</string>
+    <string name="dashboard_bp_range_label">BP RANGE</string>
+    <string name="dashboard_status_pending">Pending</string>
     <string name="dashboard_swelling_label">SWELLING</string>
     <string name="dashboard_ataxia_label">ATAXIA</string>
+    <string name="dashboard_steps_label">STEPS</string>
+    <string name="motion_static">Static</string>
+    <string name="motion_in_motion">In Motion</string>
     <string name="remember_me">Remember me</string>
 </resources>

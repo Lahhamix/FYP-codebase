@@ -25,9 +25,9 @@ bool encryption_is_ready();
 size_t addPKCS5Padding(const uint8_t* data, size_t dataLen, uint8_t* paddedData, size_t maxLen);
 bool encryptWithKeyIV(const String& plaintext, const uint8_t* key, const uint8_t* iv, EncryptedPayload& payload);
 
-// Separate encryption functions for each data type
-bool encryptAccel(const String& plaintext, EncryptedPayload& payload);
-bool encryptGyro(const String& plaintext, EncryptedPayload& payload);
+// Separate encryption functions for each data type (UUIDs 0002/0003: steps + motion, not raw IMU)
+bool encryptSteps(const String& plaintext, EncryptedPayload& payload);
+bool encryptMotion(const String& plaintext, EncryptedPayload& payload);
 bool encryptHeartRate(const String& plaintext, EncryptedPayload& payload);
 bool encryptSpO2(const String& plaintext, EncryptedPayload& payload);
 bool encryptFlex(const String& plaintext, EncryptedPayload& payload);

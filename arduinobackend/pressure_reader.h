@@ -23,8 +23,8 @@
 #define ROW_SIG A2
 
 // Timing
-#define COL_SETTLE_US 20
-#define ROW_SETTLE_US 20
+#define COL_SETTLE_US 2
+#define ROW_SETTLE_US 2
 
 // BLE packet configuration
 #define BLE_PACKET_SIZE 20
@@ -44,6 +44,9 @@ bool pressure_init();
 
 // Scan matrix and return frame data
 PressureFrame readPressure();
+
+/** Same as readPressure but calls yieldFn every N columns so IMU can be serviced (see serial_log.h). */
+PressureFrame readPressureWithYield(void (*yieldFn)(void));
 
 // Pack 12-bit samples into BLE packet format
 void packSamples12(const uint16_t* samples, int count, uint8_t* out12);

@@ -120,7 +120,7 @@ class PressureMatrixActivity : AppCompatActivity() {
                     val uuidString = intent.getStringExtra(MainActivity.EXTRA_UUID_STRING)
                     if (uuidString == MainActivity.pressureCharUuid.toString()) {
                         val packet = intent.getByteArrayExtra(MainActivity.EXTRA_DECRYPTED_DATA)
-                        if (packet != null && packet.size == 20) {
+                        if (packet != null && (packet.size == 20 || packet.size == 24)) {
                             processPressurePacket(packet)
                         }
                     }
@@ -168,12 +168,21 @@ class PressureMatrixActivity : AppCompatActivity() {
 
     // Python-style: each packet updates buffer directly at startIndex (no frame assembly)
     private fun processPressurePacket(packet: ByteArray) {
-        if (packet.size != 20) return
+        if (packet.size != 20 && packet.size != 24) return
         if ((packet[0].toInt() and 0xFF) != 0xA5 || (packet[1].toInt() and 0xFF) != 0x5A) return
 
         val startIndex = (packet[4].toInt() and 0xFF) or ((packet[5].toInt() and 0xFF) shl 8)
         val sampleCount = packet[6].toInt() and 0xFF
-        val payload = packet.copyOfRange(8, 20)  // 12 bytes
+        val payload: ByteArray = if (packet.size == 24) {
+            // 8 header + 16 ciphertext -> decrypt into 12-byte payload
+            val cipher = packet.copyOfRange(8, 24)
+            val plain = AESCrypto.decryptPressurePayload(cipher)
+            if (plain == null || plain.size != 12) return
+            plain
+        } else {
+            // Legacy/plain mode (kept for backwards compatibility)
+            packet.copyOfRange(8, 20)  // 12 bytes
+        }
 
         val samples = unpack12BitSamples(payload, sampleCount)
         val end = minOf(startIndex + samples.size, NUM_VALUES)

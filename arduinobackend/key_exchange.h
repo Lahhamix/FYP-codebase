@@ -27,8 +27,8 @@ const uint8_t* key_exchange_get_peripheral_public_key();
 bool key_exchange_is_complete();
 
 // Get derived keys (16 bytes each) - only valid after key_exchange_is_complete()
-void key_exchange_get_accel_key(uint8_t* outKey);
-void key_exchange_get_gyro_key(uint8_t* outKey);
+void key_exchange_get_steps_key(uint8_t* outKey);
+void key_exchange_get_motion_key(uint8_t* outKey);
 void key_exchange_get_heart_rate_key(uint8_t* outKey);
 void key_exchange_get_spo2_key(uint8_t* outKey);
 void key_exchange_get_flex_key(uint8_t* outKey);

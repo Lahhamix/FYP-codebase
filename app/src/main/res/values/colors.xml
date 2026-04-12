@@ -29,5 +29,8 @@
     <color name="google_red">#DB4437</color>
     <color name="text_hint">#7C95AC</color>
 
+    <color name="dashboard_steps_accent">#7C3AED</color>
+    <color name="dashboard_steps_icon">#6D28D9</color>
+
 
 </resources>
