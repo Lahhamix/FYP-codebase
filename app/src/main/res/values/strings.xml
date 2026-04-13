@@ -111,6 +111,7 @@
     <string name="nav_history">History</string>
     <string name="nav_home">Home</string>
     <string name="nav_settings">Settings</string>
+    <string name="nav_foot_overview">Foot</string>
 
     <string name="sock_disconnected">Sock Disconnected</string>
     <string name="sock_disconnected_desc">Your SoleMate sock is out of range. Make sure it is nearby and charged.</string>
@@ -127,6 +128,25 @@
     <string name="plantar_pressure">Plantar Pressure</string>
     <string name="open_heatmap_calibrate">Open heatmap and calibrate</string>
     <string name="calibrate">Calibrate</string>
+    <string name="foot_overview_title">Foot Overview</string>
+    <string name="foot_overview_subtitle">Tap a zone to view readings</string>
+    <string name="foot_overview_image_desc">SoleMate foot overview map</string>
+    <string name="foot_overview_tip_desc">Foot overview information</string>
+    <string name="foot_overview_tip">Each zone represents a smart sensor in your SoleMate sock. Tapping a zone on your map shows personal health data.</string>
+    <string name="zone_1_title">Zone 1: Plantar Foot</string>
+    <string name="zone_1_desc">Monitors plantar foot pressure while standing or walking.</string>
+    <string name="zone_1_metric_title">Ataxia Risk</string>
+    <string name="zone_1_metric_subtitle">Current Plantar Pressure Distribution</string>
+    <string name="zone_2_title">Zone 2: Big Toe</string>
+    <string name="zone_2_desc">Measures Heart Rate and SpO2 at rest and during motion.</string>
+    <string name="zone_2_metric_title">Heart Health</string>
+    <string name="zone_2_metric_subtitle">Current Cardiovascular Parameters</string>
+    <string name="zone_3_title">Zone 3: Ankle Cuff</string>
+    <string name="zone_3_desc">Monitors for swelling and checks blood circulation.</string>
+    <string name="zone_3_metric_title">Swelling</string>
+    <string name="zone_3_metric_subtitle">Current Ankle Fluid Retention</string>
+    <string name="view_full_analytics">View Full Analytics</string>
+    <string name="foot_overview_coming_soon">Action will be wired in the next step.</string>
 
     <string name="toast_edit_profile_coming_soon">Edit profile coming soon</string>
     <string name="toast_bluetooth_permission_connect">Bluetooth permission required to connect</string>

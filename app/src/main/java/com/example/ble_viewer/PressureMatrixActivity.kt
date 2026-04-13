@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -13,7 +14,11 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -64,6 +69,9 @@ class PressureMatrixActivity : AppCompatActivity() {
         private val CONFIG_VMAX_FIXED = VMAX_FIXED
 
         const val EXTRA_START_CALIBRATION = "start_calibration"
+        const val EXTRA_SHOW_FOOT_OVERVIEW = "show_foot_overview"
+        private const val PREFS_NAME = "SolematePrefs"
+        private const val KEY_PROFILE_IMAGE_PATH = "profile_image_path"
     }
 
     private data class PressureConfig(
@@ -112,6 +120,7 @@ class PressureMatrixActivity : AppCompatActivity() {
 
     private var updateHandler: android.os.Handler? = null
     private var updateRunnable: Runnable? = null
+    private var isFootOverviewMode: Boolean = false
 
     private val sensorDataReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -134,6 +143,14 @@ class PressureMatrixActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isFootOverviewMode = intent.getBooleanExtra(EXTRA_SHOW_FOOT_OVERVIEW, false)
+
+        if (isFootOverviewMode) {
+            setContentView(R.layout.activity_foot_overview)
+            setupFootOverviewMode()
+            return
+        }
+
         setContentView(R.layout.activity_pressure_matrix)
 
         heatmapImageView = findViewById(R.id.heatmapImageView)
@@ -564,6 +581,9 @@ class PressureMatrixActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (isFootOverviewMode) {
+            return
+        }
         if (!isCalibrating) {
             calibrateButton.visibility = View.VISIBLE
             calibrateButton.alpha = 1f
@@ -578,13 +598,120 @@ class PressureMatrixActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        if (isFootOverviewMode) {
+            return
+        }
         updateRunnable?.let { updateHandler?.removeCallbacks(it) }
         LocalBroadcastManager.getInstance(this).unregisterReceiver(sensorDataReceiver)
     }
 
     override fun onDestroy() {
+        if (isFootOverviewMode) {
+            super.onDestroy()
+            return
+        }
         updateRunnable = null
         updateHandler = null
         super.onDestroy()
+    }
+
+    private fun setupFootOverviewMode() {
+        bindFootOverviewToolbar()
+        bindFootOverviewNavigation()
+        bindFootOverviewInteractions()
+    }
+
+    private fun bindFootOverviewToolbar() {
+        val username = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString("username", getString(R.string.username_placeholder))
+            .orEmpty()
+            .ifBlank { getString(R.string.username_placeholder) }
+
+        findViewById<TextView>(R.id.toolbar_username)?.text = username
+
+        val imagePath = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString(KEY_PROFILE_IMAGE_PATH, null)
+
+        val profileImageView = findViewById<ImageView>(R.id.toolbar_profile_image)
+        if (!imagePath.isNullOrBlank()) {
+            val bitmap = BitmapFactory.decodeFile(imagePath)
+            if (bitmap != null) {
+                profileImageView?.setImageBitmap(bitmap)
+            } else {
+                profileImageView?.setImageResource(R.drawable.profile)
+            }
+        } else {
+            profileImageView?.setImageResource(R.drawable.profile)
+        }
+
+        findViewById<View>(R.id.profile_card)?.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+
+        findViewById<TextView>(R.id.toolbar_username)?.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+    }
+
+    private fun bindFootOverviewNavigation() {
+        findViewById<LinearLayout>(R.id.nav_home)?.setOnClickListener {
+            finish()
+        }
+
+        findViewById<LinearLayout>(R.id.nav_history)?.setOnClickListener {
+            startActivity(Intent(this, ReadingsActivity::class.java))
+        }
+
+        findViewById<LinearLayout>(R.id.nav_settings)?.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+    }
+
+    private fun bindFootOverviewInteractions() {
+        val comingSoonMessage = getString(R.string.foot_overview_coming_soon)
+        val scrollView = findViewById<ScrollView>(R.id.foot_overview_scroll)
+        val zoneCard1 = findViewById<View>(R.id.zone_card_1)
+        val zoneCard2 = findViewById<View>(R.id.zone_card_2)
+        val zoneCard3 = findViewById<View>(R.id.zone_card_3)
+
+        findViewById<View>(R.id.zone_marker_1)?.setOnClickListener {
+            scrollToAndHighlightZone(scrollView, zoneCard1)
+        }
+
+        findViewById<View>(R.id.zone_marker_2)?.setOnClickListener {
+            scrollToAndHighlightZone(scrollView, zoneCard2)
+        }
+
+        findViewById<View>(R.id.zone_marker_3)?.setOnClickListener {
+            scrollToAndHighlightZone(scrollView, zoneCard3)
+        }
+
+        val zoneViews = listOf(
+            R.id.zone_1_view_analytics,
+            R.id.zone_2_view_analytics,
+            R.id.zone_3_view_analytics,
+            R.id.zone_card_1,
+            R.id.zone_card_2,
+            R.id.zone_card_3
+        )
+
+        zoneViews.forEach { id ->
+            findViewById<View>(id)?.setOnClickListener {
+                Toast.makeText(this, comingSoonMessage, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun scrollToAndHighlightZone(scrollView: ScrollView, target: View) {
+        scrollView.post {
+            scrollView.smoothScrollTo(0, target.top)
+            target.setBackgroundResource(R.drawable.foot_overview_zone_card_highlight_bg)
+            target.postDelayed({
+                target.setBackgroundResource(R.drawable.foot_overview_zone_card_bg)
+            }, 1800L)
+        }
     }
 }

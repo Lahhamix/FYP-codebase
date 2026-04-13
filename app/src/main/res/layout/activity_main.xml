@@ -925,7 +925,7 @@
             android:gravity="center"
             android:orientation="horizontal"
             android:paddingHorizontal="18dp"
-            android:weightSum="3">
+            android:weightSum="4">
 
             <LinearLayout
                 android:id="@+id/nav_history"
@@ -1004,6 +1004,32 @@
                     android:text="@string/nav_settings"
                     android:textColor="#6B7480"
                     android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/nav_foot_overview"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@string/nav_foot_overview"
+                    android:src="@drawable/foot"
+                    app:tint="#6B7480" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/rubik_medium"
+                    android:gravity="center"
+                    android:text="@string/nav_foot_overview"
+                    android:textColor="#6B7480"
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

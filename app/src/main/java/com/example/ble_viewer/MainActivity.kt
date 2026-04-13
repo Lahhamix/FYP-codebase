@@ -429,9 +429,16 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+        findViewById<View>(R.id.nav_foot_overview).setOnClickListener {
+            startActivity(Intent(this, PressureMatrixActivity::class.java).apply {
+                putExtra(PressureMatrixActivity.EXTRA_SHOW_FOOT_OVERVIEW, true)
+            })
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
         attachLongPressReadAloud(findViewById(R.id.nav_home), getString(R.string.nav_home))
         attachLongPressReadAloud(findViewById(R.id.nav_history), getString(R.string.nav_history))
         attachLongPressReadAloud(findViewById(R.id.nav_settings), getString(R.string.nav_settings))
+        attachLongPressReadAloud(findViewById(R.id.nav_foot_overview), getString(R.string.nav_foot_overview))
 
         val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
