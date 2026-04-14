@@ -56,65 +56,78 @@
                 app:strokeColor="#E4E8EE"
                 app:strokeWidth="1dp">
 
-                <FrameLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
-                    <ImageView
+                    <com.google.android.material.imageview.ShapeableImageView
                         android:id="@+id/foot_overview_map_image"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:adjustViewBounds="true"
                         android:contentDescription="@string/foot_overview_image_desc"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/foot_overview_exact_v2" />
+                        android:scaleType="fitXY"
+                        android:src="@drawable/foot_overview_exact"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FootOverviewCard"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/zone_marker_3"
                         android:layout_width="52dp"
                         android:layout_height="52dp"
-                        android:layout_gravity="top|center_horizontal"
-                        android:layout_marginStart="52dp"
-                        android:layout_marginTop="52dp"
                         android:background="@drawable/foot_overview_marker_inactive"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
                         android:text="3"
                         android:textColor="@color/dark_blue"
                         android:textSize="26sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_bias="0.64"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="0.26" />
 
                     <TextView
                         android:id="@+id/zone_marker_1"
                         android:layout_width="64dp"
                         android:layout_height="64dp"
-                        android:layout_gravity="center"
-                        android:layout_marginStart="-84dp"
-                        android:layout_marginTop="22dp"
                         android:background="@drawable/foot_overview_marker_active"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
                         android:text="1"
                         android:textColor="@color/white"
                         android:textSize="30sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_bias="0.30"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="0.62" />
 
                     <TextView
                         android:id="@+id/zone_marker_2"
                         android:layout_width="52dp"
                         android:layout_height="52dp"
-                        android:layout_gravity="bottom|end"
-                        android:layout_marginEnd="62dp"
-                        android:layout_marginBottom="58dp"
                         android:background="@drawable/foot_overview_marker_inactive"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
                         android:text="2"
                         android:textColor="@color/dark_blue"
                         android:textSize="26sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_bias="0.79"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="0.80" />
 
-                </FrameLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
@@ -528,7 +541,7 @@
         android:gravity="center"
         android:orientation="horizontal"
         android:paddingHorizontal="18dp"
-        android:weightSum="3">
+        android:weightSum="4">
 
         <LinearLayout
             android:id="@+id/nav_history"
@@ -569,7 +582,7 @@
                 android:layout_height="22dp"
                 android:contentDescription="@string/nav_home"
                 android:src="@drawable/ic_nav_home"
-                app:tint="#3F93E9" />
+                    app:tint="#6B7480" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -578,9 +591,8 @@
                 android:fontFamily="@font/rubik_medium"
                 android:gravity="center"
                 android:text="@string/nav_home"
-                android:textColor="#3F93E9"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                    android:textColor="#6B7480"
+                    android:textSize="13sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -607,6 +619,33 @@
                 android:text="@string/nav_settings"
                 android:textColor="#6B7480"
                 android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_foot_overview"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/nav_foot_overview"
+                android:src="@drawable/foot"
+                app:tint="#3F93E9" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/rubik_medium"
+                android:gravity="center"
+                android:text="@string/nav_foot_overview"
+                android:textColor="#3F93E9"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
     </LinearLayout>

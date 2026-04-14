@@ -55,6 +55,10 @@
             android:label="Pressure Matrix"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
+            android:name=".PlantarFootAnalyticsActivity"
+            android:label="Plantar Foot"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
             android:name=".SettingsActivity"
             android:label="Settings"
             android:theme="@style/Theme.Test.NoActionBar" />

@@ -72,6 +72,9 @@ class PressureMatrixActivity : AppCompatActivity() {
         const val EXTRA_SHOW_FOOT_OVERVIEW = "show_foot_overview"
         private const val PREFS_NAME = "SolematePrefs"
         private const val KEY_PROFILE_IMAGE_PATH = "profile_image_path"
+        const val HEATMAP_SNAPSHOT_FILE = "latest_pressure_heatmap.png"
+        const val KEY_HEATMAP_LAST_UPDATED_MS = "analytics_heatmap_last_updated_ms"
+        private const val HEATMAP_CAPTURE_INTERVAL_MS = 10 * 60 * 1000L
     }
 
     private data class PressureConfig(
@@ -401,6 +404,7 @@ class PressureMatrixActivity : AppCompatActivity() {
             PressureDisplayMode.FIXED -> preprocessFixed(processed)
         }
         val bitmap = createHeatmapBitmap(forDisplay, config.mode)
+        maybeSaveHeatmapSnapshot(bitmap)
         runOnUiThread {
             if (!isDestroyed && !isFinishing) {
                 heatmapImageView.setImageBitmap(bitmap)
@@ -561,6 +565,23 @@ class PressureMatrixActivity : AppCompatActivity() {
         return Color.rgb(r, g, b)
     }
 
+    private fun maybeSaveHeatmapSnapshot(bitmap: Bitmap) {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val lastSaved = prefs.getLong(KEY_HEATMAP_LAST_UPDATED_MS, 0L)
+        if (now - lastSaved < HEATMAP_CAPTURE_INTERVAL_MS) return
+
+        try {
+            val outputFile = File(filesDir, HEATMAP_SNAPSHOT_FILE)
+            FileOutputStream(outputFile).use { fos ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+            }
+            prefs.edit().putLong(KEY_HEATMAP_LAST_UPDATED_MS, now).apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save heatmap snapshot: ${e.message}")
+        }
+    }
+
     private fun showDisconnectDialog() {
         runOnUiThread {
             if (isFinishing || isDestroyed) return@runOnUiThread
@@ -656,6 +677,8 @@ class PressureMatrixActivity : AppCompatActivity() {
     }
 
     private fun bindFootOverviewNavigation() {
+        val scrollView = findViewById<ScrollView>(R.id.foot_overview_scroll)
+
         findViewById<LinearLayout>(R.id.nav_home)?.setOnClickListener {
             finish()
         }
@@ -668,6 +691,12 @@ class PressureMatrixActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+
+        findViewById<LinearLayout>(R.id.nav_foot_overview)?.setOnClickListener {
+            scrollView.post {
+                scrollView.smoothScrollTo(0, 0)
+            }
+        }
     }
 
     private fun bindFootOverviewInteractions() {
@@ -676,6 +705,11 @@ class PressureMatrixActivity : AppCompatActivity() {
         val zoneCard1 = findViewById<View>(R.id.zone_card_1)
         val zoneCard2 = findViewById<View>(R.id.zone_card_2)
         val zoneCard3 = findViewById<View>(R.id.zone_card_3)
+
+        findViewById<View>(R.id.zone_1_view_analytics)?.setOnClickListener {
+            startActivity(Intent(this, PlantarFootAnalyticsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
 
         findViewById<View>(R.id.zone_marker_1)?.setOnClickListener {
             scrollToAndHighlightZone(scrollView, zoneCard1)
@@ -690,7 +724,6 @@ class PressureMatrixActivity : AppCompatActivity() {
         }
 
         val zoneViews = listOf(
-            R.id.zone_1_view_analytics,
             R.id.zone_2_view_analytics,
             R.id.zone_3_view_analytics,
             R.id.zone_card_1,

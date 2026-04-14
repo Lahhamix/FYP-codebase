@@ -44,4 +44,9 @@
         <item name="cornerSize">13dp</item>
     </style>
 
+    <style name="ShapeAppearanceOverlay.FootOverviewCard" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">26dp</item>
+    </style>
+
 </resources>

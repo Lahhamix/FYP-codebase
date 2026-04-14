@@ -214,6 +214,7 @@ class MainActivity : AppCompatActivity() {
                             val steps = AESCrypto.decryptSteps(encryptedBytes).trim()
                             if (steps.isEmpty() || steps.startsWith("DECRYPT_ERROR")) return@runOnUiThread
                             stepsText.text = steps
+                            steps.toIntOrNull()?.let { persistDailySteps(it) }
                         }
                         motionCharUuid.toString() -> {
                             val raw = AESCrypto.decryptMotion(encryptedBytes).trim()
@@ -444,6 +445,16 @@ class MainActivity : AppCompatActivity() {
         bluetoothAdapter = bluetoothManager.adapter
 
         handleIntent(intent)
+    }
+
+    private fun persistDailySteps(steps: Int) {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val dayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+        val key = "steps_day_$dayKey"
+        val previousMax = prefs.getInt(key, 0)
+        if (steps > previousMax) {
+            prefs.edit().putInt(key, steps).apply()
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {

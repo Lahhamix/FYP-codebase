@@ -147,6 +147,23 @@
     <string name="zone_3_metric_subtitle">Current Ankle Fluid Retention</string>
     <string name="view_full_analytics">View Full Analytics</string>
     <string name="foot_overview_coming_soon">Action will be wired in the next step.</string>
+    <string name="analytics_zone_description">Your plantar pressure distribution is currently within the Normal Status. Measurements are taken every 10 minutes by your SoleMate.</string>
+    <string name="analytics_heatmap_desc">Captured plantar pressure heatmap</string>
+    <string name="analytics_updated_icon_desc">Last update time</string>
+    <string name="analytics_updated_waiting">Updated waiting for first capture</string>
+    <string name="analytics_updated_just_now">Updated just now</string>
+    <string name="analytics_updated_minutes_ago">Updated %1$dm ago</string>
+    <string name="analytics_updated_hours_ago">Updated %1$dh ago</string>
+    <string name="analytics_updated_days_ago">Updated %1$dd ago</string>
+    <string name="analytics_pressure_status_placeholder">Normal Pressure Distribution</string>
+    <string name="analytics_steps_consistency">STEP CONSISTENCY</string>
+    <string name="analytics_steps_period">Monthly</string>
+    <string name="analytics_ataxia_title">What is Ataxia?</string>
+    <string name="analytics_ataxia_desc">Ataxia is a condition that affects balance, coordination, and muscle control. It makes tasks like walking, reaching, or holding objects harder because the muscles don’t work together as they should.</string>
+    <string name="analytics_back_to_foot">Back to Foot Overview</string>
+    <string name="analytics_share_health_report">Share Health Report</string>
+    <string name="analytics_secure_pdf_note">A secure PDF report will be generated for your clinician.</string>
+    <string name="toast_share_report_coming_soon">Share report action coming soon</string>
 
     <string name="toast_edit_profile_coming_soon">Edit profile coming soon</string>
     <string name="toast_bluetooth_permission_connect">Bluetooth permission required to connect</string>
