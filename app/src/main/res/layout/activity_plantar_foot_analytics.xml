@@ -21,24 +21,17 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/rubik_medium"
-                android:text="@string/zone_1_title"
-                android:textColor="@color/dark_blue"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/analytics_back_button"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_marginTop="8dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:text="@string/analytics_back_to_foot"
                 android:textAllCaps="false"
-                android:textColor="@color/dark_blue"
+                android:textColor="@color/blue"
                 android:textSize="13sp"
                 app:backgroundTint="@android:color/white"
                 app:cornerRadius="20dp"
@@ -53,11 +46,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/foot_overview_info_bg"
-                android:fontFamily="@font/rubik_medium"
+                android:background="#F1F8FD"
+                android:fontFamily="@font/roboto_medium"
                 android:padding="12dp"
                 android:text="@string/analytics_zone_description"
-                android:textColor="#2E3743"
+                android:textColor="#0A2C4D"
                 android:textSize="13sp" />
 
             <com.google.android.material.card.MaterialCardView
@@ -94,16 +87,16 @@
                             android:layout_height="18dp"
                             android:contentDescription="@string/analytics_updated_icon_desc"
                             android:src="@drawable/ic_nav_history"
-                            app:tint="#576575" />
+                            app:tint="#343842" />
 
                         <TextView
                             android:id="@+id/analytics_heatmap_updated_at"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/analytics_updated_waiting"
-                            android:textColor="#576575"
+                            android:textColor="#343842"
                             android:textSize="16sp" />
 
                         <View
@@ -115,12 +108,12 @@
                             android:id="@+id/analytics_heatmap_status"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/status_chip_bg"
-                            android:fontFamily="@font/rubik_medium"
+
+                            android:fontFamily="@font/roboto_medium"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="4dp"
                             android:text="@string/analytics_pressure_status_placeholder"
-                            android:textColor="@color/dark_blue"
+                            android:textColor="#16181D"
                             android:textSize="14sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -145,7 +138,7 @@
                     <FrameLayout
                         android:layout_width="42dp"
                         android:layout_height="42dp"
-                        android:background="@drawable/foot_overview_analytics_icon_bg">
+                        android:background="@drawable/analytics_ataxia_icon_bg">
 
                         <ImageView
                             android:layout_width="22dp"
@@ -153,7 +146,7 @@
                             android:layout_gravity="center"
                             android:contentDescription="@string/analytics_ataxia_title"
                             android:src="@drawable/ic_circle_alert"
-                            app:tint="@color/white" />
+                            app:tint="#0D3B66" />
                     </FrameLayout>
 
                     <LinearLayout
@@ -166,9 +159,9 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/analytics_ataxia_title"
-                            android:textColor="@color/dark_blue"
+                            android:textColor="@color/blue"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
@@ -176,9 +169,9 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/analytics_ataxia_desc"
-                            android:textColor="#4A5462"
+                            android:textColor="#343842"
                             android:textSize="14sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -208,19 +201,19 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/analytics_steps_consistency"
-                            android:textColor="@color/dark_blue"
+                            android:textColor="@color/blue"
                             android:textSize="16sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/analytics_steps_period"
-                            android:textColor="#6F7F91"
-                            android:textSize="12sp" />
+                            android:textColor="#0D3B66"
+                            android:textSize="13sp" />
                     </LinearLayout>
 
                     <com.github.mikephil.charting.charts.BarChart
@@ -236,7 +229,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="70dp"
                 android:layout_marginTop="16dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:text="@string/analytics_share_health_report"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
@@ -254,7 +247,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/analytics_secure_pdf_note"
                 android:textColor="#4A5462"
@@ -290,7 +283,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/nav_history"
                 android:textColor="#6B7480"
@@ -316,7 +309,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/nav_home"
                 android:textColor="#6B7480"
@@ -342,7 +335,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/nav_settings"
                 android:textColor="#6B7480"
@@ -368,7 +361,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/nav_foot_overview"
                 android:textColor="#3F93E9"

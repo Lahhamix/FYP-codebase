@@ -23,28 +23,27 @@
             android:orientation="vertical"
             android:paddingHorizontal="14dp"
             android:paddingTop="14dp"
-            android:paddingBottom="96dp">
+            android:paddingBottom="16dp">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/foot_overview_title"
-                android:textColor="@color/dark_blue"
-                android:textSize="30sp"
+                android:textColor="@color/blue"
+                android:textSize="25sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/rubik_medium"
+                android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/foot_overview_subtitle"
                 android:textColor="#2D2F33"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textSize="12sp"/>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -81,7 +80,7 @@
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
                         android:text="3"
-                        android:textColor="@color/dark_blue"
+                        android:textColor="@color/blue"
                         android:textSize="26sp"
                         android:textStyle="bold"
                         app:layout_constraintBottom_toBottomOf="parent"
@@ -117,7 +116,7 @@
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
                         android:text="2"
-                        android:textColor="@color/dark_blue"
+                        android:textColor="@color/blue"
                         android:textSize="26sp"
                         android:textStyle="bold"
                         app:layout_constraintBottom_toBottomOf="parent"
@@ -146,15 +145,15 @@
                     android:layout_gravity="top"
                     android:layout_marginTop="4dp"
                     android:contentDescription="@string/foot_overview_tip_desc"
-                    android:src="@drawable/ic_life_buoy"
-                    app:tint="@color/dark_blue" />
+                    android:src="@drawable/ic_life_buoy_foot_overview"
+                    app:tint="#0D3C68" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-                    android:fontFamily="@font/rubik_medium"
+                    android:fontFamily="@font/roboto_medium"
                     android:lineSpacingExtra="2dp"
                     android:text="@string/foot_overview_tip"
                     android:textColor="#2E3743"
@@ -175,11 +174,11 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:background="@drawable/foot_overview_zone_pill_bg"
-                    android:fontFamily="@font/rubik_medium"
+                    android:fontFamily="@font/roboto_medium"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="4dp"
                     android:text="@string/zone_1_title"
-                    android:textColor="@color/dark_blue"
+                    android:textColor="@color/blue"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -187,7 +186,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:fontFamily="@font/rubik_medium"
+                    android:fontFamily="@font/roboto_medium"
                     android:gravity="center"
                     android:text="@string/zone_1_desc"
                     android:textColor="#586474"
@@ -230,16 +229,16 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/zone_1_metric_title"
-                            android:textColor="@color/dark_blue"
+                            android:textColor="@color/blue"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/zone_1_metric_subtitle"
                             android:textColor="#6E7785"
                             android:textSize="11sp" />
@@ -269,18 +268,17 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:fontFamily="@font/rubik_medium"
+                        android:fontFamily="@font/roboto_medium"
                         android:text="@string/view_full_analytics"
-                        android:textColor="@color/dark_blue"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/blue"
+                        android:textSize="16sp" />
 
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="@string/view_full_analytics"
                         android:src="@drawable/settings_chevron_right"
-                        app:tint="@color/dark_blue" />
+                        app:tint="@color/blue" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -298,11 +296,11 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:background="@drawable/foot_overview_zone_pill_bg"
-                    android:fontFamily="@font/rubik_medium"
+                    android:fontFamily="@font/roboto_medium"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="4dp"
                     android:text="@string/zone_2_title"
-                    android:textColor="@color/dark_blue"
+                    android:textColor="@color/blue"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -310,7 +308,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:fontFamily="@font/rubik_medium"
+                    android:fontFamily="@font/roboto_medium"
                     android:gravity="center"
                     android:text="@string/zone_2_desc"
                     android:textColor="#586474"
@@ -353,16 +351,16 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/zone_2_metric_title"
-                            android:textColor="@color/dark_blue"
+                            android:textColor="@color/blue"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/zone_2_metric_subtitle"
                             android:textColor="#6E7785"
                             android:textSize="11sp" />
@@ -392,18 +390,17 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:fontFamily="@font/rubik_medium"
+                        android:fontFamily="@font/roboto_medium"
                         android:text="@string/view_full_analytics"
-                        android:textColor="@color/dark_blue"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/blue"
+                        android:textSize="16sp" />
 
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="@string/view_full_analytics"
                         android:src="@drawable/settings_chevron_right"
-                        app:tint="@color/dark_blue" />
+                        app:tint="@color/blue" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -422,11 +419,11 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:background="@drawable/foot_overview_zone_pill_bg"
-                    android:fontFamily="@font/rubik_medium"
+                    android:fontFamily="@font/roboto_medium"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="4dp"
                     android:text="@string/zone_3_title"
-                    android:textColor="@color/dark_blue"
+                    android:textColor="@color/blue"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -434,7 +431,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:fontFamily="@font/rubik_medium"
+                    android:fontFamily="@font/roboto_medium"
                     android:gravity="center"
                     android:text="@string/zone_3_desc"
                     android:textColor="#586474"
@@ -477,16 +474,16 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/zone_3_metric_title"
-                            android:textColor="@color/dark_blue"
+                            android:textColor="@color/blue"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/rubik_medium"
+                            android:fontFamily="@font/roboto_medium"
                             android:text="@string/zone_3_metric_subtitle"
                             android:textColor="#6E7785"
                             android:textSize="11sp" />
@@ -516,18 +513,17 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:fontFamily="@font/rubik_medium"
+                        android:fontFamily="@font/roboto_medium"
                         android:text="@string/view_full_analytics"
-                        android:textColor="@color/dark_blue"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/blue"
+                        android:textSize="16sp" />
 
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="@string/view_full_analytics"
                         android:src="@drawable/settings_chevron_right"
-                        app:tint="@color/dark_blue" />
+                        app:tint="@color/blue" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -582,7 +578,7 @@
                 android:layout_height="22dp"
                 android:contentDescription="@string/nav_home"
                 android:src="@drawable/ic_nav_home"
-                    app:tint="#6B7480" />
+                app:tint="#6B7480" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -591,8 +587,8 @@
                 android:fontFamily="@font/rubik_medium"
                 android:gravity="center"
                 android:text="@string/nav_home"
-                    android:textColor="#6B7480"
-                    android:textSize="13sp" />
+                android:textColor="#6B7480"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <LinearLayout
