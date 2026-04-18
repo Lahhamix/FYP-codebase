@@ -2,6 +2,7 @@ package com.example.ble_viewer
 
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -190,7 +191,7 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
         val entries = values.mapIndexed { index, value -> BarEntry(index.toFloat(), value) }
 
         val dataSet = BarDataSet(entries, "").apply {
-            color = getColor(R.color.dark_blue)
+            color = Color.parseColor("#0D3B66")
             setDrawValues(false)
             highLightAlpha = 0
         }
