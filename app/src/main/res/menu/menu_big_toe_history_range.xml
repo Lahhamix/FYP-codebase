@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/history_30m"
+        android:title="@string/big_toe_last_30_minutes" />
+    <item
+        android:id="@+id/history_1h"
+        android:title="@string/big_toe_last_1_hour" />
+    <item
+        android:id="@+id/history_2h"
+        android:title="@string/big_toe_last_2_hours" />
+    <item
+        android:id="@+id/history_4h"
+        android:title="@string/big_toe_last_4_hours" />
+</menu>

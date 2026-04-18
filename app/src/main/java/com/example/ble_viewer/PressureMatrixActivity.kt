@@ -710,6 +710,11 @@ class PressureMatrixActivity : AppCompatActivity() {
             startActivity(Intent(this, PlantarFootAnalyticsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+        
+        findViewById<View>(R.id.zone_2_view_analytics)?.setOnClickListener {
+            startActivity(Intent(this, BigToeAnalyticsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
 
         findViewById<View>(R.id.zone_marker_1)?.setOnClickListener {
             scrollToAndHighlightZone(scrollView, zoneCard1)
@@ -724,7 +729,6 @@ class PressureMatrixActivity : AppCompatActivity() {
         }
 
         val zoneViews = listOf(
-            R.id.zone_2_view_analytics,
             R.id.zone_3_view_analytics,
             R.id.zone_card_1,
             R.id.zone_card_2,

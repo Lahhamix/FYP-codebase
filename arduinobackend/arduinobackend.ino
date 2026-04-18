@@ -260,23 +260,26 @@ void loop() {
         }
       }
 
-      if (ppgData.heartRateAvailable && ppgData.validHeartRate) {
-        String hrData = String(ppgData.beatsPerMinute);
-        EncryptedPayload hrEncrypted;
-        if (encryptHeartRate(hrData, hrEncrypted)) {
-          writeEncryptedValue(heartRateChar, hrEncrypted, "heart rate");
-        } else {
-          LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt heart rate data"));
+      // Match MAX30102_by_RF reference behavior: only publish when BOTH HR and SpO2 are valid.
+      if (ppgData.heartRateAvailable && ppgData.spo2Available && ppgData.validHeartRate && ppgData.validSPO2) {
+        {
+          String hrData = String(ppgData.beatsPerMinute);
+          EncryptedPayload hrEncrypted;
+          if (encryptHeartRate(hrData, hrEncrypted)) {
+            writeEncryptedValue(heartRateChar, hrEncrypted, "heart rate");
+          } else {
+            LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt heart rate data"));
+          }
         }
-      }
 
-      if (ppgData.spo2Available && ppgData.validSPO2) {
-        String spo2Data = String(ppgData.spO2, 1);
-        EncryptedPayload spo2Encrypted;
-        if (encryptSpO2(spo2Data, spo2Encrypted)) {
-          writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");
-        } else {
-          LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt SpO2 data"));
+        {
+          String spo2Data = String(ppgData.spO2, 1);
+          EncryptedPayload spo2Encrypted;
+          if (encryptSpO2(spo2Data, spo2Encrypted)) {
+            writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");
+          } else {
+            LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt SpO2 data"));
+          }
         }
       }
 
@@ -386,6 +389,8 @@ void loop() {
 
     pressureStreamingStarted = false;  // so next connection prints "Streaming started" again
     LOG_SYSTEM(Serial.println("🔌 Disconnected."));
+    // Ensure peripheral resumes advertising after central disconnects (stack-dependent).
+    BLE.advertise();
   } else {
     // No BLE: do not scan pressure or print pressure (same as other sensors — only active when connected).
     delay(MAIN_LOOP_DELAY_MS);

@@ -44,13 +44,16 @@
 #define PPG_INTERRUPT_PIN 13
 
 // RF window length: seconds × 25 Hz = samples per HR/SpO2 update (smaller = faster prints, less stable). Was 4s/100 samples.
-#define PPG_RF_ST_SECONDS 2
+#define PPG_RF_ST_SECONDS 4
 
 // Per main loop, drain up to this many FIFO samples (MAX30102 FIFO depth 32) so slow loops catch up instead of 1 sample/iteration.
-#define PPG_MAX_SAMPLES_PER_LOOP 28
+// Reference sketch reads exactly 1 sample per step (no FIFO "catch-up" bursts).
+// Keeping this at 1 makes the sampling more uniform and aligns periodicity detection.
+#define PPG_MAX_SAMPLES_PER_LOOP 100
 
 // When interrupt mode + HR & SpO2 valid: print this many "red,ir" CSV lines (set to 100 to match MAX30102_by_RF.ino full buffer dump)
-#define PPG_RED_IR_CSV_LINES 2
+// Match the reference sketch's full window dump when valid.
+#define PPG_RED_IR_CSV_LINES 0
 
 // Main loop delay after one full pass (lower = faster PPG window fill; higher = lower CPU / BLE load)
 #define MAIN_LOOP_DELAY_MS 2

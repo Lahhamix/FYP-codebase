@@ -165,6 +165,29 @@
     <string name="analytics_secure_pdf_note">A secure PDF report will be generated for your clinician.</string>
     <string name="toast_share_report_coming_soon">Share report action coming soon</string>
 
+    <string name="big_toe_title">Big Toe</string>
+    <string name="big_toe_banner">Your vitals are currently within the Normal Range.\nMeasurements are taken every 15 minutes by your smart sock.</string>
+    <string name="big_toe_spo2_title">Oxygen (SpO₂)</string>
+    <string name="big_toe_last_30_minutes">Last 30 minutes</string>
+    <string name="big_toe_last_1_hour">Last 1 hour</string>
+    <string name="big_toe_last_2_hours">Last 2 hours</string>
+    <string name="big_toe_last_4_hours">Last 4 hours</string>
+    <string name="big_toe_range_30m">30m</string>
+    <string name="big_toe_range_1h">1h</string>
+    <string name="big_toe_range_2h">2h</string>
+    <string name="big_toe_range_4h">4h</string>
+    <string name="big_toe_hr_range">Range: 60 - 100</string>
+    <string name="big_toe_spo2_range">Range: 95 - 100</string>
+    <string name="big_toe_bp_placeholder">120/80 mmHg</string>
+    <string name="big_toe_bp_hypotension">HYPOTENSION</string>
+    <string name="big_toe_bp_normal">NORMAL</string>
+    <string name="big_toe_bp_hypertension">HYPERTENSION</string>
+    <string name="big_toe_bp_detail_hypo_line">Low Blood Pressure</string>
+    <string name="big_toe_bp_detail_norm_line">Blood Pressure in Normal Range</string>
+    <string name="big_toe_bp_detail_hyper_line">High Blood Pressure</string>
+    <string name="big_toe_what_is_spo2_title">What is SpO₂?</string>
+    <string name="big_toe_what_is_spo2_desc">Oxygen saturation measures the percentage of oxygen-carrying hemoglobin in your blood. Healthy levels for most adults are above 95%.</string>
+
     <string name="toast_edit_profile_coming_soon">Edit profile coming soon</string>
     <string name="toast_bluetooth_permission_connect">Bluetooth permission required to connect</string>
     <string name="toast_bluetooth_not_available">Bluetooth is not available</string>

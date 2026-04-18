@@ -91,7 +91,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fadeTargets: List<View>
 
     private var bluetoothAdapter: BluetoothAdapter? = null
-    private var bluetoothGatt: BluetoothGatt? = null
+    /** Backed by [BleGattSession] so GATT outlives this Activity when navigating to other screens. */
+    private var bluetoothGatt: BluetoothGatt?
+        get() = BleGattSession.gatt
+        set(value) {
+            BleGattSession.gatt = value
+        }
     private var lastDeviceAddress: String? = null
     private var isDeviceConnected = false
     private var hasAttemptedConnection = false
@@ -195,12 +200,14 @@ class MainActivity : AppCompatActivity() {
                             latestBpm = bpm
                             heartRateText.text = formatValueWithUnit(bpm.toString(), "BPM")
                             heartStatus.text = heartRateState(bpm)
+                            VitalsHistoryStore.appendHeartRate(this@MainActivity, bpm)
                         }
                         spo2CharUuid.toString() -> {
                             val spo2 = AESCrypto.decryptSpO2(encryptedBytes).trim().toDoubleOrNull() ?: return@runOnUiThread
                             latestSpo2 = spo2
                             spo2Text.text = formatValueWithUnit(String.format(Locale.US, "%.1f", spo2), "%")
                             spo2Status.text = spo2State(spo2)
+                            VitalsHistoryStore.appendSpo2(this@MainActivity, spo2)
                         }
                         edemaCharUuid.toString() -> {
                             val edemaPayload = AESCrypto.decryptFlex(encryptedBytes).trim()
@@ -520,8 +527,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         } else {
-            isDeviceConnected = false
-            setDisconnectedMode(true)
+            // No connect/reconnect extras — e.g. FLAG_ACTIVITY_SINGLE_TOP from Big Toe / foot nav "Home".
+            // Must not clear session: BLE is still up; only refresh overlay vs live GATT.
+            reconcileDisconnectedOverlay()
         }
     }
 
@@ -745,10 +753,12 @@ class MainActivity : AppCompatActivity() {
             }
             isKeyExchangeInProgress = keyExchangeManager != null
             
+            // Application context: avoids stack/Activity lifecycle quirks that can drop the connection
+            // when opening other Activities (Foot Overview, analytics, etc.).
             bluetoothGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                device.connectGatt(this, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+                device.connectGatt(applicationContext, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
             } else {
-                device.connectGatt(this, false, gattCallback)
+                device.connectGatt(applicationContext, false, gattCallback)
             }
             
             if (bluetoothGatt == null) {
@@ -1128,8 +1138,8 @@ class MainActivity : AppCompatActivity() {
             characteristicBuffers.values.forEach { it.reset() }
             characteristicBuffers.clear()
         }
-        bluetoothGatt?.close()
-        bluetoothGatt = null
+        BleGattSession.gatt?.close()
+        BleGattSession.gatt = null
         stopDataLogging()
         keyExchangeManager?.close()
         keyExchangeManager = null
@@ -1159,6 +1169,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun reconcileDisconnectedOverlay() {
+        // After navigation (e.g. Foot Overview → analytics), MainActivity may be recreated while
+        // BleGattSession still holds a live GATT. Instance flags reset to defaults, so we must align
+        // with the system ACL/GATT connection state or we falsely show "Sock Offline".
+        val sessionGatt = BleGattSession.gatt
+        val btManager = getSystemService(BluetoothManager::class.java)
+        if (sessionGatt != null && btManager != null) {
+            val sysState = try {
+                btManager.getConnectionState(sessionGatt.device, BluetoothProfile.GATT)
+            } catch (e: SecurityException) {
+                Log.w(TAG, "getConnectionState: ${e.message}")
+                null
+            }
+            if (sysState == BluetoothProfile.STATE_CONNECTED) {
+                isDeviceConnected = true
+                hasAttemptedConnection = true
+                setDisconnectedMode(false)
+                updateDashboardStatus(getLocalizedConnectedLabel(), DashboardStatusVisual.CHECK)
+                return
+            }
+        }
+
         if (!hasAttemptedConnection && !isDeviceConnected && bluetoothGatt == null) {
             setDisconnectedMode(true)
             return
@@ -1464,7 +1495,11 @@ class MainActivity : AppCompatActivity() {
         tts?.shutdown()
         tts = null
         super.onDestroy()
-        cleanup()
+        // Only tear down BLE when this Activity is actually finishing (user leaves the task / backs out).
+        // Navigating to Foot Overview / analytics must not close GATT.
+        if (isFinishing) {
+            cleanup()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

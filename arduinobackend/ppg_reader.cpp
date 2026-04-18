@@ -3,9 +3,16 @@
  */
 
 #include "ppg_reader.h"
+#include <ArduinoBLE.h>
 #include <Wire.h>
 #include <math.h>
 #include "serial_log.h"
+
+static inline void ble_yield() {
+  // Keep the BLE stack responsive during long PPG reads.
+  BLE.poll();
+  yield();
+}
 
 // =============================================================================
 // MAX30102 I2C driver (internal)
@@ -374,6 +381,7 @@ static bool readNextSampleFromFifo(uint32_t *outRed, uint32_t *outIr, uint32_t t
     if (!maxim_max30102_read_reg(REG_FIFO_RD_PTR, &rd)) return false;
     if ((wr & 0x1Fu) != (rd & 0x1Fu)) break;
 
+    ble_yield();
     delay(1);
   }
   return maxim_max30102_read_fifo(outRed, outIr);
@@ -396,7 +404,7 @@ static bool ppg_read_one_sample(uint32_t *outRed, uint32_t *outIr) {
   {
     const uint32_t tWait = millis();
     while (digitalRead(PPG_INTERRUPT_PIN) == HIGH) {
-      yield();
+      ble_yield();
       if ((millis() - tWait) >= PPG_INT_WAIT_MS) {
         break;
       }
@@ -461,7 +469,7 @@ PPGData ppg_tick() {
       irBuffer[collectIdx] = ir;
       collectIdx++;
       gained++;
-      yield();
+      ble_yield();
     }
 
     if (gained == 0) {
@@ -487,23 +495,6 @@ PPGData ppg_tick() {
     return stale;
   }
 
-#if !PPG_USE_INTERRUPT_PIN
-  uint64_t irSum = 0;
-  for (int i = 0; i < BUFFER_SIZE; i++) irSum += irBuffer[i];
-  const uint32_t irMean = (uint32_t)(irSum / BUFFER_SIZE);
-  if (irMean < PPG_FINGER_IR_THRESHOLD) {
-    const uint32_t now = millis();
-    if (now - lastNoFingerPrintMs > 750) {
-      lastNoFingerPrintMs = now;
-      LOG_PPG(Serial.println("[PPG] 🛑 No finger detected"));
-    }
-    collectIdx = 0;
-    PPGData stale = latestPublished;
-    stale.newWindow = false;
-    return stale;
-  }
-#endif
-
   float spo2 = -999.0f;
   int8_t spo2Valid = 0;
   int32_t hr = -999;
@@ -522,11 +513,13 @@ PPGData ppg_tick() {
   latestPublished.correl = correl;
   latestPublished.validHeartRate = hrValid;
   latestPublished.validSPO2 = spo2Valid;
-  latestPublished.heartRateAvailable = (hrValid == 1);
-  latestPublished.spo2Available = (spo2Valid == 1);
+  // Match the reference sketch behavior: treat a window as usable only when BOTH HR and SpO2 are valid.
+  const bool bothValid = (hrValid == 1) && (spo2Valid == 1);
+  latestPublished.heartRateAvailable = bothValid;
+  latestPublished.spo2Available = bothValid;
   latestPublished.beatsPerMinute = hr;
   latestPublished.spO2 = spo2;
-  latestPublished.fingerDetected = true;
+  latestPublished.fingerDetected = bothValid;
   latestPublished.newWindow = true;
 
   collectIdx = 0;

@@ -87,11 +87,16 @@ void loop() {
 
   // Send samples only when algorithm indicates valid HR+SpO2
   if (ch_hr_valid && ch_spo2_valid) {
-    for (i = 0; i < BUFFER_SIZE; ++i) {
-      Serial.print(aun_red_buffer[i]);
-      Serial.print(",");
-      Serial.println(aun_ir_buffer[i]);
-    }
+    Serial.print(F("[PPG] HR="));
+    Serial.print(n_heart_rate);
+    Serial.print(F(" BPM, SpO2="));
+    Serial.print(n_spo2, 1);
+    Serial.println(F("%"));
+    // for (i = 0; i < BUFFER_SIZE; ++i) {
+    //   Serial.print(aun_red_buffer[i]);
+    //   Serial.print(",");
+    //   Serial.println(aun_ir_buffer[i]);
+    // }
   }
 
   delay(100);  // Optional delay to control data rate
