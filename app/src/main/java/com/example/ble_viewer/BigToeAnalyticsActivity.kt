@@ -1,9 +1,12 @@
 package com.example.ble_viewer
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -17,6 +20,13 @@ import java.util.Locale
 import java.text.NumberFormat
 
 class BigToeAnalyticsActivity : AppCompatActivity() {
+
+    companion object {
+        private const val PREFS_NAME = "SolematePrefs"
+    }
+
+    private lateinit var toolbarUsername: TextView
+    private lateinit var toolbarProfileImage: ImageView
 
     private enum class HistoryWindow(val ms: Long, val labelRes: Int) {
         M30(30L * 60_000L, R.string.big_toe_last_30_minutes),
@@ -56,6 +66,10 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         spo2Updated = findViewById(R.id.big_toe_spo2_updated)
         spo2Period = findViewById(R.id.big_toe_spo2_period)
 
+        toolbarUsername = findViewById(R.id.toolbar_username)
+        toolbarProfileImage = findViewById(R.id.toolbar_profile_image)
+        bindToolbar()
+
         setupCharts()
         bindBottomNavigation()
         bindActions()
@@ -65,6 +79,46 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
 
         refreshHeartRate()
         refreshSpo2()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateToolbarUserFromPrefs()
+    }
+
+    private fun bindToolbar() {
+        updateToolbarUserFromPrefs()
+
+        findViewById<View>(R.id.profile_card).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+
+        toolbarUsername.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+    }
+
+    private fun updateToolbarUserFromPrefs() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val username = prefs.getString("username", getString(R.string.username_placeholder))
+            .orEmpty()
+            .ifBlank { getString(R.string.username_placeholder) }
+
+        toolbarUsername.text = username
+
+        val imagePath = prefs.getString("profile_image_path", null)
+        if (!imagePath.isNullOrBlank()) {
+            val bitmap = BitmapFactory.decodeFile(imagePath)
+            if (bitmap != null) {
+                toolbarProfileImage.setImageBitmap(bitmap)
+            } else {
+                toolbarProfileImage.setImageResource(R.drawable.profile)
+            }
+        } else {
+            toolbarProfileImage.setImageResource(R.drawable.profile)
+        }
     }
 
     private fun showHistoryPopup(anchor: android.view.View, forHr: Boolean) {
