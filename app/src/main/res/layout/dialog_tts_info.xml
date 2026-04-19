@@ -70,7 +70,7 @@
         android:layoutDirection="locale"
         android:textDirection="locale"
         android:text="@string/tts_dialog_do_not_show_again"
-        android:textColor="#2F3D4A"
+        android:textColor="#0D3B66"
         android:textSize="14sp" />
 
     <LinearLayout

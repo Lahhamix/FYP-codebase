@@ -1182,6 +1182,9 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).notify(DEVICE_ALERTS_NOTIFICATION_ID, notification)
         lastAlertNotificationMessage = alertMessage
         lastAlertNotificationAtMs = now
+
+        // Auto-share now dispatches email only when an alert is raised.
+        AutoShareScheduler.enqueueAlert(applicationContext, alertMessage)
     }
 
     private fun isDeviceAlertsEnabled(): Boolean {

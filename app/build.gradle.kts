@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,18 @@ plugins {
 android {
     namespace = "com.example.ble_viewer"
     compileSdk = 34
+
+    val localProperties = Properties().apply {
+        val localPropsFile = rootProject.file("local.properties")
+        if (localPropsFile.exists()) {
+            localPropsFile.inputStream().use { load(it) }
+        }
+    }
+
+    val sendGridApiKey = (localProperties.getProperty("SENDGRID_API_KEY") ?: "").trim()
+    val sendGridFromEmail = (localProperties.getProperty("SENDGRID_FROM_EMAIL") ?: "").trim()
+    val sendGridApiBaseUrl = (localProperties.getProperty("SENDGRID_API_BASE_URL") ?: "https://api.sendgrid.com").trim()
+    val autoShareRecipientFallback = (localProperties.getProperty("AUTO_SHARE_RECIPIENT_FALLBACK") ?: "").trim()
 
     defaultConfig {
         applicationId = "com.example.ble_viewer"
@@ -18,6 +32,11 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "SENDGRID_API_KEY", "\"$sendGridApiKey\"")
+        buildConfigField("String", "SENDGRID_FROM_EMAIL", "\"$sendGridFromEmail\"")
+        buildConfigField("String", "SENDGRID_API_BASE_URL", "\"$sendGridApiBaseUrl\"")
+        buildConfigField("String", "AUTO_SHARE_RECIPIENT_FALLBACK", "\"$autoShareRecipientFallback\"")
     }
 
     buildTypes {
@@ -37,6 +56,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         compose = false
     }
     packaging {
@@ -55,6 +75,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.1.1")
     implementation("com.github.angads25:toggle:1.1.0")
     implementation("com.github.yalantis:ucrop:2.2.8")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Charting library
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")

@@ -633,6 +633,7 @@
 
 
                 <LinearLayout
+                    android:id="@+id/settings_contact_support_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -941,16 +942,28 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/settings_contact_support_row"
+                    android:id="@+id/settings_auto_share_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/settings_icon_circle_bg"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_share_report"
+                        app:tint="#4B6B89" />
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -964,15 +977,19 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/settings_auto_share_summary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/roboto_medium"
                             android:text="@string/settings_auto_share_desc"
                             android:textColor="#8F9AA6"
-                            android:textSize="13sp" />
+                            android:textSize="13sp"
+                            android:ellipsize="end"
+                            android:maxLines="2" />
                     </LinearLayout>
 
                     <com.github.angads25.toggle.widget.LabeledSwitch
+                        android:id="@+id/settings_auto_share_switch"
                         android:layout_width="60dp"
                         android:layout_height="36dp"
                         android:textSize="0sp"
@@ -982,6 +999,42 @@
                         app:on="false"
                         app:textOff=""
                         app:textOn="" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/settings_auto_share_recipients_count"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/roboto_medium"
+                        android:text="@string/settings_auto_share_recipients_count"
+                        android:textColor="@color/blue"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/settings_auto_share_manage_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:fontFamily="@font/rubik_medium"
+                        android:minHeight="40dp"
+                        android:paddingHorizontal="14dp"
+                        android:text="@string/settings_auto_share_manage_recipients"
+                        android:textAllCaps="false"
+                        android:textColor="#2F5A80"
+                        android:textSize="13sp"
+                        app:backgroundTint="@android:color/white"
+                        app:cornerRadius="14dp"
+                        app:elevation="0dp"
+                        app:strokeColor="#4E7EA8"
+                        app:strokeWidth="1dp" />
                 </LinearLayout>
 
                 <TextView

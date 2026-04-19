@@ -8,6 +8,8 @@ class SolemateApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        AutoShareScheduler.reschedule(this)
+
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 TextSizeScaleManager.applyTo(activity)

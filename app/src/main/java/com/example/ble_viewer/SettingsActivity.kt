@@ -10,7 +10,10 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.speech.tts.TextToSpeech
+import android.util.Log
+import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.animation.AnimationUtils
@@ -32,11 +35,18 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
+import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.button.MaterialButton
 import com.github.angads25.toggle.widget.LabeledSwitch
 import com.yalantis.ucrop.UCrop
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.SecureRandom
 import java.util.Locale
 import android.widget.FrameLayout
 
@@ -51,6 +61,19 @@ class SettingsActivity : AppCompatActivity() {
         private const val KEY_VOICE_READ_HINTS_ENABLED = "voice_read_hints_enabled"
         private const val KEY_VOICE_READ_HINTS_DIALOG_SEEN = "voice_read_hints_dialog_seen"
         private const val KEY_PROFILE_IMAGE_PATH = "profile_image_path"
+        private const val KEY_AUTO_SHARE_ENABLED = "auto_share_enabled"
+        private const val KEY_AUTO_SHARE_EMAIL = "auto_share_email"
+        private const val KEY_AUTO_SHARE_VERIFIED_EMAIL = "auto_share_verified_email"
+        private const val KEY_AUTO_SHARE_VERIFIED_EMAILS = "auto_share_verified_emails"
+        private const val KEY_AUTO_SHARE_VERIFIED_EMAILS_ORDERED = "auto_share_verified_emails_ordered"
+        private const val KEY_AUTO_SHARE_PENDING_EMAIL = "auto_share_pending_email"
+        private const val KEY_AUTO_SHARE_PENDING_CODE = "auto_share_pending_code"
+        private const val KEY_AUTO_SHARE_PENDING_EXPIRES_AT = "auto_share_pending_expires_at"
+        private const val KEY_AUTO_SHARE_DISABLE_CONFIRM_SKIP = "auto_share_disable_confirm_skip"
+        private const val KEY_AUTO_SHARE_TIME_HOUR = "auto_share_time_hour"
+        private const val KEY_AUTO_SHARE_TIME_MINUTE = "auto_share_time_minute"
+        private const val DEFAULT_AUTO_SHARE_HOUR = 9
+        private const val DEFAULT_AUTO_SHARE_MINUTE = 0
         private const val FEEDBACK_FORM_URL_EN = "https://docs.google.com/forms/d/e/1FAIpQLSe0C7NxZ-hUC-oVMoHSYUianMU36Q1E4xyMS07JrURUJOXjEw/viewform?usp=dialog"
         private const val FEEDBACK_FORM_URL_AR = "https://docs.google.com/forms/d/e/1FAIpQLSeV57vy8dmqPhhS2ElAWk40UaOpFfPHfTvdEUbzHOTVdCdsEQ/viewform?usp=publish-editor"
         private const val FEEDBACK_FORM_URL_FR = "https://docs.google.com/forms/d/e/1FAIpQLSfGYhRvRHMw5pOEZHiQuD2yoHH5n2Kx5rEdt7noJBoZb0n1QQ/viewform?usp=publish-editor"
@@ -65,10 +88,14 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var settingsScrollView: View
     private lateinit var textSizeSlider: SeekBar
     private lateinit var textSizeValue: TextView
+    private lateinit var settingsAutoShareSummary: TextView
+    private lateinit var settingsAutoShareRecipientsCount: TextView
+    private lateinit var autoShareSwitch: LabeledSwitch
     private lateinit var deviceAlertsSwitch: LabeledSwitch
     private lateinit var voiceReadHintsSwitch: LabeledSwitch
     private lateinit var voiceReadHintsRow: LinearLayout
     private var suppressDeviceAlertsToggleCallback = false
+    private var suppressAutoShareToggleCallback = false
     private var suppressVoiceReadToggleCallback = false
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -181,13 +208,18 @@ class SettingsActivity : AppCompatActivity() {
         settingsScrollView = findViewById(R.id.settings_scroll_view)
         textSizeSlider = findViewById(R.id.text_size_slider)
         textSizeValue = findViewById(R.id.settings_text_size_value)
+        settingsAutoShareSummary = findViewById(R.id.settings_auto_share_summary)
+        settingsAutoShareRecipientsCount = findViewById(R.id.settings_auto_share_recipients_count)
+        autoShareSwitch = findViewById(R.id.settings_auto_share_switch)
         deviceAlertsSwitch = findViewById(R.id.settings_device_alerts_switch)
         voiceReadHintsSwitch = findViewById(R.id.settings_voice_read_hints_switch)
         voiceReadHintsRow = findViewById(R.id.settings_voice_read_hints_row)
         updateUsername()
         updateProfileImage()
         updateLanguageChip()
+        updateAutoShareSummary()
         setupAccessibilityToggles()
+        setupAutoShareToggle()
         setupReadableResourceRows()
         setupTextSizeControls()
         setupSecurityAndAccessibilityTts()
@@ -254,6 +286,20 @@ class SettingsActivity : AppCompatActivity() {
                 speakSettingsText(getString(R.string.settings_language) + ". " + getString(R.string.settings_choose_language))
             }
             true
+        }
+
+        findViewById<LinearLayout>(R.id.settings_auto_share_row).setOnClickListener {
+            autoShareSwitch.performClick()
+        }
+        findViewById<LinearLayout>(R.id.settings_auto_share_row).setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(buildAutoShareSpeech())
+            }
+            true
+        }
+
+        findViewById<MaterialButton>(R.id.settings_auto_share_manage_button).setOnClickListener {
+            showAutoShareDialog()
         }
 
         findViewById<LinearLayout>(R.id.settings_terms_of_use_row).setOnClickListener {
@@ -616,6 +662,526 @@ class SettingsActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    private fun showAutoShareDialog() {
+        showAutoShareDialog(triggeredByToggle = false)
+    }
+
+    private fun showAutoShareDialog(triggeredByToggle: Boolean) {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_auto_share, null)
+        TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
+
+        val emailField = dialogView.findViewById<EditText>(R.id.auto_share_dialog_email)
+        val verifyEmailButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_verify_email_button)
+        val codeContainer = dialogView.findViewById<LinearLayout>(R.id.auto_share_dialog_code_container)
+        val codeField = dialogView.findViewById<EditText>(R.id.auto_share_dialog_code)
+        val resendContainer = dialogView.findViewById<LinearLayout>(R.id.auto_share_dialog_resend_container)
+        val resendButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_resend_button)
+        val resendTimerText = dialogView.findViewById<TextView>(R.id.auto_share_dialog_resend_timer)
+        val sharedWithLabel = dialogView.findViewById<TextView>(R.id.auto_share_dialog_shared_with_label)
+        val emailLabel = dialogView.findViewById<TextView>(R.id.auto_share_dialog_email_label)
+        val emailRow = dialogView.findViewById<LinearLayout>(R.id.auto_share_dialog_email_row)
+        val verifiedSection = dialogView.findViewById<LinearLayout>(R.id.auto_share_dialog_verified_section)
+        val verifiedList = dialogView.findViewById<LinearLayout>(R.id.auto_share_dialog_verified_list)
+        val addRecipientButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_add_recipient_button)
+        val cancelButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_cancel_button)
+        val saveButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_save_button)
+
+        val resendCooldownMs = 60_000L
+        var resendTimer: CountDownTimer? = null
+        var autoShareDialog: AlertDialog? = null
+
+        val verifiedEmails = getVerifiedAutoShareEmails(prefs).toMutableList()
+
+        fun persistVerifiedEmails() {
+            val normalized = verifiedEmails
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .toMutableList()
+
+            val orderedJson = JSONArray(normalized).toString()
+
+            val editor = prefs.edit()
+                .putString(KEY_AUTO_SHARE_VERIFIED_EMAILS_ORDERED, orderedJson)
+                .putStringSet(KEY_AUTO_SHARE_VERIFIED_EMAILS, normalized.toCollection(LinkedHashSet()))
+
+            val primary = normalized.firstOrNull().orEmpty()
+            if (primary.isNotBlank()) {
+                editor.putString(KEY_AUTO_SHARE_EMAIL, primary)
+                editor.putString(KEY_AUTO_SHARE_VERIFIED_EMAIL, primary)
+            } else {
+                editor.remove(KEY_AUTO_SHARE_EMAIL)
+                editor.remove(KEY_AUTO_SHARE_VERIFIED_EMAIL)
+            }
+            editor.apply()
+        }
+
+        fun renderVerifiedEmails() {
+            verifiedList.removeAllViews()
+            val hasRecipients = verifiedEmails.isNotEmpty()
+            sharedWithLabel.visibility = if (hasRecipients) View.VISIBLE else View.GONE
+            verifiedList.visibility = if (hasRecipients) View.VISIBLE else View.GONE
+            verifiedSection.visibility = if (hasRecipients) View.VISIBLE else View.GONE
+            if (verifiedEmails.isEmpty()) return
+
+            val density = resources.displayMetrics.density
+
+            verifiedEmails.forEach { email ->
+                val emailContainer = LinearLayout(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        bottomMargin = (8 * density).toInt()
+                    }
+                    orientation = LinearLayout.HORIZONTAL
+                    setBackgroundResource(R.drawable.settings_outline_button_bg)
+                    setPadding(
+                        (12 * density).toInt(),
+                        (8 * density).toInt(),
+                        (12 * density).toInt(),
+                        (8 * density).toInt()
+                    )
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                }
+
+                val emailText = TextView(this).apply {
+                    text = email
+                    setTextColor(Color.parseColor("#1A416B"))
+                    textSize = 15f
+                    layoutParams = LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+                }
+
+                val deleteButton = ImageButton(this).apply {
+                    setImageResource(R.drawable.ic_trash_2)
+                    setBackgroundColor(Color.TRANSPARENT)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        (38 * density).toInt(),
+                        (38 * density).toInt()
+                    ).apply {
+                        marginStart = (12 * density).toInt()
+                    }
+                    setOnClickListener {
+                        val dialogView = LayoutInflater.from(this@SettingsActivity)
+                            .inflate(R.layout.dialog_stop_sharing, null)
+
+                        val titleView = dialogView.findViewById<TextView>(R.id.stop_sharing_title)
+                        val messageView = dialogView.findViewById<TextView>(R.id.stop_sharing_message)
+                        val cancelButton = dialogView.findViewById<MaterialButton>(R.id.stop_sharing_cancel_button)
+                        val removeButton = dialogView.findViewById<MaterialButton>(R.id.stop_sharing_remove_button)
+
+                        titleView.text = "Stop Sharing?"
+                        messageView.text = "By removing $email, they won't be receiving your health alerts anymore."
+
+                        val dialog = AlertDialog.Builder(this@SettingsActivity)
+                            .setView(dialogView)
+                            .create()
+
+                        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+                        cancelButton.setOnClickListener {
+                            dialog.dismiss()
+                        }
+
+                        removeButton.setOnClickListener {
+                            val wasAutoShareEnabled = prefs.getBoolean(KEY_AUTO_SHARE_ENABLED, false)
+                            verifiedEmails.removeAll { it.equals(email, ignoreCase = true) }
+                            persistVerifiedEmails()
+                            renderVerifiedEmails()
+
+                            if (verifiedEmails.isEmpty() && wasAutoShareEnabled) {
+                                prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+                                AutoShareScheduler.cancel(this@SettingsActivity)
+                                setAutoShareSwitchChecked(false)
+                                updateAutoShareSummary()
+                                autoShareDialog?.dismiss()
+                                showAutoShareTurnedOffDialog()
+                            }
+
+                            Thread {
+                                val (sent, errorDetail) = sendSharingStoppedEmail(email)
+                                if (!sent) {
+                                    runOnUiThread {
+                                        val detail = errorDetail?.take(120).orEmpty()
+                                        val message = if (detail.isNotBlank()) {
+                                            "Recipient removed, but update email failed (" + detail + ")"
+                                        } else {
+                                            "Recipient removed, but update email failed"
+                                        }
+                                        Toast.makeText(this@SettingsActivity, message, Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }.start()
+                            dialog.dismiss()
+                        }
+
+                        dialog.show()
+                    }
+                }
+
+                emailContainer.addView(emailText)
+                emailContainer.addView(deleteButton)
+                verifiedList.addView(emailContainer)
+            }
+        }
+
+        fun resetEntryFields() {
+            emailField.text?.clear()
+            codeField.text?.clear()
+            codeContainer.visibility = View.GONE
+            resendContainer.visibility = View.GONE
+            resendTimerText.visibility = View.GONE
+            resendButton.alpha = 1f
+            resendButton.text = getString(R.string.settings_auto_share_dialog_resend)
+            verifyEmailButton.text = getString(R.string.settings_auto_share_dialog_verify)
+            verifyEmailButton.isEnabled = true
+            verifyEmailButton.visibility = View.VISIBLE
+        }
+
+        fun setRecipientEntryVisible(visible: Boolean) {
+            emailLabel.visibility = if (visible) View.VISIBLE else View.GONE
+            emailRow.visibility = if (visible) View.VISIBLE else View.GONE
+            if (!visible) {
+                codeContainer.visibility = View.GONE
+                resendContainer.visibility = View.GONE
+                resendTimerText.visibility = View.GONE
+            }
+        }
+
+        fun cooldownRemainingMs(): Long {
+            val lastSentAt = prefs.getLong("auto_share_last_code_sent_at", 0L)
+            if (lastSentAt <= 0L) return 0L
+            return (lastSentAt + resendCooldownMs - System.currentTimeMillis()).coerceAtLeast(0L)
+        }
+
+        fun updateResendForCooldown(remainingMs: Long) {
+            val isVerifyMode = codeContainer.visibility == View.VISIBLE && !codeField.text.isNullOrBlank()
+            if (isVerifyMode) {
+                resendButton.isEnabled = true
+                resendButton.alpha = 1f
+                resendTimerText.visibility = View.GONE
+                return
+            }
+
+            if (remainingMs <= 0L) {
+                resendButton.isEnabled = true
+                resendButton.alpha = 1f
+                resendTimerText.visibility = View.GONE
+            } else {
+                resendButton.isEnabled = false
+                resendButton.alpha = 0.45f
+                resendTimerText.visibility = View.VISIBLE
+                resendTimerText.text = getString(
+                    R.string.settings_auto_share_resend_in,
+                    (remainingMs / 1000L).toInt().coerceAtLeast(1)
+                )
+            }
+        }
+
+        fun startResendCooldown(remainingMs: Long) {
+            resendTimer?.cancel()
+            updateResendForCooldown(remainingMs)
+            if (remainingMs <= 0L) return
+
+            resendTimer = object : CountDownTimer(remainingMs, 1000L) {
+                override fun onTick(millisUntilFinished: Long) {
+                    updateResendForCooldown(millisUntilFinished)
+                }
+
+                override fun onFinish() {
+                    updateResendForCooldown(0L)
+                }
+            }.start()
+        }
+
+        fun sendVerificationCode(targetEmail: String) {
+            val verificationCode = generateVerificationCode()
+            verifyEmailButton.isEnabled = false
+
+            Thread {
+                val (sent, errorDetail) = sendVerificationEmail(targetEmail, verificationCode)
+                runOnUiThread {
+                    verifyEmailButton.isEnabled = true
+                    if (!sent) {
+                        val detail = errorDetail?.take(140).orEmpty()
+                        val message = if (detail.isNotBlank()) {
+                            getString(R.string.settings_auto_share_send_failed) + " (" + detail + ")"
+                        } else {
+                            getString(R.string.settings_auto_share_send_failed)
+                        }
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        if (verifiedEmails.isEmpty()) {
+                            prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+                            AutoShareScheduler.cancel(this@SettingsActivity)
+                            setAutoShareSwitchChecked(false)
+                            updateAutoShareSummary()
+                        }
+                        return@runOnUiThread
+                    }
+
+                    prefs.edit()
+                        .putString(KEY_AUTO_SHARE_PENDING_EMAIL, targetEmail)
+                        .putString(KEY_AUTO_SHARE_PENDING_CODE, verificationCode)
+                        .putLong(KEY_AUTO_SHARE_PENDING_EXPIRES_AT, System.currentTimeMillis() + 24L * 60L * 60L * 1000L)
+                        .putLong("auto_share_last_code_sent_at", System.currentTimeMillis())
+                        .apply()
+
+                    verifyEmailButton.visibility = View.GONE
+                    codeContainer.visibility = View.VISIBLE
+                    resendContainer.visibility = View.VISIBLE
+                    resendButton.text = getString(R.string.settings_auto_share_dialog_resend)
+                    codeField.text?.clear()
+                    codeField.requestFocus()
+                    Toast.makeText(
+                        this,
+                        getString(R.string.settings_auto_share_code_sent_to, targetEmail),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    startResendCooldown(resendCooldownMs)
+                }
+            }.start()
+        }
+
+        codeContainer.visibility = View.GONE
+        resendContainer.visibility = View.GONE
+        resendTimerText.visibility = View.GONE
+        renderVerifiedEmails()
+
+        verifyEmailButton.setOnClickListener {
+            val email = emailField.text?.toString()?.trim().orEmpty()
+            if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                emailField.error = getString(R.string.settings_auto_share_invalid_email)
+                emailField.requestFocus()
+                return@setOnClickListener
+            }
+
+            if (verifiedEmails.any { it.equals(email, ignoreCase = true) }) {
+                Toast.makeText(this, getString(R.string.settings_auto_share_email_already_verified), Toast.LENGTH_SHORT).show()
+                codeContainer.visibility = View.GONE
+                resendContainer.visibility = View.GONE
+                verifyEmailButton.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+
+            sendVerificationCode(email)
+        }
+
+        resendButton.setOnClickListener {
+            val email = emailField.text?.toString()?.trim().orEmpty()
+            val enteredCode = codeField.text?.toString()?.trim().orEmpty()
+            if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                emailField.error = getString(R.string.settings_auto_share_invalid_email)
+                emailField.requestFocus()
+                return@setOnClickListener
+            }
+
+            val pendingEmail = prefs.getString(KEY_AUTO_SHARE_PENDING_EMAIL, "").orEmpty()
+            val pendingCode = prefs.getString(KEY_AUTO_SHARE_PENDING_CODE, "").orEmpty()
+            val expiresAt = prefs.getLong(KEY_AUTO_SHARE_PENDING_EXPIRES_AT, 0L)
+            val hasActiveCode = pendingCode.isNotBlank() && pendingEmail.equals(email, ignoreCase = true) && System.currentTimeMillis() < expiresAt
+
+            if (enteredCode.isNotBlank()) {
+                if (!hasActiveCode) {
+                    Toast.makeText(this, getString(R.string.settings_auto_share_code_invalid), Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                if (enteredCode != pendingCode) {
+                    codeField.error = getString(R.string.settings_auto_share_code_invalid)
+                    codeField.requestFocus()
+                    return@setOnClickListener
+                }
+
+                verifiedEmails.removeAll { it.equals(email, ignoreCase = true) }
+                verifiedEmails.add(email)
+                persistVerifiedEmails()
+
+                prefs.edit()
+                    .remove(KEY_AUTO_SHARE_PENDING_CODE)
+                    .remove(KEY_AUTO_SHARE_PENDING_EMAIL)
+                    .remove(KEY_AUTO_SHARE_PENDING_EXPIRES_AT)
+                    .apply()
+
+                renderVerifiedEmails()
+                resetEntryFields()
+                setRecipientEntryVisible(false)
+                Toast.makeText(this, getString(R.string.settings_auto_share_recipient_added), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val cooldown = cooldownRemainingMs()
+            if (cooldown > 0L) {
+                startResendCooldown(cooldown)
+                Toast.makeText(
+                    this,
+                    getString(R.string.settings_auto_share_resend_wait, (cooldown / 1000L).toInt().coerceAtLeast(1)),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            sendVerificationCode(email)
+        }
+
+        addRecipientButton.setOnClickListener {
+            setRecipientEntryVisible(true)
+            resetEntryFields()
+            emailField.requestFocus()
+        }
+
+        emailField.doAfterTextChanged {
+            val typedEmail = it?.toString()?.trim().orEmpty()
+            if (typedEmail.isBlank()) {
+                codeContainer.visibility = View.GONE
+                resendContainer.visibility = View.GONE
+                verifyEmailButton.visibility = View.VISIBLE
+                return@doAfterTextChanged
+            }
+
+            val pendingEmail = prefs.getString(KEY_AUTO_SHARE_PENDING_EMAIL, "").orEmpty()
+            val expiresAt = prefs.getLong(KEY_AUTO_SHARE_PENDING_EXPIRES_AT, 0L)
+            val now = System.currentTimeMillis()
+            val showCode = pendingEmail.equals(typedEmail, ignoreCase = true) && now < expiresAt
+            codeContainer.visibility = if (showCode) View.VISIBLE else View.GONE
+            resendContainer.visibility = if (showCode) View.VISIBLE else View.GONE
+            verifyEmailButton.visibility = if (showCode) View.GONE else View.VISIBLE
+        }
+
+        codeField.doAfterTextChanged {
+            val hasCode = !it.isNullOrBlank()
+            if (codeContainer.visibility == View.VISIBLE) {
+                resendButton.text = if (hasCode) {
+                    getString(R.string.settings_auto_share_dialog_verify)
+                } else {
+                    getString(R.string.settings_auto_share_dialog_resend)
+                }
+
+                if (hasCode) {
+                    resendButton.isEnabled = true
+                    resendButton.alpha = 1f
+                    resendTimerText.visibility = View.GONE
+                } else {
+                    updateResendForCooldown(cooldownRemainingMs())
+                }
+            }
+        }
+
+        autoShareDialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        autoShareDialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        cancelButton.setOnClickListener {
+            resendTimer?.cancel()
+            if (triggeredByToggle) {
+                setAutoShareSwitchChecked(false)
+            }
+            autoShareDialog?.dismiss()
+        }
+
+        saveButton.setOnClickListener {
+            val email = emailField.text?.toString()?.trim().orEmpty()
+            val now = System.currentTimeMillis()
+            val pendingCode = prefs.getString(KEY_AUTO_SHARE_PENDING_CODE, "").orEmpty()
+            val pendingEmail = prefs.getString(KEY_AUTO_SHARE_PENDING_EMAIL, "").orEmpty()
+            val expiresAt = prefs.getLong(KEY_AUTO_SHARE_PENDING_EXPIRES_AT, 0L)
+            val enteredCode = codeField.text?.toString()?.trim().orEmpty()
+            val hasActiveCode = pendingCode.isNotBlank() &&
+                pendingEmail.equals(email, ignoreCase = true) &&
+                now < expiresAt
+
+            if (hasActiveCode) {
+                if (enteredCode.isBlank()) {
+                    codeContainer.visibility = View.VISIBLE
+                    codeField.error = getString(R.string.settings_auto_share_code_required)
+                    codeField.requestFocus()
+                    return@setOnClickListener
+                }
+
+                if (enteredCode != pendingCode) {
+                    codeField.error = getString(R.string.settings_auto_share_code_invalid)
+                    codeField.requestFocus()
+                    return@setOnClickListener
+                }
+
+                if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    emailField.error = getString(R.string.settings_auto_share_invalid_email)
+                    emailField.requestFocus()
+                    return@setOnClickListener
+                }
+
+                verifiedEmails.removeAll { it.equals(email, ignoreCase = true) }
+                verifiedEmails.add(email)
+                persistVerifiedEmails()
+
+                prefs.edit()
+                    .remove(KEY_AUTO_SHARE_PENDING_CODE)
+                    .remove(KEY_AUTO_SHARE_PENDING_EMAIL)
+                    .remove(KEY_AUTO_SHARE_PENDING_EXPIRES_AT)
+                    .apply()
+
+                renderVerifiedEmails()
+                resetEntryFields()
+                setRecipientEntryVisible(false)
+                Toast.makeText(this, getString(R.string.settings_auto_share_recipient_added), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (verifiedEmails.isEmpty()) {
+                Toast.makeText(this, getString(R.string.settings_auto_share_verify_one_recipient), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            prefs.edit()
+                .putBoolean(KEY_AUTO_SHARE_ENABLED, true)
+                .apply()
+
+            AutoShareScheduler.reschedule(this)
+            setAutoShareSwitchChecked(true)
+            updateAutoShareSummary()
+            Toast.makeText(this, getString(R.string.settings_auto_share_saved), Toast.LENGTH_SHORT).show()
+            resendTimer?.cancel()
+            autoShareDialog?.dismiss()
+        }
+
+        autoShareDialog?.setOnDismissListener {
+            resendTimer?.cancel()
+            if (triggeredByToggle && !prefs.getBoolean(KEY_AUTO_SHARE_ENABLED, false)) {
+                setAutoShareSwitchChecked(false)
+            }
+            updateAutoShareSummary()
+        }
+
+        renderVerifiedEmails()
+        setRecipientEntryVisible(verifiedEmails.isEmpty())
+        startResendCooldown(cooldownRemainingMs())
+
+        autoShareDialog?.show()
+    }
+
+    private fun showAutoShareTurnedOffDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_auto_share_turned_off, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        dialogView.findViewById<MaterialButton>(R.id.auto_share_off_ok_button).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
     private fun setVoiceReadHintsSwitchChecked(checked: Boolean) {
         suppressVoiceReadToggleCallback = true
         voiceReadHintsSwitch.setOn(checked)
@@ -626,6 +1192,128 @@ class SettingsActivity : AppCompatActivity() {
         suppressDeviceAlertsToggleCallback = true
         deviceAlertsSwitch.setOn(checked)
         suppressDeviceAlertsToggleCallback = false
+    }
+
+    private fun setAutoShareSwitchChecked(checked: Boolean) {
+        suppressAutoShareToggleCallback = true
+        autoShareSwitch.setOn(checked)
+        suppressAutoShareToggleCallback = false
+    }
+
+    private fun setupAutoShareToggle() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val hasRecipients = getVerifiedAutoShareEmails(prefs).isNotEmpty()
+        val persistedEnabled = prefs.getBoolean(KEY_AUTO_SHARE_ENABLED, false)
+        val shouldEnable = persistedEnabled && hasRecipients
+
+        if (persistedEnabled && !hasRecipients) {
+            prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+            AutoShareScheduler.cancel(this)
+        }
+
+        setAutoShareSwitchChecked(shouldEnable)
+
+        autoShareSwitch.setOnToggledListener { _, isChecked ->
+            if (suppressAutoShareToggleCallback) return@setOnToggledListener
+
+            if (isChecked) {
+                val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                if (getVerifiedAutoShareEmails(prefs).isEmpty()) {
+                    prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+                    AutoShareScheduler.cancel(this)
+                    setAutoShareSwitchChecked(false)
+                    updateAutoShareSummary()
+                    showAutoShareMissingRecipientsDialog()
+                    return@setOnToggledListener
+                }
+                prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, true).apply()
+                AutoShareScheduler.reschedule(this)
+                updateAutoShareSummary()
+            } else {
+                if (!prefs.getBoolean(KEY_AUTO_SHARE_DISABLE_CONFIRM_SKIP, false)) {
+                    setAutoShareSwitchChecked(true)
+                    showAutoShareDisableConfirmDialog()
+                    return@setOnToggledListener
+                }
+                disableAutoShareAndNotifyRecipients()
+            }
+        }
+    }
+
+    private fun disableAutoShareAndNotifyRecipients() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val recipients = getVerifiedAutoShareEmails(prefs).toList()
+        prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+        AutoShareScheduler.cancel(this)
+        setAutoShareSwitchChecked(false)
+        updateAutoShareSummary()
+        if (recipients.isNotEmpty()) {
+            sendAutoShareDisabledEmails(recipients)
+        }
+    }
+
+    private fun showAutoShareDisableConfirmDialog() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_auto_share_disable_confirm, null)
+        val doNotShowAgain = dialogView.findViewById<CheckBox>(R.id.auto_share_disable_do_not_show_again)
+        val cancelButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_disable_cancel_button)
+        val turnOffButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_disable_turn_off_button)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        cancelButton.setOnClickListener {
+            setAutoShareSwitchChecked(true)
+            dialog.dismiss()
+        }
+
+        turnOffButton.setOnClickListener {
+            if (doNotShowAgain.isChecked) {
+                prefs.edit().putBoolean(KEY_AUTO_SHARE_DISABLE_CONFIRM_SKIP, true).apply()
+            }
+            dialog.dismiss()
+            disableAutoShareAndNotifyRecipients()
+        }
+
+        dialog.setOnCancelListener {
+            setAutoShareSwitchChecked(true)
+        }
+
+        dialog.show()
+    }
+
+    private fun showAutoShareMissingRecipientsDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_auto_share_missing_recipients, null)
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        dialogView.findViewById<MaterialButton>(R.id.auto_share_missing_cancel_button).setOnClickListener {
+            prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+            AutoShareScheduler.cancel(this)
+            updateAutoShareSummary()
+            setAutoShareSwitchChecked(false)
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<MaterialButton>(R.id.auto_share_missing_manage_button).setOnClickListener {
+            prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+            AutoShareScheduler.cancel(this)
+            updateAutoShareSummary()
+            setAutoShareSwitchChecked(false)
+            dialog.dismiss()
+            showAutoShareDialog(triggeredByToggle = true)
+        }
+
+        dialog.show()
     }
 
     private fun shouldRequestPostNotificationsPermission(): Boolean {
@@ -724,6 +1412,13 @@ class SettingsActivity : AppCompatActivity() {
             true
         }
 
+        findViewById<LinearLayout>(R.id.settings_auto_share_row)?.setOnLongClickListener {
+            if (isVoiceReadHintsEnabled()) {
+                speakSettingsText(buildAutoShareSpeech())
+            }
+            true
+        }
+
         findViewById<LinearLayout>(R.id.settings_privacy_policy_row)?.setOnLongClickListener {
             if (isVoiceReadHintsEnabled()) {
                 speakSettingsText(getString(R.string.settings_privacy_policy))
@@ -761,6 +1456,488 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun buildTutorialSpeech(): String {
         return getString(R.string.settings_app_tutorial) + ". " + getString(R.string.settings_app_tutorial_desc)
+    }
+
+    private fun buildAutoShareSpeech(): String {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val enabled = prefs.getBoolean(KEY_AUTO_SHARE_ENABLED, false)
+        val verifiedEmails = getVerifiedAutoShareEmails(prefs)
+
+        return if (!enabled) {
+            getString(R.string.settings_auto_share) + ". " + getString(R.string.settings_auto_share_off)
+        } else if (verifiedEmails.isEmpty()) {
+            getString(R.string.settings_auto_share) + ". " + getString(R.string.settings_auto_share_pending_verification)
+        } else if (verifiedEmails.size == 1) {
+            getString(R.string.settings_auto_share) + ". " + verifiedEmails.first()
+        } else {
+            getString(R.string.settings_auto_share) + ". " +
+                verifiedEmails.joinToString(separator = ", ")
+        }
+    }
+
+    private fun updateAutoShareSummary() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val verifiedEmails = getVerifiedAutoShareEmails(prefs)
+        val isEnabled = prefs.getBoolean(KEY_AUTO_SHARE_ENABLED, false)
+
+        if (verifiedEmails.isEmpty() && isEnabled) {
+            prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+            AutoShareScheduler.cancel(this)
+            setAutoShareSwitchChecked(false)
+        }
+
+        settingsAutoShareSummary.text = getString(R.string.settings_auto_share_desc)
+        settingsAutoShareRecipientsCount.text = getString(
+            R.string.settings_auto_share_recipients_count,
+            verifiedEmails.size
+        )
+    }
+
+    private fun getVerifiedAutoShareEmails(prefs: android.content.SharedPreferences): LinkedHashSet<String> {
+        val ordered = prefs.getString(KEY_AUTO_SHARE_VERIFIED_EMAILS_ORDERED, null)
+        if (!ordered.isNullOrBlank()) {
+            return runCatching {
+                val parsed = JSONArray(ordered)
+                val emails = LinkedHashSet<String>()
+                for (index in 0 until parsed.length()) {
+                    val email = parsed.optString(index).trim()
+                    if (email.isNotBlank()) {
+                        emails.add(email)
+                    }
+                }
+                emails
+            }.getOrDefault(LinkedHashSet())
+        }
+
+        val set = prefs.getStringSet(KEY_AUTO_SHARE_VERIFIED_EMAILS, emptySet())
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            ?.toCollection(LinkedHashSet())
+            ?: LinkedHashSet()
+
+        if (set.isEmpty()) {
+            val legacy = prefs.getString(KEY_AUTO_SHARE_VERIFIED_EMAIL, "").orEmpty().trim()
+            if (legacy.isNotBlank()) {
+                set.add(legacy)
+            }
+        }
+        return set
+    }
+
+    private fun isAutoShareEmailVerified(prefs: android.content.SharedPreferences, email: String): Boolean {
+        if (email.isBlank()) return false
+        return getVerifiedAutoShareEmails(prefs).any { it.equals(email, ignoreCase = true) }
+    }
+
+    private fun generateVerificationCode(): String {
+        val code = SecureRandom().nextInt(900_000) + 100_000
+        return code.toString()
+    }
+
+    private fun sendVerificationEmail(recipientEmail: String, code: String): Pair<Boolean, String?> {
+        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
+        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
+        if (apiKey.isBlank() || fromEmail.isBlank()) {
+            Log.e("SendGridEmail", "Missing API key or from email")
+            return false to "missing SendGrid key/from email"
+        }
+
+        val patientName = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString("username", getString(R.string.settings_default_name))
+            .orEmpty()
+        val html = buildVerificationEmailHtml(patientName, code)
+        val plainText = """
+            SoleMate Email Verification
+
+            Hello,
+
+            $patientName has added you to receive health data via SoleMate.
+            Verification code: $code
+
+            This code expires in 24 hours.
+        """.trimIndent()
+
+        return runCatching {
+            val payload = JSONObject().apply {
+                put("personalizations", JSONArray().put(
+                    JSONObject().put("to", JSONArray().put(JSONObject().put("email", recipientEmail)))
+                ))
+                put("from", JSONObject().put("email", fromEmail).put("name", "SoleMate"))
+                put("subject", "SoleMate Email Verification")
+                put("content", JSONArray().put(
+                    JSONObject().put("type", "text/plain").put("value", plainText)
+                ).put(
+                    JSONObject().put("type", "text/html").put("value", html)
+                ))
+            }
+
+            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim().ifBlank { "https://api.sendgrid.com" }.trimEnd('/')
+            val sendUrl = "$baseUrl/v3/mail/send"
+            val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Authorization", "Bearer $apiKey")
+                setRequestProperty("Content-Type", "application/json")
+                connectTimeout = 15000
+                readTimeout = 15000
+            }
+
+            OutputStreamWriter(connection.outputStream).use { writer ->
+                writer.write(payload.toString())
+                writer.flush()
+            }
+
+            val responseCode = connection.responseCode
+            val messageId = connection.getHeaderField("X-Message-Id").orEmpty()
+            Log.d("SendGridEmail", "Response code: $responseCode, endpoint: $sendUrl")
+            if (messageId.isNotBlank()) {
+                Log.i("SendGridEmail", "Accepted by SendGrid. Message ID: $messageId")
+            }
+            
+            if (responseCode !in 200..202) {
+                val errorStream = connection.errorStream?.bufferedReader()?.readText() ?: "No error details"
+                Log.e("SendGridEmail", "SendGrid error: $errorStream")
+                val parsedMessage = runCatching {
+                    val errorJson = JSONObject(errorStream)
+                    val errors = errorJson.optJSONArray("errors")
+                    if (errors != null && errors.length() > 0) {
+                        errors.optJSONObject(0)?.optString("message")
+                    } else {
+                        null
+                    }
+                }.getOrNull().orEmpty().ifBlank { null }
+                connection.disconnect()
+                return@runCatching (false to (parsedMessage ?: "HTTP $responseCode"))
+            }
+            
+            connection.disconnect()
+            true to null
+        }.onFailure { exception ->
+            Log.e("SendGridEmail", "Exception sending email: ${exception.message}", exception)
+        }.getOrElse { exception ->
+            false to (exception.message ?: "network error")
+        }
+    }
+
+    private fun sendSharingStoppedEmail(recipientEmail: String): Pair<Boolean, String?> {
+        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
+        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
+        if (apiKey.isBlank() || fromEmail.isBlank()) {
+            Log.e("SendGridEmail", "Missing API key or from email")
+            return false to "missing SendGrid key/from email"
+        }
+
+        val patientName = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString("username", getString(R.string.settings_default_name))
+            .orEmpty()
+            .ifBlank { getString(R.string.settings_default_name) }
+
+        val safePatientName = escapeHtml(patientName)
+        val html = buildSharingStoppedEmailHtml(recipientEmail, safePatientName)
+        val plainText = """
+            SoleMate Alert Sharing Update
+
+            $patientName has stopped sharing health alerts with you.
+
+            You will no longer receive email notifications when alerts are triggered.
+
+            This is an automated message. No action is required.
+        """.trimIndent()
+
+        return runCatching {
+            val payload = JSONObject().apply {
+                put("personalizations", JSONArray().put(
+                    JSONObject().put("to", JSONArray().put(JSONObject().put("email", recipientEmail)))
+                ))
+                put("from", JSONObject().put("email", fromEmail).put("name", "SoleMate"))
+                put("subject", "Alert Sharing Update - SoleMate")
+                put("content", JSONArray().put(
+                    JSONObject().put("type", "text/plain").put("value", plainText)
+                ).put(
+                    JSONObject().put("type", "text/html").put("value", html)
+                ))
+            }
+
+            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim().ifBlank { "https://api.sendgrid.com" }.trimEnd('/')
+            val sendUrl = "$baseUrl/v3/mail/send"
+            val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Authorization", "Bearer $apiKey")
+                setRequestProperty("Content-Type", "application/json")
+                connectTimeout = 15000
+                readTimeout = 15000
+            }
+
+            OutputStreamWriter(connection.outputStream).use { writer ->
+                writer.write(payload.toString())
+                writer.flush()
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..202) {
+                val errorStream = connection.errorStream?.bufferedReader()?.readText() ?: "No error details"
+                Log.e("SendGridEmail", "SendGrid error on removal email: $errorStream")
+                val parsedMessage = runCatching {
+                    val errorJson = JSONObject(errorStream)
+                    val errors = errorJson.optJSONArray("errors")
+                    if (errors != null && errors.length() > 0) {
+                        errors.optJSONObject(0)?.optString("message")
+                    } else {
+                        null
+                    }
+                }.getOrNull().orEmpty().ifBlank { null }
+                connection.disconnect()
+                return@runCatching (false to (parsedMessage ?: "HTTP $responseCode"))
+            }
+
+            connection.disconnect()
+            true to null
+        }.onFailure { exception ->
+            Log.e("SendGridEmail", "Exception sending removal email: ${exception.message}", exception)
+        }.getOrElse { exception ->
+            false to (exception.message ?: "network error")
+        }
+    }
+
+    private fun sendAutoShareDisabledEmails(recipientEmails: List<String>) {
+        val cleanedRecipients = recipientEmails
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase(Locale.ROOT) }
+
+        if (cleanedRecipients.isEmpty()) return
+
+        Thread {
+            val failedRecipients = mutableListOf<String>()
+            cleanedRecipients.forEach { recipientEmail ->
+                val (sent, errorDetail) = sendAlertSharingDisabledEmail(recipientEmail)
+                if (!sent) {
+                    failedRecipients.add(recipientEmail)
+                    Log.e(
+                        "SendGridEmail",
+                        "Failed to send disabled-sharing email to $recipientEmail: ${errorDetail.orEmpty()}"
+                    )
+                }
+            }
+
+            if (failedRecipients.isNotEmpty()) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "Alert-sharing disabled emails failed for ${failedRecipients.size} recipient(s)",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }.start()
+    }
+
+    private fun sendAlertSharingDisabledEmail(recipientEmail: String): Pair<Boolean, String?> {
+        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
+        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
+        if (apiKey.isBlank() || fromEmail.isBlank()) {
+            Log.e("SendGridEmail", "Missing API key or from email")
+            return false to "missing SendGrid key/from email"
+        }
+
+        val patientName = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString("username", getString(R.string.settings_default_name))
+            .orEmpty()
+            .ifBlank { getString(R.string.settings_default_name) }
+
+        val safePatientName = escapeHtml(patientName)
+        val html = buildAlertSharingDisabledEmailHtml(recipientEmail, safePatientName)
+        val plainText = """
+            Alert Sharing Disabled - SoleMate
+
+            Hello,
+
+            $patientName has turned off alert sharing in the SoleMate Application.
+
+            As a result, you will no longer receive email notifications when alerts are triggered for this user.
+
+            If you believe this change was made unintentionally, please contact the user directly.
+
+            This is an automated message. No action is required.
+        """.trimIndent()
+
+        return runCatching {
+            val payload = JSONObject().apply {
+                put("personalizations", JSONArray().put(
+                    JSONObject().put("to", JSONArray().put(JSONObject().put("email", recipientEmail)))
+                ))
+                put("from", JSONObject().put("email", fromEmail).put("name", "SoleMate"))
+                put("subject", "Alert Sharing Disabled - SoleMate")
+                put("content", JSONArray().put(
+                    JSONObject().put("type", "text/plain").put("value", plainText)
+                ).put(
+                    JSONObject().put("type", "text/html").put("value", html)
+                ))
+            }
+
+            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim().ifBlank { "https://api.sendgrid.com" }.trimEnd('/')
+            val sendUrl = "$baseUrl/v3/mail/send"
+            val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Authorization", "Bearer $apiKey")
+                setRequestProperty("Content-Type", "application/json")
+                connectTimeout = 15000
+                readTimeout = 15000
+            }
+
+            OutputStreamWriter(connection.outputStream).use { writer ->
+                writer.write(payload.toString())
+                writer.flush()
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..202) {
+                val errorStream = connection.errorStream?.bufferedReader()?.readText() ?: "No error details"
+                Log.e("SendGridEmail", "SendGrid error on disable email: $errorStream")
+                val parsedMessage = runCatching {
+                    val errorJson = JSONObject(errorStream)
+                    val errors = errorJson.optJSONArray("errors")
+                    if (errors != null && errors.length() > 0) {
+                        errors.optJSONObject(0)?.optString("message")
+                    } else {
+                        null
+                    }
+                }.getOrNull().orEmpty().ifBlank { null }
+                connection.disconnect()
+                return@runCatching (false to (parsedMessage ?: "HTTP $responseCode"))
+            }
+
+            connection.disconnect()
+            true to null
+        }.onFailure { exception ->
+            Log.e("SendGridEmail", "Exception sending disable email: ${exception.message}", exception)
+        }.getOrElse { exception ->
+            false to (exception.message ?: "network error")
+        }
+    }
+
+    private fun buildVerificationEmailHtml(patientName: String, code: String): String {
+        val safeName = escapeHtml(patientName.ifBlank { getString(R.string.settings_default_name) })
+        val safeCode = escapeHtml(code)
+
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Email Verification - SoleMate</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333;">
+                <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);">
+                    <h1 style="color: #0E3B66; font-size: 26px; text-align: center;">Verify Your Email Address</h1>
+                    <p> Hello,</p>
+                    <p>We are reaching out because $safeName has added you to share health data via the SoleMate system. To ensure security, please verify your email address.</p>
+                    <p>Please use the following verification code to confirm your email:</p>
+                    <h2 style="text-align: center; font-size: 24px; color: #0E3B66;">$safeCode</h2>
+                    <p>Once the patient enters the code in the app, you will gain access to the shared data.</p>
+                    <p>If you did not request access or if this message was sent in error, please disregard this email.</p>
+                    <p>Thank you for your cooperation!</p>
+                    <p style="font-size: 14px; color: #555; font-style: italic;">Note: This verification code will expire in 24 hours.</p>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun buildSharingStoppedEmailHtml(recipientEmail: String, safePatientName: String): String {
+        val recipientLabel = escapeHtml(recipientEmail.substringBefore('@').ifBlank { "Recipient" })
+
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Alert Access Update - SoleMate</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333;">
+                <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);">
+                    <div style="text-align: center; padding-bottom: 15px; border-bottom: 2px solid #0E3B66;">
+                        <h1 style="color: #0E3B66; font-size: 24px; margin: 0;">Alert Sharing Update</h1>
+                    </div>
+
+                    <p style="font-size: 16px; line-height: 1.6;">Hello,</p>
+
+                    <p style="font-size: 16px; line-height: 1.6;">
+                        We would like to inform you that your alert access through the SoleMate system has been updated.
+                    </p>
+
+                    <div style="background-color: #f1f5f9; border-left: 4px solid #0E3B66; padding: 15px; margin: 20px 0; border-radius: 5px; font-size: 16px; line-height: 1.6;">
+                        <strong>$safePatientName</strong> has stopped sharing health alerts with you.
+                    </div>
+
+                    <p style="font-size: 16px; line-height: 1.6; font-weight: bold; color: #0E3B66;">
+                        You will no longer receive email notifications when alerts are triggered.
+                    </p>
+
+                    <p style="font-size: 16px; line-height: 1.6;">
+                        If this change was unexpected or you believe you should still receive alerts, please contact the patient directly.
+                    </p>
+
+                    <p style="font-size: 13px; color: #666; margin-top: 20px; text-align: center;">
+                        This is an automated message. No action is required.
+                    </p>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun buildAlertSharingDisabledEmailHtml(recipientEmail: String, safePatientName: String): String {
+        val recipientLabel = escapeHtml(recipientEmail.substringBefore('@').ifBlank { "Recipient" })
+
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Alert Sharing Disabled - SoleMate</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333;">
+                <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);">
+                    <div style="text-align: center; padding-bottom: 15px; border-bottom: 2px solid #0E3B66;">
+                        <h1 style="color: #0E3B66; font-size: 24px; margin: 0;">Alert Sharing Disabled</h1>
+                    </div>
+
+                    <p style="font-size: 16px; line-height: 1.6;">Hello,</p>
+
+                    <p style="font-size: 16px; line-height: 1.6;">
+                        We would like to inform you that <strong>$safePatientName</strong> has turned off alert sharing in the SoleMate Application.
+                    </p>
+
+                    <div style="background-color: #f1f5f9; border-left: 4px solid #0E3B66; padding: 15px; margin: 20px 0; border-radius: 5px; font-size: 16px; line-height: 1.6;">
+                        As a result, you will no longer receive email notifications when alerts are triggered for this user.
+                    </div>
+
+                    <p style="font-size: 16px; line-height: 1.6;">
+                        If you believe this change was made unintentionally, please contact the user directly.
+                    </p>
+
+                    <p style="font-size: 13px; color: #666; margin-top: 20px; text-align: center;">
+                        This is an automated message. No action is required.
+                    </p>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun escapeHtml(value: String): String {
+        return value
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
     }
 
     private fun speakSettingsText(text: String, forcePreview: Boolean = false) {
