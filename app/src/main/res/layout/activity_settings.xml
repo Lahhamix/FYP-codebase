@@ -633,7 +633,7 @@
 
 
                 <LinearLayout
-                    android:id="@+id/settings_contact_support_row"
+                    android:id="@+id/settings_voice_read_hints_toggle_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -1067,9 +1067,13 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
+                    android:id="@+id/settings_contact_support_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 

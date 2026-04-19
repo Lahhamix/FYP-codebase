@@ -165,6 +165,52 @@
     <string name="settings_copyright" translatable="false">© 2026 SoleMate Health Inc.</string>
     <string name="settings_feedback">Send app feedback</string>
 
+    <string name="privacy_dialog_title">Privacy Policy</string>
+    <string name="privacy_dialog_close">Close</string>
+
+    <string name="privacy_section_1_title">1. Overview</string>
+    <string name="privacy_section_1_body">SoleMate is a health monitoring application that collects and stores user data to provide monitoring features, visual insights, and alert-related functionality.</string>
+
+    <string name="privacy_section_2_title">2. Data We Collect</string>
+    <string name="privacy_section_2_body">- Username, password, and profile picture\n- Google account information (email and Google ID when using Google Sign-In)\n- Health data such as plantar pressure distribution, heart rate, SpO2, step count and consistency, and swelling detection\n- Sensor data received from the Bluetooth-connected device\n- History of health readings stored locally\n- Auto-share recipient email addresses and verification status\n- App settings including notification, alert, language, and accessibility preferences</string>
+
+    <string name="privacy_section_3_title">3. How Data Is Stored</string>
+    <string name="privacy_section_3_body">Data is stored locally on the user device using SharedPreferences and internal app files. Health data may be saved in files such as CSV history files, baseline data files, and heatmap images. No cloud database or Firebase storage is currently used.</string>
+
+    <string name="privacy_section_4_title">4. Data Sharing</string>
+    <string name="privacy_section_4_body">Data is not shared with third parties by default. If Auto-share is enabled, alert emails are sent to user-selected and verified recipients. Users may also manually export and share their data (for example, CSV files).</string>
+
+    <string name="privacy_section_5_title">5. Third-Party Services</string>
+    <string name="privacy_section_5_body">SoleMate integrates the following third-party tools: Google Sign-In for authentication, SendGrid for alert emails, WorkManager for background tasks, uCrop for profile image editing, and MPAndroidChart for visualization.</string>
+
+    <string name="privacy_section_6_title">6. Data Security</string>
+    <string name="privacy_section_6_body">Bluetooth data transmission uses encryption mechanisms including ECDH key exchange and AES. Some sensitive account data is stored locally on the device. Full encryption for all stored user data is not currently implemented.</string>
+
+    <string name="privacy_section_7_title">7. Permissions</string>
+    <string name="privacy_section_7_body">The app uses Bluetooth permissions (sensor connection), Location (required for Bluetooth scanning), Notifications (alerts), Internet (email and related services), Biometric (if enabled), and storage-related access for saving/exporting files.</string>
+
+    <string name="privacy_section_8_title">8. User Control</string>
+    <string name="privacy_section_8_body">Users can edit profile information (username and photo), change or reset password, export data, and sign out. Account deletion is not yet implemented.</string>
+
+    <string name="privacy_section_9_title">9. No Analytics Tracking</string>
+    <string name="privacy_section_9_body">SoleMate does not collect analytics, usage tracking data, or behavioral telemetry. No crash reporting or telemetry system is currently implemented.</string>
+
+    <string name="privacy_section_10_title">10. Contact &amp; Support</string>
+    <string name="privacy_section_10_body">Users can access support via the Contact Support section in the app. Feedback can be submitted through an external Google Form or by emailing SoleMateapp26\@gmail.com.</string>
+
+    <string name="privacy_last_updated">Last updated: April 2026</string>
+
+    <string name="contact_support_dialog_title">Contact Support</string>
+    <string name="contact_support_dialog_close">Close</string>
+    <string name="contact_support_overview">If you need help with SoleMate, you can contact our support team or submit feedback using the options below.</string>
+    <string name="contact_support_options_title">Contact Options</string>
+    <string name="contact_support_feedback_button">Submit Feedback</string>
+    <string name="contact_support_help_title">Help Information</string>
+    <string name="contact_support_help_info">You can use the app features, settings, and alerts to guide you through SoleMate. Explore each section to learn more about monitoring your health data.</string>
+    <string name="contact_support_note">Our support team will review your feedback and respond through the appropriate channels when possible.</string>
+    <string name="contact_support_email">Email: SoleMate26\@gmail.com</string>
+    <string name="contact_support_emergency_note">If you are experiencing a medical emergency, please call 140 immediately.</string>
+
     <string name="nav_history">History</string>
     <string name="nav_home">Home</string>
     <string name="nav_settings">Settings</string>

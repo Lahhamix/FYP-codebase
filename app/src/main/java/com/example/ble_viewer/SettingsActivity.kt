@@ -302,6 +302,14 @@ class SettingsActivity : AppCompatActivity() {
             showTermsOfUseDialog()
         }
 
+        findViewById<LinearLayout>(R.id.settings_privacy_policy_row).setOnClickListener {
+            showPrivacyPolicyDialog()
+        }
+
+        findViewById<LinearLayout>(R.id.settings_contact_support_row).setOnClickListener {
+            showContactSupportDialog()
+        }
+
         findViewById<LinearLayout>(R.id.nav_home).setOnClickListener {
             finish()
         }
@@ -645,6 +653,57 @@ class SettingsActivity : AppCompatActivity() {
         TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
 
         val closeButton = dialogView.findViewById<MaterialButton>(R.id.terms_dialog_close_button)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showContactSupportDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_contact_support, null)
+        TextSizeScaleManager.applyTo(
+            dialogView,
+            TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this))
+        )
+
+        val feedbackButton = dialogView.findViewById<MaterialButton>(R.id.contact_support_feedback_button)
+        val closeButton = dialogView.findViewById<MaterialButton>(R.id.contact_support_dialog_close_button)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        feedbackButton.setOnClickListener {
+            openFeedbackFormForCurrentLanguage()
+            dialog.dismiss()
+        }
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showPrivacyPolicyDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_privacy_policy, null)
+        TextSizeScaleManager.applyTo(
+            dialogView,
+            TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this))
+        )
+
+        val section10BodyView = dialogView.findViewById<TextView>(R.id.privacy_section_10_body)
+        section10BodyView.text = getString(R.string.privacy_section_10_body)
+
+        val closeButton = dialogView.findViewById<MaterialButton>(R.id.privacy_dialog_close_button)
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
