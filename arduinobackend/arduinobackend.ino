@@ -6,18 +6,12 @@
 #include "pressure_reader.h"
 #include "encryption.h"
 #include "key_exchange.h"
+#include "serial_log.h"
 
-// Set to 1 to enable encryption for pressure matrix (must match Android PRESSURE_MATRIX_ENCRYPTION_ENABLED)
-#define PRESSURE_ENCRYPTION_ENABLED 1
-
-// Pressure: 20-byte plain (8 header + 12 payload) or 24-byte encrypted (8 header + 16 ciphertext)
+// Pressure: ALWAYS encrypted (8 header + 16 ciphertext)
 #define PRESSURE_HEADER_SIZE 8
 #define PRESSURE_PAYLOAD_SIZE 12
-#if PRESSURE_ENCRYPTION_ENABLED
-  static const int kPressurePacketSize = PRESSURE_HEADER_SIZE + 16;  // 8 + 16 encrypted
-#else
-  static const int kPressurePacketSize = PRESSURE_HEADER_SIZE + PRESSURE_PAYLOAD_SIZE;  // 20
-#endif
+static const int kPressurePacketSize = PRESSURE_HEADER_SIZE + 16;  // 24
 
 // -----------------------------------------------------------------------------
 // BLE Services and Characteristics
@@ -33,13 +27,13 @@ BLECharacteristic peripheralPublicKeyChar(PERIPHERAL_PUBLIC_KEY_CHAR_UUID, BLERe
 // Each characteristic reserves 1 byte for length + 80 bytes ciphertext
 static const int kCharacteristicSize = 81;
 
-BLECharacteristic accelChar(
+BLECharacteristic stepsChar(
   "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
 );
 
-BLECharacteristic gyroChar(
+BLECharacteristic motionChar(
   "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
   kCharacteristicSize
@@ -77,11 +71,11 @@ void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
   if (key_exchange_process_phone_key(data, len)) {
     encryption_init_from_key_exchange();
     // Write initial values so Android gets them when it enables notifications
-    EncryptedPayload accelInit, gyroInit, heartInit, spo2Init;
-    if (encryptAccel("0.00,0.00,0.00", accelInit))
-      writeEncryptedValue(accelChar, accelInit, "accelerometer (init)");
-    if (encryptGyro("0.00,0.00,0.00", gyroInit))
-      writeEncryptedValue(gyroChar, gyroInit, "gyroscope (init)");
+    EncryptedPayload stepsInit, motionInit, heartInit, spo2Init;
+    if (encryptSteps("0", stepsInit))
+      writeEncryptedValue(stepsChar, stepsInit, "steps (init)");
+    if (encryptMotion("0", motionInit))
+      writeEncryptedValue(motionChar, motionInit, "motion (init)");
     if (encryptHeartRate("--", heartInit))
       writeEncryptedValue(heartRateChar, heartInit, "heart rate (init)");
     if (encryptSpO2("--", spo2Init))
@@ -90,18 +84,11 @@ void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
     if (encryptFlex("calibrating,0,0,0", edemaInit))
       writeEncryptedValue(edemaChar, edemaInit, "flex edema (init)");
     // Send initial pressure packet (20 bytes plain or 24 bytes with encrypted payload)
-#if PRESSURE_ENCRYPTION_ENABLED
     uint8_t initPressure[kPressurePacketSize] = {0};
     initPressure[0] = 0xA5;
     initPressure[1] = 0x5A;
     // bytes 8..23 are zeros; Android treats all-zero ciphertext as init and returns 12 zeros
     pressureChar.writeValue(initPressure, kPressurePacketSize);
-#else
-    uint8_t initPacket[20] = {0};
-    initPacket[0] = 0xA5;
-    initPacket[1] = 0x5A;
-    pressureChar.writeValue(initPacket, 20);
-#endif
   }
 }
 
@@ -112,7 +99,7 @@ void setup() {
   Serial.begin(9600);
   // Don't block on Serial - Arduino must advertise even when not connected to USB
   delay(500);  // Brief delay for Serial to init (optional, for debug)
-  Serial.println("🔬 Initializing wearable sensors...");
+  LOG_SYSTEM(Serial.println("🔬 Initializing wearable sensors..."));
   analogReadResolution(12);
 
   // Seed RNG for ECDH key generation (use analog pin + time for entropy)
@@ -120,31 +107,31 @@ void setup() {
 
   // Initialize IMU
   if (!imu_init()) {
-    Serial.println("❌ Failed to initialize IMU!");
+    LOG_SYSTEM(Serial.println("❌ Failed to initialize IMU!"));
     while (1);
   }
-  Serial.println("✅ IMU initialized.");
+  LOG_SYSTEM(Serial.println("✅ IMU initialized."));
 
   // Initialize PPG
   if (!ppg_init()) {
-    Serial.println("❌ Failed to initialize PPG!");
+    LOG_SYSTEM(Serial.println("❌ Failed to initialize PPG!"));
     while (1);
   }
-  Serial.println("✅ PPG initialized.");
+  LOG_SYSTEM(Serial.println("✅ PPG initialized."));
 
   // Initialize Flex sensors
   if (!flex_init()) {
-    Serial.println("❌ Failed to initialize Flex sensors!");
+    LOG_SYSTEM(Serial.println("❌ Failed to initialize Flex sensors!"));
     while (1);
   }
-  Serial.println("✅ Flex sensors initialized.");
+  LOG_SYSTEM(Serial.println("✅ Flex sensors initialized."));
 
   // Initialize Pressure matrix
   if (!pressure_init()) {
-    Serial.println("❌ Failed to initialize Pressure matrix!");
+    LOG_SYSTEM(Serial.println("❌ Failed to initialize Pressure matrix!"));
     while (1);
   }
-  Serial.println("✅ Pressure matrix initialized.");
+  LOG_SYSTEM(Serial.println("✅ Pressure matrix initialized."));
 
   // Initialize BLE
   if (!BLE.begin()) {
@@ -166,8 +153,8 @@ void setup() {
   BLE.addService(keyExchangeService);
 
   // Wearable sensor service
-  wearableService.addCharacteristic(accelChar);
-  wearableService.addCharacteristic(gyroChar);
+  wearableService.addCharacteristic(stepsChar);
+  wearableService.addCharacteristic(motionChar);
   wearableService.addCharacteristic(heartRateChar);
   wearableService.addCharacteristic(spo2Char);
   wearableService.addCharacteristic(edemaChar);
@@ -175,8 +162,8 @@ void setup() {
   BLE.addService(wearableService);
 
   BLE.advertise();
-  Serial.println("📡 Advertising as SoleMate...");
-  Serial.println("🔐 ECDH key exchange + AES-128-CBC encryption");
+  LOG_SYSTEM(Serial.println("📡 Advertising as SoleMate..."));
+  LOG_SYSTEM(Serial.println("🔐 ECDH key exchange + AES-128-CBC encryption"));
 }
 
 // -----------------------------------------------------------------------------
@@ -185,8 +172,8 @@ void setup() {
 
 void writeEncryptedValue(BLECharacteristic& characteristic, const EncryptedPayload& payload, const char* label) {
   if (payload.length == 0 || payload.length > sizeof(payload.data)) {
-    Serial.print("[ENCRYPTION] Invalid payload length for ");
-    Serial.println(label);
+    LOG_ENCRYPT(Serial.print("[ENCRYPTION] Invalid payload length for "));
+    LOG_ENCRYPT(Serial.println(label));
     return;
   }
 
@@ -196,81 +183,107 @@ void writeEncryptedValue(BLECharacteristic& characteristic, const EncryptedPaylo
   characteristic.writeValue(framedPayload, payload.length + 1);
 }
 
+/** Called every few columns during pressure matrix scan — must BLE.poll() or GATT/service discovery can stall. */
+static void bleAndImuYield() {
+  BLE.poll();
+  imu_pump_steps();
+}
+
 void loop() {
   BLE.poll();  // Process BLE events (connection, writes, etc.)
   BLEDevice central = BLE.central();
 
   if (central) {
-    Serial.print("🔗 Connected to: ");
-    Serial.println(central.address());
+    LOG_SYSTEM(Serial.print("🔗 Connected to: "));
+    LOG_SYSTEM(Serial.println(central.address()));
 
     static bool pressureStreamingStarted = false;  // reset when disconnected (see below)
 
     while (central.connected()) {
       BLE.poll();  // Must poll to receive Android's key exchange write
 
-      // Always sample PPG so BPM/SpO2 remain visible in Serial Monitor even
-      // if BLE key exchange is delayed or fails.
-      PPGData ppgData = readPPG();
-
       if (!encryption_is_ready()) {
-        delay(50);
+        // Chunk delay so BLE.stack keeps getting BLE.poll() while waiting for phone key write
+        for (uint8_t i = 0; i < 5; i++) {
+          BLE.poll();
+          delay(10);
+        }
         continue;
       }
 
-      // Read and stream IMU data
+      // IMU → flex → PPG tick before pressure scan/TX so PPG samples are not delayed by a full matrix read + BLE burst
       IMUData imuData = readIMU();
-      if (imuData.available) {
-        String accelData = String(imuData.ax, 2) + "," + String(imuData.ay, 2) + "," + String(imuData.az, 2);
-        String gyroData = String(imuData.gx, 2) + "," + String(imuData.gy, 2) + "," + String(imuData.gz, 2);
-        EncryptedPayload accelEncrypted;
-        EncryptedPayload gyroEncrypted;
-        
-        //Serial.print("[ACCEL] ");
-        //Serial.println(accelData);
-        if (encryptAccel(accelData, accelEncrypted)) {
-          writeEncryptedValue(accelChar, accelEncrypted, "accelerometer");
-        } else {
-          Serial.println("[ENCRYPTION] Failed to encrypt accelerometer data");
-        }
-        
-        //Serial.print("[GYRO] ");
-        //Serial.println(gyroData);
-        if (encryptGyro(gyroData, gyroEncrypted)) {
-          writeEncryptedValue(gyroChar, gyroEncrypted, "gyroscope");
-        } else {
-          Serial.println("[ENCRYPTION] Failed to encrypt gyroscope data");
-        }
-      }
-
-      if (ppgData.heartRateAvailable && ppgData.validHeartRate) {
-        String hrData = String(ppgData.beatsPerMinute);
-        EncryptedPayload hrEncrypted;
-        if (encryptHeartRate(hrData, hrEncrypted)) {
-          Serial.print("[PPG] Heart Rate: ");
-          Serial.print(hrData);
-          Serial.println(" BPM");
-          writeEncryptedValue(heartRateChar, hrEncrypted, "heart rate");
-        } else {
-          Serial.println("[ENCRYPTION] Failed to encrypt heart rate data");
-        }
-      }
-
-      if (ppgData.spo2Available && ppgData.validSPO2) {
-        String spo2Data = String(ppgData.spO2, 1);
-        EncryptedPayload spo2Encrypted;
-        if (encryptSpO2(spo2Data, spo2Encrypted)) {
-          Serial.print("[PPG] SpO2: ");
-          Serial.print(spo2Data);
-          Serial.println(" %");
-          writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");
-        } else {
-          Serial.println("[ENCRYPTION] Failed to encrypt SpO2 data");
-        }
-      }
-
-      // Read and stream Flex edema data
       FlexData flexData = readFlex();
+      PPGData ppgData = ppg_tick();
+      PressureFrame pressureFrame = readPressureWithYield(bleAndImuYield);
+
+      // Steps + motion: stream every loop tick (do NOT gate on imuData.available).
+      // HR/SpO2 use PPG; IMU can be quiet for stretches — step count still updates via accel drain inside readIMU().
+      {
+        String stepsData = String(imuData.stepCount);
+        String motionData = imuData.isMoving ? "1" : "0";
+        EncryptedPayload stepsEncrypted;
+        EncryptedPayload motionEncrypted;
+
+        if (encryptSteps(stepsData, stepsEncrypted)) {
+          writeEncryptedValue(stepsChar, stepsEncrypted, "steps");
+        } else {
+          LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt steps data"));
+        }
+
+        if (encryptMotion(motionData, motionEncrypted)) {
+          writeEncryptedValue(motionChar, motionEncrypted, "motion");
+        } else {
+          LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt motion data"));
+        }
+      }
+
+      // Serial IMU logs (optional; only when we have a fresh IMU frame)
+      if (imuData.available) {
+        static uint32_t lastImuLogMs = 0;
+        static bool lastMoving = false;
+        const uint32_t now = millis();
+        const bool timeToLog = (now - lastImuLogMs) >= IMU_LOG_PERIOD_MS;
+        if (timeToLog) {
+          lastMoving = imuData.isMoving;
+          lastImuLogMs = now;
+          LOG_IMU(Serial.print(F("[IMU] motion=")));
+          LOG_IMU(Serial.print(lastMoving ? F("1") : F("0")));
+          LOG_IMU(Serial.print(F(" aDyn=")));
+          LOG_IMU(Serial.print(imuData.aDyn, 3));
+          LOG_IMU(Serial.print(F("g aMag=")));
+          LOG_IMU(Serial.print(imuData.aMag, 3));
+          LOG_IMU(Serial.print(F("g gMag=")));
+          LOG_IMU(Serial.print(imuData.gMag, 1));
+          LOG_IMU(Serial.print(F("dps steps=")));
+          LOG_IMU(Serial.println(imuData.stepCount));
+        }
+      }
+
+      // Match MAX30102_by_RF reference behavior: only publish when BOTH HR and SpO2 are valid.
+      if (ppgData.heartRateAvailable && ppgData.spo2Available && ppgData.validHeartRate && ppgData.validSPO2) {
+        {
+          String hrData = String(ppgData.beatsPerMinute);
+          EncryptedPayload hrEncrypted;
+          if (encryptHeartRate(hrData, hrEncrypted)) {
+            writeEncryptedValue(heartRateChar, hrEncrypted, "heart rate");
+          } else {
+            LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt heart rate data"));
+          }
+        }
+
+        {
+          String spo2Data = String(ppgData.spO2, 1);
+          EncryptedPayload spo2Encrypted;
+          if (encryptSpO2(spo2Data, spo2Encrypted)) {
+            writeEncryptedValue(spo2Char, spo2Encrypted, "SpO2");
+          } else {
+            LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt SpO2 data"));
+          }
+        }
+      }
+
+      // Flex edema
       if (flexData.dataAvailable) {
         String edemaData = String(flexData.edemaLabel) + "," +
                            String(flexData.totalDeviation) + "," +
@@ -280,16 +293,15 @@ void loop() {
         if (encryptFlex(edemaData, edemaEncrypted)) {
           writeEncryptedValue(edemaChar, edemaEncrypted, "flex edema");
         } else {
-          Serial.println("[ENCRYPTION] Failed to encrypt flex edema data");
+          LOG_ENCRYPT(Serial.println("[ENCRYPTION] Failed to encrypt flex edema data"));
         }
       }
 
-      // Read and stream Pressure matrix (Python-style: 20-byte packets, rolling buffer on phone)
+      // Pressure matrix (Python-style packets, rolling buffer on phone)
       static uint16_t frameCounter = 0;
-      PressureFrame pressureFrame = readPressure();
       if (pressureFrame.available) {
         if (!pressureStreamingStarted) {
-          //Serial.println("[PRESSURE] 📤 Streaming started (20-byte packets, Python-style).");
+          LOG_PRESSURE(Serial.println(F("[PRESSURE] Streaming started (encrypted packets, Python-style headers).")));
           pressureStreamingStarted = true;
         }
         // Min/max of raw frame (same style as Android Logcat stats)
@@ -299,13 +311,22 @@ void loop() {
           if (v < pMin) pMin = v;
           if (v > pMax) pMax = v;
         }
-        //Serial.print("[PRESSURE] frame raw min=");
-        //Serial.print(pMin);
-        //Serial.print(" max=");
-        //Serial.println(pMax);
+        {
+          static uint32_t lastPressureLogMs = 0;
+          const uint32_t nowPlog = millis();
+          if ((uint32_t)(nowPlog - lastPressureLogMs) >= PRESSURE_LOG_PERIOD_MS) {
+            lastPressureLogMs = nowPlog;
+            LOG_PRESSURE(Serial.print(F("[PRESSURE] frame raw min=")));
+            LOG_PRESSURE(Serial.print(pMin));
+            LOG_PRESSURE(Serial.print(F(" max=")));
+            LOG_PRESSURE(Serial.println(pMax));
+          }
+        }
 
         for (uint16_t startIndex = 0; startIndex < NUM_VALUES; startIndex += SAMPLES_PER_PACKET) {
           BLE.poll();
+          // Do NOT call imu_pump_steps() here — ~96 calls/frame was killing loop time. IMU is pumped during
+          // readPressureWithYield + readIMU() at the top of the loop.
           int remaining = NUM_VALUES - startIndex;
           uint8_t sampleCount = (remaining >= SAMPLES_PER_PACKET) ? SAMPLES_PER_PACKET : remaining;
 
@@ -323,7 +344,6 @@ void loop() {
           header[6] = sampleCount;
           header[7] = (startIndex == 0) ? 0x01 : ((startIndex + sampleCount >= NUM_VALUES) ? 0x02 : 0x00);
 
-#if PRESSURE_ENCRYPTION_ENABLED
           uint8_t encryptedPayload[16];
           size_t encryptedLen = 0;
           if (encryptPressurePayload(payload, 12, encryptedPayload, &encryptedLen) && encryptedLen == 16) {
@@ -332,40 +352,48 @@ void loop() {
             memcpy(&packet[PRESSURE_HEADER_SIZE], encryptedPayload, 16);
             pressureChar.writeValue(packet, kPressurePacketSize);
           }
-#else
-          uint8_t packet[20];
-          memcpy(packet, header, PRESSURE_HEADER_SIZE);
-          memcpy(&packet[8], payload, 12);
-          pressureChar.writeValue(packet, 20);
-#endif
-          delay(2);
+          if (PRESSURE_PACKET_DELAY_MS > 0) {
+            delay(PRESSURE_PACKET_DELAY_MS);
+          }
         }
         frameCounter++;
       } else {
-        Serial.println("[PRESSURE] ⚠️ No frame (read not available).");
+        LOG_PRESSURE(Serial.println("[PRESSURE] ⚠️ No frame (read not available)."));
       }
 
-      delay(100); // ~10 Hz synchronized update rate
+      // Serial: PPG window dump + optional combined snapshot (after all sensors this iteration)
+      ppg_print_serial_on_new_window(ppgData);
+#if LOG_SENSOR_SNAPSHOT_ENABLED
+      LOG_SNAPSHOT(Serial.print(F("[SENSORS] flex=")));
+      LOG_SNAPSHOT(Serial.print(flexData.edemaLabel));
+      LOG_SNAPSHOT(Serial.print(F(" totalDev=")));
+      LOG_SNAPSHOT(Serial.print(flexData.totalDeviation));
+      if (pressureFrame.available) {
+        uint16_t pMin = 0x0FFF, pMax = 0;
+        for (int i = 0; i < NUM_VALUES; i++) {
+          uint16_t v = pressureFrame.data[i] & 0x0FFF;
+          if (v < pMin) pMin = v;
+          if (v > pMax) pMax = v;
+        }
+        LOG_SNAPSHOT(Serial.print(F(" | pressure raw min=")));
+        LOG_SNAPSHOT(Serial.print(pMin));
+        LOG_SNAPSHOT(Serial.print(F(" max=")));
+        LOG_SNAPSHOT(Serial.println(pMax));
+      } else {
+        LOG_SNAPSHOT(Serial.println(F(" | pressure=no_frame")));
+      }
+#endif
+
+      delay(MAIN_LOOP_DELAY_MS); // tune in serial_log.h; PPG drains FIFO (PPG_MAX_SAMPLES_PER_LOOP) per tick
     }
 
     pressureStreamingStarted = false;  // so next connection prints "Streaming started" again
-    Serial.println("🔌 Disconnected.");
+    LOG_SYSTEM(Serial.println("🔌 Disconnected."));
+    // Ensure peripheral resumes advertising after central disconnects (stack-dependent).
+    BLE.advertise();
   } else {
-    // No BLE device connected: still read pressure and print same stats as when connected
-    PressureFrame pressureFrame = readPressure();
-    if (pressureFrame.available) {
-      uint16_t pMin = 0x0FFF, pMax = 0;
-      for (int i = 0; i < NUM_VALUES; i++) {
-        uint16_t v = pressureFrame.data[i] & 0x0FFF;
-        if (v < pMin) pMin = v;
-        if (v > pMax) pMax = v;
-      }
-      Serial.print("[PRESSURE] frame raw min=");
-      Serial.print(pMin);
-      Serial.print(" max=");
-      Serial.println(pMax);
-    }
-    delay(100);
+    // No BLE: do not scan pressure or print pressure (same as other sensors — only active when connected).
+    delay(MAIN_LOOP_DELAY_MS);
   }
 }
 

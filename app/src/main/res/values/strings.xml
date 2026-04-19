@@ -168,6 +168,7 @@
     <string name="nav_history">History</string>
     <string name="nav_home">Home</string>
     <string name="nav_settings">Settings</string>
+    <string name="nav_foot_overview">Foot</string>
 
     <string name="sock_disconnected">Sock Disconnected</string>
     <string name="sock_disconnected_desc">Your SoleMate sock is out of range. Make sure it is nearby and charged.</string>
@@ -184,6 +185,65 @@
     <string name="plantar_pressure">Plantar Pressure</string>
     <string name="open_heatmap_calibrate">Open heatmap and calibrate</string>
     <string name="calibrate">Calibrate</string>
+    <string name="foot_overview_title">Foot Overview</string>
+    <string name="foot_overview_subtitle">Tap a zone to view readings</string>
+    <string name="foot_overview_image_desc">SoleMate foot overview map</string>
+    <string name="foot_overview_tip_desc">Foot overview information</string>
+    <string name="foot_overview_tip">Each zone represents a smart sensor in your SoleMate sock. Tapping a zone on your map shows personal health data.</string>
+    <string name="zone_1_title">Zone 1: Plantar Foot</string>
+    <string name="zone_1_desc">Monitors plantar foot pressure while standing or walking.</string>
+    <string name="zone_1_metric_title">Ataxia Risk</string>
+    <string name="zone_1_metric_subtitle">Current Plantar Pressure Distribution</string>
+    <string name="zone_2_title">Zone 2: Big Toe</string>
+    <string name="zone_2_desc">Measures Heart Rate and SpO2 at rest and during motion.</string>
+    <string name="zone_2_metric_title">Heart Health</string>
+    <string name="zone_2_metric_subtitle">Current Cardiovascular Parameters</string>
+    <string name="zone_3_title">Zone 3: Ankle Cuff</string>
+    <string name="zone_3_desc">Monitors for swelling and checks blood circulation.</string>
+    <string name="zone_3_metric_title">Swelling</string>
+    <string name="zone_3_metric_subtitle">Current Ankle Fluid Retention</string>
+    <string name="view_full_analytics">View Full Analytics</string>
+    <string name="foot_overview_coming_soon">Action will be wired in the next step.</string>
+    <string name="analytics_zone_description">Your plantar pressure distribution is currently within the Normal Status. Measurements are taken every 10 minutes by your SoleMate.</string>
+    <string name="analytics_heatmap_desc">Captured plantar pressure heatmap</string>
+    <string name="analytics_updated_icon_desc">Last update time</string>
+    <string name="analytics_updated_waiting">Updated waiting for first capture</string>
+    <string name="analytics_updated_just_now">Updated just now</string>
+    <string name="analytics_updated_minutes_ago">Updated %1$dm ago</string>
+    <string name="analytics_updated_hours_ago">Updated %1$dh ago</string>
+    <string name="analytics_updated_days_ago">Updated %1$dd ago</string>
+    <string name="analytics_pressure_status_placeholder">Normal Pressure Distribution</string>
+    <string name="analytics_steps_consistency">STEP CONSISTENCY</string>
+    <string name="analytics_steps_period">Monthly</string>
+    <string name="analytics_ataxia_title">What is Ataxia?</string>
+    <string name="analytics_ataxia_desc">Ataxia is a condition that affects balance, coordination, and muscle control. It makes tasks like walking, reaching, or holding objects harder because the muscles don’t work together as they should.</string>
+    <string name="analytics_back_to_foot">Back to Foot Overview</string>
+    <string name="analytics_share_health_report">Share Health Report</string>
+    <string name="analytics_secure_pdf_note">A secure PDF report will be generated for your clinician.</string>
+    <string name="toast_share_report_coming_soon">Share report action coming soon</string>
+
+    <string name="big_toe_title">Big Toe</string>
+    <string name="big_toe_banner">Your vitals are currently within the Normal Range.\nMeasurements are taken every 15 minutes by your smart sock.</string>
+    <string name="big_toe_spo2_title">Oxygen (SpO₂)</string>
+    <string name="big_toe_last_30_minutes">Last 30 minutes</string>
+    <string name="big_toe_last_1_hour">Last 1 hour</string>
+    <string name="big_toe_last_2_hours">Last 2 hours</string>
+    <string name="big_toe_last_4_hours">Last 4 hours</string>
+    <string name="big_toe_range_30m">30m</string>
+    <string name="big_toe_range_1h">1h</string>
+    <string name="big_toe_range_2h">2h</string>
+    <string name="big_toe_range_4h">4h</string>
+    <string name="big_toe_hr_range">Range: 60 - 100</string>
+    <string name="big_toe_spo2_range">Range: 95 - 100</string>
+    <string name="big_toe_bp_placeholder">120/80 mmHg</string>
+    <string name="big_toe_bp_hypotension">HYPOTENSION</string>
+    <string name="big_toe_bp_normal">NORMAL</string>
+    <string name="big_toe_bp_hypertension">HYPERTENSION</string>
+    <string name="big_toe_bp_detail_hypo_line">Low Blood Pressure</string>
+    <string name="big_toe_bp_detail_norm_line">Blood Pressure in Normal Range</string>
+    <string name="big_toe_bp_detail_hyper_line">High Blood Pressure</string>
+    <string name="big_toe_what_is_spo2_title">What is SpO₂?</string>
+    <string name="big_toe_what_is_spo2_desc">Oxygen saturation measures the percentage of oxygen-carrying hemoglobin in your blood. Healthy levels for most adults are above 95%.</string>
 
     <string name="toast_edit_profile_coming_soon">Edit profile coming soon</string>
     <string name="toast_bluetooth_permission_connect">Bluetooth permission required to connect</string>
@@ -205,6 +265,17 @@
     <string name="confirm_password">Confirm Password</string>
     <string name="sign_in">Sign in</string>
     <string name="sign_up">Sign up</string>
+    <string name="forgot_password">Forgot your password ?</string>
+    <string name="forgot_password_title">Reset Password</string>
+    <string name="forgot_password_subtitle">Enter your username or email, then choose a new password.</string>
+    <string name="forgot_password_identifier_label">Email or Username</string>
+    <string name="forgot_password_identifier_hint">Enter your username or email</string>
+    <string name="forgot_password_new_password_hint">Enter your new password</string>
+    <string name="forgot_password_confirm_hint">Confirm your new password</string>
+    <string name="forgot_password_save">Save Password</string>
+    <string name="forgot_password_cancel">Cancel</string>
+    <string name="toast_forgot_password_updated">Password updated. Please sign in again.</string>
+    <string name="toast_forgot_password_account_not_found">No matching local account found.</string>
     <string name="dont_have_account">"Do not have an account?   "</string>
     <string name="already_have_account">"Already have an account?  "</string>
     <string name="or">or</string>
@@ -269,10 +340,10 @@
     <string name="loading_dots">...</string>
 
     <!-- Gait Analysis Strings -->
-    <string name="gait_acceleration_data">Acceleration Data</string>
-    <string name="gait_acceleration_desc">Real-time acceleration data from IMU sensor</string>
-    <string name="gait_gyroscope_data">Gyroscope Data</string>
-    <string name="gait_gyroscope_desc">Real-time rotational data from IMU sensor</string>
+    <string name="gait_steps_data">Step count</string>
+    <string name="gait_steps_desc">Total steps from IMU (same encrypted channel as the dashboard)</string>
+    <string name="gait_motion_data">Motion state</string>
+    <string name="gait_motion_desc">Static vs in motion from IMU</string>
     <string name="gait_edema_assessment">Edema Assessment</string>
     <string name="gait_edema_calibrating">Calibrating...</string>
     <string name="gait_edema_severe">SEVERE</string>
@@ -289,7 +360,12 @@
     <string name="dashboard_heart_rate_label">HEART RATE</string>
     <string name="dashboard_spo2_label" translatable="false">SPO2</string>
     <string name="dashboard_bp_class_label">BP Classification</string>
+    <string name="dashboard_bp_range_label">BP RANGE</string>
+    <string name="dashboard_status_pending">Pending</string>
     <string name="dashboard_swelling_label">SWELLING</string>
     <string name="dashboard_ataxia_label">ATAXIA</string>
+    <string name="dashboard_steps_label">STEPS</string>
+    <string name="motion_static">Static</string>
+    <string name="motion_in_motion">In Motion</string>
     <string name="remember_me">Remember me</string>
 </resources>

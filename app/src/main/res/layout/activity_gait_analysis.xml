@@ -21,7 +21,7 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Acceleration Data Card -->
+            <!-- Steps (BLE characteristic 0002, encrypted) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -29,7 +29,7 @@
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="#4CAF50"
+                app:strokeColor="@color/dashboard_steps_accent"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -49,17 +49,17 @@
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:layout_marginEnd="12dp"
-                            android:contentDescription="Acceleration Icon"
-                            android:src="@android:drawable/ic_menu_compass"
-                            app:tint="#4CAF50" />
+                            android:contentDescription="@string/gait_steps_data"
+                            android:src="@drawable/ic_steps"
+                            app:tint="@color/dashboard_steps_icon" />
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:fontFamily="@font/rubik_medium"
-                            android:text="@string/gait_acceleration_data"
-                            android:textColor="#4CAF50"
+                            android:text="@string/gait_steps_data"
+                            android:textColor="@color/dashboard_steps_accent"
                             android:textSize="20sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -71,7 +71,7 @@
                         android:fontFamily="@font/rubik_medium"
                         android:textColor="@color/dark_blue"
                         android:textSize="16sp"
-                        tools:text="X: 0.98, Y: -0.05, Z: 0.12" />
+                        tools:text="Steps: 0" />
 
                     <TextView
                         android:layout_width="match_parent"
@@ -79,13 +79,13 @@
                         android:layout_marginTop="12dp"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
-                        android:text="@string/gait_acceleration_desc"
+                        android:text="@string/gait_steps_desc"
                         android:textColor="#999999"
                         android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Gyroscope Data Card -->
+            <!-- Motion state (BLE characteristic 0003, encrypted) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -93,7 +93,7 @@
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="#FF9800"
+                app:strokeColor="#9333EA"
                 app:strokeWidth="2dp">
 
                 <LinearLayout
@@ -113,17 +113,17 @@
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:layout_marginEnd="12dp"
-                            android:contentDescription="Gyroscope Icon"
-                            android:src="@android:drawable/ic_menu_rotate"
-                            app:tint="#FF9800" />
+                            android:contentDescription="@string/gait_motion_data"
+                            android:src="@drawable/ic_nav_home"
+                            app:tint="#9333EA" />
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:fontFamily="@font/rubik_medium"
-                            android:text="@string/gait_gyroscope_data"
-                            android:textColor="#FF9800"
+                            android:text="@string/gait_motion_data"
+                            android:textColor="#9333EA"
                             android:textSize="20sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -135,7 +135,7 @@
                         android:fontFamily="@font/rubik_medium"
                         android:textColor="@color/dark_blue"
                         android:textSize="16sp"
-                        tools:text="X: -2.4, Y: 10.1, Z: 5.7" />
+                        tools:text="Motion: Static" />
 
                     <TextView
                         android:layout_width="match_parent"
@@ -143,7 +143,7 @@
                         android:layout_marginTop="12dp"
                         android:fontFamily="@font/rubik_medium"
                         android:gravity="center"
-                        android:text="@string/gait_gyroscope_desc"
+                        android:text="@string/gait_motion_desc"
                         android:textColor="#999999"
                         android:textSize="12sp" />
                 </LinearLayout>

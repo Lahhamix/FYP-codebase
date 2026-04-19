@@ -8,6 +8,7 @@
 
 #include "key_exchange.h"
 #include <string.h>
+#include "serial_log.h"
 
 // uECC for ECDH - built into Arduino Nano 33 BLE mbed core (secp256r1)
 #include <uECC.h>
@@ -18,14 +19,14 @@
 // Purpose strings - MUST match AESCrypto.kt exactly
 static const char PURPOSE_HEART_RATE[] = "HEART_RATE";
 static const char PURPOSE_SPO2[] = "SPO2";
-static const char PURPOSE_ACCEL[] = "ACCEL";
-static const char PURPOSE_GYRO[] = "GYRO";
+static const char PURPOSE_STEPS[] = "STEPS";
+static const char PURPOSE_MOTION[] = "MOTION";
 static const char PURPOSE_FLEX[] = "FLEX";
 static const char PURPOSE_PRESSURE[] = "PRESSURE";
 
 static uint8_t s_sharedSecret[SHARED_SECRET_SIZE];
-static uint8_t s_accelKey[DERIVED_KEY_SIZE];
-static uint8_t s_gyroKey[DERIVED_KEY_SIZE];
+static uint8_t s_stepsKey[DERIVED_KEY_SIZE];
+static uint8_t s_motionKey[DERIVED_KEY_SIZE];
 static uint8_t s_heartRateKey[DERIVED_KEY_SIZE];
 static uint8_t s_spo2Key[DERIVED_KEY_SIZE];
 static uint8_t s_flexKey[DERIVED_KEY_SIZE];
@@ -65,7 +66,7 @@ void key_exchange_init() {
   uint8_t publicKeyRaw[PUBLIC_KEY_RAW_SIZE];
 
   if (uECC_make_key(publicKeyRaw, s_privateKey) != 1) {
-    Serial.println("[KEY_EXCHANGE] Failed to generate keypair");
+    LOG_ENCRYPT(Serial.println("[KEY_EXCHANGE] Failed to generate keypair"));
     return;
   }
 
@@ -76,8 +77,8 @@ void key_exchange_init() {
 
 bool key_exchange_process_phone_key(const uint8_t* phonePublicKey, size_t len) {
   if (len != PUBLIC_KEY_UNCOMPRESSED_SIZE) {
-    Serial.print("[KEY_EXCHANGE] Invalid phone key length: ");
-    Serial.println(len);
+    LOG_ENCRYPT(Serial.print("[KEY_EXCHANGE] Invalid phone key length: "));
+    LOG_ENCRYPT(Serial.println(len));
     return false;
   }
 
@@ -85,20 +86,20 @@ bool key_exchange_process_phone_key(const uint8_t* phonePublicKey, size_t len) {
   const uint8_t* phoneKeyRaw = &phonePublicKey[1];
 
   if (uECC_shared_secret(phoneKeyRaw, s_privateKey, s_sharedSecret) != 1) {
-    Serial.println("[KEY_EXCHANGE] Failed to compute shared secret");
+    LOG_ENCRYPT(Serial.println("[KEY_EXCHANGE] Failed to compute shared secret"));
     return false;
   }
 
   // Derive keys using same KDF as Android
-  deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_ACCEL, s_accelKey);
-  deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_GYRO, s_gyroKey);
+  deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_STEPS, s_stepsKey);
+  deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_MOTION, s_motionKey);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_HEART_RATE, s_heartRateKey);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_SPO2, s_spo2Key);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_FLEX, s_flexKey);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_PRESSURE, s_pressureKey);
 
   s_keyExchangeComplete = true;
-  Serial.println("[KEY_EXCHANGE] Key derivation complete.");
+  LOG_ENCRYPT(Serial.println("[KEY_EXCHANGE] Key derivation complete."));
   return true;
 }
 
@@ -110,12 +111,12 @@ bool key_exchange_is_complete() {
   return s_keyExchangeComplete;
 }
 
-void key_exchange_get_accel_key(uint8_t* outKey) {
-  memcpy(outKey, s_accelKey, DERIVED_KEY_SIZE);
+void key_exchange_get_steps_key(uint8_t* outKey) {
+  memcpy(outKey, s_stepsKey, DERIVED_KEY_SIZE);
 }
 
-void key_exchange_get_gyro_key(uint8_t* outKey) {
-  memcpy(outKey, s_gyroKey, DERIVED_KEY_SIZE);
+void key_exchange_get_motion_key(uint8_t* outKey) {
+  memcpy(outKey, s_motionKey, DERIVED_KEY_SIZE);
 }
 
 void key_exchange_get_heart_rate_key(uint8_t* outKey) {

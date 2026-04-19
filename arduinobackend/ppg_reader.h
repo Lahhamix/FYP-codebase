@@ -1,22 +1,31 @@
 #ifndef PPG_READER_H
 #define PPG_READER_H
 
-#include <Wire.h>
-#include "MAX30105.h"
-#include "heartRate.h"
+#include <Arduino.h>
 
 struct PPGData {
   int32_t beatsPerMinute;
   double spO2;
   bool heartRateAvailable;
   bool spo2Available;
-  int8_t validHeartRate;   // 1 if heart rate is valid, 0 otherwise
-  int8_t validSPO2;        // 1 if SpO2 is valid, 0 otherwise
+  int8_t validHeartRate;
+  int8_t validSPO2;
+
+  float ratio;
+  float correl;
+
+  bool fingerDetected;
+
+  /** True only on iterations where a full RF window just finished (new HR/SpO2 computed). */
+  bool newWindow;
 };
 
 bool ppg_init();
-PPGData readPPG();
-void resetSpo2();
+
+/** Call once per main loop: collects one PPG sample per call (non-blocking vs other sensors). */
+PPGData ppg_tick();
+
+/** Optional: print HR/SpO2 line + red,ir CSV lines when a new window completed (uses internal buffers). */
+void ppg_print_serial_on_new_window(const PPGData& d);
 
 #endif
-

@@ -30,6 +30,9 @@
             android:name=".LoginActivity"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
+            android:name=".ForgotPasswordActivity"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
             android:name=".RegistrationActivity"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
@@ -50,6 +53,14 @@
         <activity
             android:name=".PressureMatrixActivity"
             android:label="Pressure Matrix"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
+            android:name=".PlantarFootAnalyticsActivity"
+            android:label="Plantar Foot"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
+            android:name=".BigToeAnalyticsActivity"
+            android:label="Big Toe"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
             android:name=".SettingsActivity"

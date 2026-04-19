@@ -35,16 +35,27 @@ class GaitAnalysisActivity : AppCompatActivity() {
                     }
 
                     val decryptedData = when (uuidString) {
-                        "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptAccel(encryptedBytes)
-                        "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptGyro(encryptedBytes)
+                        "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptSteps(encryptedBytes)
+                        "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptMotion(encryptedBytes)
                         "9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00" -> AESCrypto.decryptFlex(encryptedBytes)
                         else -> return
                     }
 
                     when (uuidString) {
-                        "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00" -> accelText.text = "📍 Accel: $decryptedData"
-                        "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00" -> gyroText.text = "🔄 Gyro: $decryptedData"
-                        "9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00" -> updateEdemaDisplay(decryptedData)
+                        "9a8b0002-6d5e-4c10-b6d9-1f25c09d9e00" ->
+                            accelText.text = getString(R.string.gait_steps_data) + ": $decryptedData"
+                        "9a8b0003-6d5e-4c10-b6d9-1f25c09d9e00" -> {
+                            val motionLabel = when (decryptedData.trim()) {
+                                "1" -> getString(R.string.motion_in_motion)
+                                else -> getString(R.string.motion_static)
+                            }
+                            gyroText.text = getString(R.string.gait_motion_data) + ": $motionLabel"
+                        }
+                        "9a8b0006-6d5e-4c10-b6d9-1f25c09d9e00" -> {
+                            if (!decryptedData.trim().startsWith("DECRYPT_ERROR")) {
+                                updateEdemaDisplay(decryptedData)
+                            }
+                        }
                     }
                 }
                 MainActivity.ACTION_DEVICE_DISCONNECTED -> {
@@ -67,6 +78,7 @@ class GaitAnalysisActivity : AppCompatActivity() {
     }
 
     private fun updateEdemaDisplay(data: String) {
+        if (data.startsWith("DECRYPT_ERROR")) return
         // Data format: "edemaLabel,totalDeviation,deviation1,deviation2"
         // Example: "none,2,1,1" or "moderate,15,7,8"
         val parts = data.split(",")

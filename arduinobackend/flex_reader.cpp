@@ -1,4 +1,5 @@
 #include "flex_reader.h"
+#include "serial_log.h"
 
 // -----------------------------------------------------------------------------
 // Flex sensors edema classification
@@ -36,7 +37,7 @@ const int severe_threshold      = 80;
 
 // Timing
 const unsigned long CALIBRATION_MS  = 60000;
-const unsigned long SAMPLE_DELAY_MS = 200;
+const unsigned long SAMPLE_DELAY_MS = 2;
 const unsigned long WARMUP_MS       = 5000;
 
 // Smoothing
@@ -141,7 +142,7 @@ bool flex_init() {
   ma_init = false;
   idx = 0;
 
-  Serial.println("[FLEX] Initialized. Starting 60s calibration...");
+  LOG_FLEX(Serial.println("[FLEX] Initialized. Starting 60s calibration..."));
   return true;
 }
 
@@ -193,10 +194,10 @@ FlexData readFlex() {
         initMovingAvgTo(preMean1, preMean2);
         preSamplingDone = true;
 
-        Serial.print("[FLEX] Pre-calibration mean1: ");
-        Serial.println(preMean1);
-        Serial.print("[FLEX] Pre-calibration mean2: ");
-        Serial.println(preMean2);
+        LOG_FLEX(Serial.print("[FLEX] Pre-calibration mean1: "));
+        LOG_FLEX(Serial.println(preMean1));
+        LOG_FLEX(Serial.print("[FLEX] Pre-calibration mean2: "));
+        LOG_FLEX(Serial.println(preMean2));
       }
 
       return data;
@@ -242,14 +243,14 @@ FlexData readFlex() {
     data.calibrated = false;
     data.dataAvailable = true;
 
-    Serial.print("[FLEX] CAL raw1=");
-    Serial.print(raw1);
-    Serial.print(" filt1=");
-    Serial.print(filt1);
-    Serial.print(" raw2=");
-    Serial.print(raw2);
-    Serial.print(" filt2=");
-    Serial.println(filt2);
+    LOG_FLEX(Serial.print("[FLEX] CAL raw1="));
+    LOG_FLEX(Serial.print(raw1));
+    LOG_FLEX(Serial.print(" filt1="));
+    LOG_FLEX(Serial.print(filt1));
+    LOG_FLEX(Serial.print(" raw2="));
+    LOG_FLEX(Serial.print(raw2));
+    LOG_FLEX(Serial.print(" filt2="));
+    LOG_FLEX(Serial.println(filt2));
 
     if (t >= CALIBRATION_MS) {
       if (minFilt1 == ADC_MAX) minFilt1 = (preN > 0) ? (int)(preAcc1 / preN) : raw1;
@@ -262,11 +263,11 @@ FlexData readFlex() {
 
       calibrated = true;
 
-      Serial.println("[FLEX] Calibration complete.");
-      Serial.print("[FLEX] Baseline1 = ");
-      Serial.println(baseline_value1);
-      Serial.print("[FLEX] Baseline2 = ");
-      Serial.println(baseline_value2);
+      LOG_FLEX(Serial.println("[FLEX] Calibration complete."));
+      LOG_FLEX(Serial.print("[FLEX] Baseline1 = "));
+      LOG_FLEX(Serial.println(baseline_value1));
+      LOG_FLEX(Serial.print("[FLEX] Baseline2 = "));
+      LOG_FLEX(Serial.println(baseline_value2));
     }
 
     return data;
@@ -303,22 +304,22 @@ FlexData readFlex() {
   data.calibrated = true;
   data.dataAvailable = true;
 
-  Serial.print("[FLEX] raw1=");
-  Serial.print(raw1);
-  Serial.print(" raw2=");
-  Serial.print(raw2);
-  Serial.print(" filt1=");
-  Serial.print(current_value1);
-  Serial.print(" filt2=");
-  Serial.print(current_value2);
-  Serial.print(" dev1=");
-  Serial.print(deviation1);
-  Serial.print(" dev2=");
-  Serial.print(deviation2);
-  Serial.print(" total=");
-  Serial.print(total_deviation);
-  Serial.print(" label=");
-  Serial.println(label);
+  LOG_FLEX(Serial.print("[FLEX] raw1="));
+  LOG_FLEX(Serial.print(raw1));
+  LOG_FLEX(Serial.print(" raw2="));
+  LOG_FLEX(Serial.print(raw2));
+  LOG_FLEX(Serial.print(" filt1="));
+  LOG_FLEX(Serial.print(current_value1));
+  LOG_FLEX(Serial.print(" filt2="));
+  LOG_FLEX(Serial.print(current_value2));
+  LOG_FLEX(Serial.print(" dev1="));
+  LOG_FLEX(Serial.print(deviation1));
+  LOG_FLEX(Serial.print(" dev2="));
+  LOG_FLEX(Serial.print(deviation2));
+  LOG_FLEX(Serial.print(" total="));
+  LOG_FLEX(Serial.print(total_deviation));
+  LOG_FLEX(Serial.print(" label="));
+  LOG_FLEX(Serial.println(label));
 
   return data;
 }

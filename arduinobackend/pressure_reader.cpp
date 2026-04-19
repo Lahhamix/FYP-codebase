@@ -1,4 +1,5 @@
 #include "pressure_reader.h"
+#include "serial_log.h"
 
 static uint16_t frameBuffer[NUM_ROWS][NUM_COLS];
 
@@ -68,6 +69,10 @@ bool pressure_init() {
 }
 
 PressureFrame readPressure() {
+  return readPressureWithYield(nullptr);
+}
+
+PressureFrame readPressureWithYield(void (*yieldFn)(void)) {
   PressureFrame frame;
   frame.available = false;
 
@@ -76,6 +81,10 @@ PressureFrame readPressure() {
     setColumn(c);
     for (int r = 0; r < NUM_ROWS; r++) {
       frameBuffer[r][c] = readRow12(r);
+    }
+    if (yieldFn != nullptr && PRESSURE_IMU_YIELD_EVERY_N_COLS > 0 &&
+        ((c + 1) % PRESSURE_IMU_YIELD_EVERY_N_COLS) == 0) {
+      yieldFn();
     }
   }
   disableAllColumns();
