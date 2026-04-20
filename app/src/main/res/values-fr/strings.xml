@@ -264,4 +264,50 @@
     <string name="username">Nom d\'utilisateur</string>
     <string name="vital_signals">Signes vitaux</string>
     <string name="welcome">Bienvenue</string>
+
+    <string name="privacy_dialog_title">Politique de Confidentialité</string>
+    <string name="privacy_dialog_close">Fermer</string>
+
+    <string name="privacy_section_1_title">1. Aperçu</string>
+    <string name="privacy_section_1_body">SoleMate est une application de suivi de la santé qui collecte et stocke les données de l\'utilisateur pour fournir des fonctionnalités de surveillance, des perspectives visuelles et des fonctionnalités liées aux alertes.</string>
+
+    <string name="privacy_section_2_title">2. Données que nous collectons</string>
+    <string name="privacy_section_2_body">- Nom d\'utilisateur, mot de passe et photo de profil\n- Informations du compte Google (adresse e-mail et ID Google lors de l\'utilisation de la connexion Google)\n- Données de santé telles que la distribution de la pression plantaire, la fréquence cardiaque, la SpO2, le nombre de pas et la cohérence, et la détection du gonflement\n- Données de capteur reçues de l\'appareil Bluetooth connecté\n- Historique des lectures de santé stockées localement\n- Adresses e-mail des destinataires du partage automatique et statut de vérification\n- Paramètres de l\'application incluant les notifications, les alertes, les préférences linguistiques et les préférences d\'accessibilité</string>
+
+    <string name="privacy_section_3_title">3. Comment les données sont stockées</string>
+    <string name="privacy_section_3_body">Les données sont stockées localement sur l\'appareil de l\'utilisateur à l\'aide de SharedPreferences et des fichiers internes de l\'application. Les données de santé peuvent être enregistrées dans des fichiers tels que les fichiers d\'historique CSV, les fichiers de données de base et les images des cartes thermiques. Aucune base de données cloud ou stockage Firebase n\'est actuellement utilisé.</string>
+
+    <string name="privacy_section_4_title">4. Partage des données</string>
+    <string name="privacy_section_4_body">Les données ne sont pas partagées avec des tiers par défaut. Si le partage automatique est activé, les e-mails d\'alerte sont envoyés aux destinataires sélectionnés et vérifiés par l\'utilisateur. Les utilisateurs peuvent également exporter et partager manuellement leurs données (par exemple, les fichiers CSV).</string>
+
+    <string name="privacy_section_5_title">5. Services tiers</string>
+    <string name="privacy_section_5_body">SoleMate intègre les outils tiers suivants: Google Sign-In pour l\'authentification, SendGrid pour les e-mails d\'alerte, WorkManager pour les tâches de fond, uCrop pour l\'édition des photos de profil et MPAndroidChart pour la visualisation.</string>
+
+    <string name="privacy_section_6_title">6. Sécurité des données</string>
+    <string name="privacy_section_6_body">La transmission de données Bluetooth utilise des mécanismes de chiffrement incluant l\'échange de clés ECDH et AES. Certaines données de compte sensibles sont stockées localement sur l\'appareil. Le chiffrement complet de toutes les données utilisateur stockées n\'est pas actuellement implémenté.</string>
+
+    <string name="privacy_section_7_title">7. Autorisations</string>
+    <string name="privacy_section_7_body">L\'application utilise les autorisations Bluetooth (connexion du capteur), Localisation (requise pour la numérisation Bluetooth), Notifications (alertes), Internet (e-mail et services connexes), Biométrique (si activé) et l\'accès au stockage pour enregistrer/exporter les fichiers.</string>
+
+    <string name="privacy_section_8_title">8. Contrôle de l\'utilisateur</string>
+    <string name="privacy_section_8_body">Les utilisateurs peuvent modifier les informations de profil (nom d\'utilisateur et photo), modifier ou réinitialiser le mot de passe, exporter les données et se déconnecter. La suppression du compte n\'est pas encore implémentée.</string>
+
+    <string name="privacy_section_9_title">9. Pas de suivi analytique</string>
+    <string name="privacy_section_9_body">SoleMate ne collecte pas les analyses, les données de suivi d\'utilisation ou la télémétrie comportementale. Aucun système de rapport d\'erreurs ou de télémétrie n\'est actuellement implémenté.</string>
+
+    <string name="privacy_section_10_title">10. Assistance et support</string>
+    <string name="privacy_section_10_body">Les utilisateurs peuvent accéder au support via la section Contacter le support dans l\'application. Les commentaires peuvent être soumis via un formulaire Google externe ou en envoyant un email à SoleMateapp26\@gmail.com.</string>
+
+    <string name="privacy_last_updated">Mise à jour: avril 2026</string>
+
+    <string name="contact_support_dialog_title">Contacter le support</string>
+    <string name="contact_support_dialog_close">Fermer</string>
+    <string name="contact_support_overview">Si vous avez besoin d\'aide avec SoleMate, vous pouvez contacter notre équipe d\'assistance ou envoyer vos commentaires en utilisant les options ci-dessous.</string>
+    <string name="contact_support_options_title">Options de contact</string>
+    <string name="contact_support_feedback_button">Envoyer des commentaires</string>
+    <string name="contact_support_help_title">Informations d\'aide</string>
+    <string name="contact_support_help_info">Vous pouvez utiliser les fonctionnalités de l\'application, les paramètres et les alertes pour vous guider à travers SoleMate. Explorez chaque section pour en savoir plus sur la surveillance de vos données de santé.</string>
+    <string name="contact_support_note">Notre équipe d\'assistance examinera vos commentaires et répondra par les canaux appropriés lorsque cela sera possible.</string>
+    <string name="contact_support_email">E-mail: SoleMate26\@gmail.com</string>
+    <string name="contact_support_emergency_note">En cas d\'urgence médicale, veuillez composer le 140 immédiatement.</string>
 </resources>

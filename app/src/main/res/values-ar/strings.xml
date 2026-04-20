@@ -258,4 +258,50 @@
     <string name="username">اسم المستخدم</string>
     <string name="vital_signals">المؤشرات الحيوية</string>
     <string name="welcome">مرحبًا</string>
+
+    <string name="privacy_dialog_title">سياسة الخصوصية</string>
+    <string name="privacy_dialog_close">إغلاق</string>
+
+    <string name="privacy_section_1_title">1. نظرة عامة</string>
+    <string name="privacy_section_1_body">SoleMate هو تطبيق مراقبة صحية يجمع ويخزن بيانات المستخدم لتوفير ميزات المراقبة والرؤى البصرية والوظائف المتعلقة بالتنبيهات.</string>
+
+    <string name="privacy_section_2_title">2. البيانات التي نجمعها</string>
+    <string name="privacy_section_2_body">- اسم المستخدم وكلمة المرور والصورة الشخصية\n- معلومات حساب Google (البريد الإلكتروني وهوية Google عند استخدام تسجيل الدخول عبر Google)\n- بيانات صحية مثل توزيع ضغط القدم الأخمصي ومعدل ضربات القلب وتشبع الأكسجين وعدد الخطوات والاتساق والكشف عن التورم\n- بيانات المستشعرات المستقبلة من جهاز Bluetooth المتصل\n- سجل قراءات الصحة المخزنة محليًا\n- عناوين بريد المستقبلين للمشاركة التلقائية وحالة التحقق\n- إعدادات التطبيق بما في ذلك الإخطارات والتنبيهات والتفضيلات اللغوية وتفضيلات إمكانية الوصول</string>
+
+    <string name="privacy_section_3_title">3. كيفية تخزين البيانات</string>
+    <string name="privacy_section_3_body">يتم تخزين البيانات محليًا على جهاز المستخدم باستخدام SharedPreferences وملفات التطبيق الداخلية. قد يتم حفظ بيانات الصحة في ملفات مثل ملفات سجل CSV وملفات البيانات الأساسية وصور الخرائط الحرارية. لا يتم استخدام قاعدة بيانات سحابية أو تخزين Firebase حاليًا.</string>
+
+    <string name="privacy_section_4_title">4. مشاركة البيانات</string>
+    <string name="privacy_section_4_body">لا يتم مشاركة البيانات مع أطراف ثالثة بشكل افتراضي. إذا تم تفعيل المشاركة التلقائية، يتم إرسال رسائل البريد الإلكتروني للتنبيهات إلى المستقبلين المحددين والموثوقين من قبل المستخدم. قد ينقر المستخدمون أيضًا على تصدير بياناتهم ومشاركتها يدويًا (على سبيل المثال، ملفات CSV).</string>
+
+    <string name="privacy_section_5_title">5. خدمات الطرف الثالث</string>
+    <string name="privacy_section_5_body">يدمج SoleMate أدوات الطرف الثالث التالية: Google Sign-In للمصادقة و SendGrid لرسائل البريد الإلكتروني للتنبيهات و WorkManager لمهام الخلفية و uCrop لتحرير صور الملف الشخصي و MPAndroidChart للتصور.</string>
+
+    <string name="privacy_section_6_title">6. أمان البيانات</string>
+    <string name="privacy_section_6_body">يستخدم نقل بيانات Bluetooth آليات التشفير بما في ذلك تبادل مفاتيح ECDH و AES. يتم تخزين بعض بيانات الحساب الحساسة محليًا على الجهاز. لم يتم تنفيذ التشفير الكامل لجميع بيانات المستخدم المخزنة حاليًا.</string>
+
+    <string name="privacy_section_7_title">7. الصلاحيات</string>
+    <string name="privacy_section_7_body">يستخدم التطبيق صلاحيات Bluetooth (اتصال المستشعرات) والموقع (مطلوب لفحص Bluetooth) والإخطارات (التنبيهات) والإنترنت (البريد الإلكتروني والخدمات ذات الصلة) والقياسات الحيوية (إن أمكن) والوصول إلى التخزين لحفظ وتصدير الملفات.</string>
+
+    <string name="privacy_section_8_title">8. التحكم من قبل المستخدم</string>
+    <string name="privacy_section_8_body">يمكن للمستخدمين تعديل معلومات الملف الشخصي (اسم المستخدم والصورة) وتغيير أو إعادة تعيين كلمة المرور وتصدير البيانات وتسجيل الخروج. لم يتم تنفيذ حذف الحساب بعد.</string>
+
+    <string name="privacy_section_9_title">9. لا توجد تتبعات تحليلية</string>
+    <string name="privacy_section_9_body">لا يجمع SoleMate بيانات التحليلات أو بيانات تتبع الاستخدام أو التلميترية السلوكية. لم يتم تنفيذ نظام الإبلاغ عن الأعطال أو التلميترية حاليًا.</string>
+
+    <string name="privacy_section_10_title">10. الاتصال والدعم</string>
+    <string name="privacy_section_10_body">يمكن للمستخدمين الوصول إلى الدعم عبر قسم الاتصال بالدعم في التطبيق. يمكن تقديم الملاحظات من خلال نموذج Google خارجي أو عن طريق إرسال بريد إلكتروني إلى SoleMateapp26\@gmail.com.</string>
+
+    <string name="privacy_last_updated">آخر تحديث: أبريل 2026</string>
+
+    <string name="contact_support_dialog_title">الاتصال بالدعم</string>
+    <string name="contact_support_dialog_close">إغلاق</string>
+    <string name="contact_support_overview">إذا كنت بحاجة إلى مساعدة مع SoleMate، يمكنك الاتصال بفريق الدعم لدينا أو تقديم ملاحظات باستخدام الخيارات أدناه.</string>
+    <string name="contact_support_options_title">خيارات الاتصال</string>
+    <string name="contact_support_feedback_button">تقديم ملاحظات</string>
+    <string name="contact_support_help_title">معلومات المساعدة</string>
+    <string name="contact_support_help_info">يمكنك استخدام ميزات التطبيق والإعدادات والتنبيهات لإرشادك عبر SoleMate. استكشف كل قسم لمعرفة المزيد عن مراقبة بيانات صحتك.</string>
+    <string name="contact_support_note">سيقوم فريق الدعم لدينا بمراجعة ملاحظاتك والرد عليها من خلال القنوات المناسبة عند الإمكان.</string>
+    <string name="contact_support_email">البريد الإلكتروني: SoleMate26\@gmail.com</string>
+    <string name="contact_support_emergency_note">إذا كنت تعاني من حالة طبية طارئة، يُرجى الاتصال فورًا على 140</string>
 </resources>
