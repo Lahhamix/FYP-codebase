@@ -730,8 +730,10 @@ class SettingsActivity : AppCompatActivity() {
         val verifyEmailButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_verify_email_button)
         val codeContainer = dialogView.findViewById<LinearLayout>(R.id.auto_share_dialog_code_container)
         val codeField = dialogView.findViewById<EditText>(R.id.auto_share_dialog_code)
+        val verificationLoading = dialogView.findViewById<View>(R.id.auto_share_dialog_loading_overlay)
         val resendContainer = dialogView.findViewById<LinearLayout>(R.id.auto_share_dialog_resend_container)
         val resendButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_resend_button)
+        val verifyCodeButton = dialogView.findViewById<MaterialButton>(R.id.auto_share_dialog_verify_code_button)
         val resendTimerText = dialogView.findViewById<TextView>(R.id.auto_share_dialog_resend_timer)
         val sharedWithLabel = dialogView.findViewById<TextView>(R.id.auto_share_dialog_shared_with_label)
         val emailLabel = dialogView.findViewById<TextView>(R.id.auto_share_dialog_email_label)
@@ -745,6 +747,7 @@ class SettingsActivity : AppCompatActivity() {
         val resendCooldownMs = 60_000L
         var resendTimer: CountDownTimer? = null
         var autoShareDialog: AlertDialog? = null
+        var requestedEmailForCode: String? = null
 
         val verifiedEmails = getVerifiedAutoShareEmails(prefs).toMutableList()
 
@@ -888,8 +891,11 @@ class SettingsActivity : AppCompatActivity() {
         fun resetEntryFields() {
             emailField.text?.clear()
             codeField.text?.clear()
+            requestedEmailForCode = null
+            verificationLoading.visibility = View.GONE
             codeContainer.visibility = View.GONE
             resendContainer.visibility = View.GONE
+            verifyCodeButton.visibility = View.GONE
             resendTimerText.visibility = View.GONE
             resendButton.alpha = 1f
             resendButton.text = getString(R.string.settings_auto_share_dialog_resend)
@@ -902,8 +908,10 @@ class SettingsActivity : AppCompatActivity() {
             emailLabel.visibility = if (visible) View.VISIBLE else View.GONE
             emailRow.visibility = if (visible) View.VISIBLE else View.GONE
             if (!visible) {
+                verificationLoading.visibility = View.GONE
                 codeContainer.visibility = View.GONE
                 resendContainer.visibility = View.GONE
+                verifyCodeButton.visibility = View.GONE
                 resendTimerText.visibility = View.GONE
             }
         }
@@ -915,14 +923,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         fun updateResendForCooldown(remainingMs: Long) {
-            val isVerifyMode = codeContainer.visibility == View.VISIBLE && !codeField.text.isNullOrBlank()
-            if (isVerifyMode) {
-                resendButton.isEnabled = true
-                resendButton.alpha = 1f
-                resendTimerText.visibility = View.GONE
-                return
-            }
-
             if (remainingMs <= 0L) {
                 resendButton.isEnabled = true
                 resendButton.alpha = 1f
@@ -956,13 +956,17 @@ class SettingsActivity : AppCompatActivity() {
 
         fun sendVerificationCode(targetEmail: String) {
             val verificationCode = generateVerificationCode()
+            verifyEmailButton.visibility = View.GONE
             verifyEmailButton.isEnabled = false
+            verificationLoading.visibility = View.VISIBLE
 
             Thread {
                 val (sent, errorDetail) = sendVerificationEmail(targetEmail, verificationCode)
                 runOnUiThread {
+                    verificationLoading.visibility = View.GONE
                     verifyEmailButton.isEnabled = true
                     if (!sent) {
+                        verifyEmailButton.visibility = View.VISIBLE
                         val detail = errorDetail?.take(140).orEmpty()
                         val message = if (detail.isNotBlank()) {
                             getString(R.string.settings_auto_share_send_failed) + " (" + detail + ")"
@@ -989,7 +993,11 @@ class SettingsActivity : AppCompatActivity() {
                     verifyEmailButton.visibility = View.GONE
                     codeContainer.visibility = View.VISIBLE
                     resendContainer.visibility = View.VISIBLE
+                    verifyCodeButton.visibility = View.GONE
+                    requestedEmailForCode = targetEmail.trim().lowercase(Locale.ROOT)
                     resendButton.text = getString(R.string.settings_auto_share_dialog_resend)
+                    resendButton.isEnabled = false
+                    resendButton.alpha = 0.45f
                     codeField.text?.clear()
                     codeField.requestFocus()
                     Toast.makeText(
@@ -1003,12 +1011,15 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         codeContainer.visibility = View.GONE
+        verificationLoading.visibility = View.GONE
         resendContainer.visibility = View.GONE
+        verifyCodeButton.visibility = View.GONE
         resendTimerText.visibility = View.GONE
         renderVerifiedEmails()
 
         verifyEmailButton.setOnClickListener {
             val email = emailField.text?.toString()?.trim().orEmpty()
+
             if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                 emailField.error = getString(R.string.settings_auto_share_invalid_email)
                 emailField.requestFocus()
@@ -1026,46 +1037,53 @@ class SettingsActivity : AppCompatActivity() {
             sendVerificationCode(email)
         }
 
-        resendButton.setOnClickListener {
+        verifyCodeButton.setOnClickListener {
             val email = emailField.text?.toString()?.trim().orEmpty()
+            val pendingCode = prefs.getString(KEY_AUTO_SHARE_PENDING_CODE, "").orEmpty()
+            val pendingEmail = prefs.getString(KEY_AUTO_SHARE_PENDING_EMAIL, "").orEmpty()
+            val expiresAt = prefs.getLong(KEY_AUTO_SHARE_PENDING_EXPIRES_AT, 0L)
             val enteredCode = codeField.text?.toString()?.trim().orEmpty()
-            if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                emailField.error = getString(R.string.settings_auto_share_invalid_email)
-                emailField.requestFocus()
+            val now = System.currentTimeMillis()
+
+            if (enteredCode.length != 6) {
+                codeField.error = getString(R.string.settings_auto_share_code_required)
+                codeField.requestFocus()
                 return@setOnClickListener
             }
 
-            val pendingEmail = prefs.getString(KEY_AUTO_SHARE_PENDING_EMAIL, "").orEmpty()
-            val pendingCode = prefs.getString(KEY_AUTO_SHARE_PENDING_CODE, "").orEmpty()
-            val expiresAt = prefs.getLong(KEY_AUTO_SHARE_PENDING_EXPIRES_AT, 0L)
-            val hasActiveCode = pendingCode.isNotBlank() && pendingEmail.equals(email, ignoreCase = true) && System.currentTimeMillis() < expiresAt
+            if (!pendingEmail.equals(email, ignoreCase = true) || now >= expiresAt || pendingCode.isBlank()) {
+                codeField.error = getString(R.string.settings_auto_share_code_expired)
+                codeField.requestFocus()
+                return@setOnClickListener
+            }
 
-            if (enteredCode.isNotBlank()) {
-                if (!hasActiveCode) {
-                    Toast.makeText(this, getString(R.string.settings_auto_share_code_invalid), Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
+            if (enteredCode != pendingCode) {
+                codeField.error = getString(R.string.settings_auto_share_code_invalid)
+                codeField.requestFocus()
+                return@setOnClickListener
+            }
 
-                if (enteredCode != pendingCode) {
-                    codeField.error = getString(R.string.settings_auto_share_code_invalid)
-                    codeField.requestFocus()
-                    return@setOnClickListener
-                }
+            verifiedEmails.removeAll { it.equals(email, ignoreCase = true) }
+            verifiedEmails.add(email)
+            persistVerifiedEmails()
 
-                verifiedEmails.removeAll { it.equals(email, ignoreCase = true) }
-                verifiedEmails.add(email)
-                persistVerifiedEmails()
+            prefs.edit()
+                .remove(KEY_AUTO_SHARE_PENDING_CODE)
+                .remove(KEY_AUTO_SHARE_PENDING_EMAIL)
+                .remove(KEY_AUTO_SHARE_PENDING_EXPIRES_AT)
+                .apply()
 
-                prefs.edit()
-                    .remove(KEY_AUTO_SHARE_PENDING_CODE)
-                    .remove(KEY_AUTO_SHARE_PENDING_EMAIL)
-                    .remove(KEY_AUTO_SHARE_PENDING_EXPIRES_AT)
-                    .apply()
+            renderVerifiedEmails()
+            resetEntryFields()
+            setRecipientEntryVisible(false)
+            Toast.makeText(this, getString(R.string.settings_auto_share_recipient_added), Toast.LENGTH_SHORT).show()
+        }
 
-                renderVerifiedEmails()
-                resetEntryFields()
-                setRecipientEntryVisible(false)
-                Toast.makeText(this, getString(R.string.settings_auto_share_recipient_added), Toast.LENGTH_SHORT).show()
+        resendButton.setOnClickListener {
+            val email = emailField.text?.toString()?.trim().orEmpty()
+            if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                emailField.error = getString(R.string.settings_auto_share_invalid_email)
+                emailField.requestFocus()
                 return@setOnClickListener
             }
 
@@ -1092,37 +1110,41 @@ class SettingsActivity : AppCompatActivity() {
         emailField.doAfterTextChanged {
             val typedEmail = it?.toString()?.trim().orEmpty()
             if (typedEmail.isBlank()) {
+                verificationLoading.visibility = View.GONE
                 codeContainer.visibility = View.GONE
                 resendContainer.visibility = View.GONE
+                verifyCodeButton.visibility = View.GONE
                 verifyEmailButton.visibility = View.VISIBLE
                 return@doAfterTextChanged
             }
 
-            val pendingEmail = prefs.getString(KEY_AUTO_SHARE_PENDING_EMAIL, "").orEmpty()
-            val expiresAt = prefs.getLong(KEY_AUTO_SHARE_PENDING_EXPIRES_AT, 0L)
-            val now = System.currentTimeMillis()
-            val showCode = pendingEmail.equals(typedEmail, ignoreCase = true) && now < expiresAt
-            codeContainer.visibility = if (showCode) View.VISIBLE else View.GONE
-            resendContainer.visibility = if (showCode) View.VISIBLE else View.GONE
-            verifyEmailButton.visibility = if (showCode) View.GONE else View.VISIBLE
+            val isTypedForRequestedCode = requestedEmailForCode
+                ?.equals(typedEmail.trim().lowercase(Locale.ROOT), ignoreCase = false)
+                ?: false
+
+            if (!isTypedForRequestedCode) {
+                verificationLoading.visibility = View.GONE
+                codeContainer.visibility = View.GONE
+                resendContainer.visibility = View.GONE
+                verifyCodeButton.visibility = View.GONE
+                verifyEmailButton.visibility = View.VISIBLE
+            }
         }
 
         codeField.doAfterTextChanged {
-            val hasCode = !it.isNullOrBlank()
+            val enteredCode = it?.toString()?.trim().orEmpty()
+            val hasTypedCode = enteredCode.isNotEmpty()
+            val hasSixDigits = enteredCode.length == 6
             if (codeContainer.visibility == View.VISIBLE) {
-                resendButton.text = if (hasCode) {
-                    getString(R.string.settings_auto_share_dialog_verify)
+                if (hasTypedCode) {
+                    resendContainer.visibility = View.GONE
+                    verifyCodeButton.visibility = View.VISIBLE
                 } else {
-                    getString(R.string.settings_auto_share_dialog_resend)
-                }
-
-                if (hasCode) {
-                    resendButton.isEnabled = true
-                    resendButton.alpha = 1f
-                    resendTimerText.visibility = View.GONE
-                } else {
+                    verifyCodeButton.visibility = View.GONE
+                    resendContainer.visibility = View.VISIBLE
                     updateResendForCooldown(cooldownRemainingMs())
                 }
+                verifyCodeButton.isEnabled = hasSixDigits
             }
         }
 
@@ -1216,9 +1238,13 @@ class SettingsActivity : AppCompatActivity() {
 
         renderVerifiedEmails()
         setRecipientEntryVisible(verifiedEmails.isEmpty())
-        startResendCooldown(cooldownRemainingMs())
 
         autoShareDialog?.show()
+        autoShareDialog?.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.98f).toInt(),
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        autoShareDialog?.window?.setGravity(android.view.Gravity.CENTER)
     }
 
     private fun showAutoShareTurnedOffDialog() {
@@ -1740,23 +1766,11 @@ class SettingsActivity : AppCompatActivity() {
             false to (exception.message ?: "network error")
         }
 
-        if (backendResult.first || !BuildConfig.DEBUG) {
+        if (backendResult.first) {
             return backendResult
         }
 
-        Log.w("EmailBackend", "Backend send failed in debug build. Falling back to direct SendGrid.")
-        val directResult = sendEmailViaSendGridDirect(recipientEmail, subject, plainText, html)
-        if (directResult.first) {
-            return directResult
-        }
-
-        val backendError = backendResult.second.orEmpty()
-        val directError = directResult.second.orEmpty()
-        val combinedError = listOf(backendError, directError)
-            .filter { it.isNotBlank() }
-            .joinToString(" | ")
-            .ifBlank { "send failed" }
-        return false to combinedError
+        return false to (backendResult.second ?: "email backend unavailable")
     }
 
     private fun sendEmailViaSendGridDirect(
@@ -2097,6 +2111,10 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.94f).toInt(),
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 

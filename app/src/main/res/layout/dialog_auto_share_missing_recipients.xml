@@ -40,7 +40,6 @@
             android:id="@+id/auto_share_missing_cancel_button"
             android:layout_width="0dp"
             android:layout_height="50dp"
-            android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:fontFamily="@font/rubik_medium"
             android:text="@string/cancel"
@@ -60,7 +59,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/auto_share_missing_manage_button"
-            android:layout_width="90dp"
+            android:layout_width="105dp"
             android:layout_height="50dp"
             android:layout_marginStart="8dp"
             android:layout_weight="1"

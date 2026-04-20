@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name" translatable="false">SoleMate</string>
-    <string name="bluetooth_not_enabled">Bluetooth is not enabled. Please enable it and restart the app.</string><string name="permissions_not_granted">Permissions not granted. The app cannot function without them.</string>
+    <string name="bluetooth_not_enabled">Bluetooth is not enabled. Please enable it and restart the app.</string>
+    <string name="permissions_not_granted">Permissions not granted. The app cannot function without them.</string>
+    <string name="bluetooth_permission_dialog_title">Allow Bluetooth Access</string>
+    <string name="bluetooth_permission_dialog_message">This allows SoleMate to find and connect to your Bluetooth accessories.</string>
+    <string name="bluetooth_permission_dialog_allow">OK</string>
+    <string name="bluetooth_permission_dialog_deny">Don\'t Allow</string>
     <string name="scanning">Scanning...</string>
     <string name="connecting">Connecting to %1$s...</string>
     <string name="connected_discovering">Connected. Discovering services...</string>
@@ -92,7 +97,7 @@
     <string name="settings_auto_share_desc">Shares Alerts automatically when they are detected.</string>
     <string name="settings_auto_share_edit">Edit</string>
     <string name="settings_auto_share_edit_placeholder">Edit options coming soon</string>
-    <string name="settings_auto_share_manage_recipients">Manage recipient</string>
+    <string name="settings_auto_share_manage_recipients">Manage Participiants</string>
     <string name="settings_auto_share_recipients_count">Recipients: %1$d added</string>
     <string name="settings_auto_share_missing_recipients_title">No recipients configured</string>
     <string name="settings_auto_share_missing_recipients_message">By enabling this setting, you need at least one recipient configured. Please manage recipients first.</string>
@@ -101,7 +106,7 @@
     <string name="settings_auto_share_disable_confirm_title">Turn off Auto-share?</string>
     <string name="settings_auto_share_disable_confirm_message">By turning off Auto-share, recipients will no longer receive your alert emails. Are you sure you want to continue?</string>
     <string name="settings_auto_share_turn_off">Turn off</string>
-    <string name="settings_auto_share_dialog_title">Auto-share settings</string>
+    <string name="settings_auto_share_dialog_title">Manage Participiants</string>
     <string name="settings_auto_share_dialog_message">Enter and verify a recipient email. Auto-share will send only when health alerts are detected.</string>
     <string name="settings_auto_share_dialog_email_label">Recipient email</string>
     <string name="settings_auto_share_dialog_email_hint">name@example.com</string>
@@ -367,7 +372,6 @@
     <string name="right_sock_active">RIGHT SOCK ACTIVE</string>
 
     <string name="toast_scan_bluetooth_unavailable">Bluetooth is not available on this device</string>
-    <string name="toast_enable_bluetooth">Please enable Bluetooth</string>
     <string name="toast_enable_location_for_ble">Location services MUST be enabled for BLE scanning.</string>
     <string name="toast_ble_permissions_required">Permissions are required to scan for BLE devices</string>
     <string name="toast_google_linked_signin">This profile is Google-linked. Please use Sign in with Google.</string>

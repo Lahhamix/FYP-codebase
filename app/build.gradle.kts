@@ -19,13 +19,20 @@ android {
     val sendGridApiKey = (localProperties.getProperty("SENDGRID_API_KEY") ?: "").trim()
     val sendGridFromEmail = (localProperties.getProperty("SENDGRID_FROM_EMAIL") ?: "").trim()
     val sendGridApiBaseUrl = (localProperties.getProperty("SENDGRID_API_BASE_URL") ?: "https://api.sendgrid.com").trim()
+    val sharedEmailBackendBaseUrl = providers.gradleProperty("EMAIL_BACKEND_BASE_URL").orNull
+        ?.trim()
+        ?.takeIf { it.isNotBlank() }
     val emailBackendBaseUrlDebug = (
-        localProperties.getProperty("EMAIL_BACKEND_BASE_URL_DEBUG")
+        providers.gradleProperty("EMAIL_BACKEND_BASE_URL_DEBUG").orNull
+            ?: localProperties.getProperty("EMAIL_BACKEND_BASE_URL_DEBUG")
+            ?: sharedEmailBackendBaseUrl
             ?: localProperties.getProperty("EMAIL_BACKEND_BASE_URL")
             ?: "http://10.0.2.2:3000"
     ).trim()
     val emailBackendBaseUrlRelease = (
-        localProperties.getProperty("EMAIL_BACKEND_BASE_URL_RELEASE")
+        providers.gradleProperty("EMAIL_BACKEND_BASE_URL_RELEASE").orNull
+            ?: localProperties.getProperty("EMAIL_BACKEND_BASE_URL_RELEASE")
+            ?: sharedEmailBackendBaseUrl
             ?: "https://your-backend.example.com"
     ).trim()
     val autoShareRecipientFallback = (localProperties.getProperty("AUTO_SHARE_RECIPIENT_FALLBACK") ?: "").trim()

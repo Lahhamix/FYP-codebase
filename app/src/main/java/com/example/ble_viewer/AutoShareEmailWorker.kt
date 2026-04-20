@@ -3,7 +3,6 @@ package com.example.ble_viewer
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -37,73 +36,58 @@ class AutoShareEmailWorker(
 
         if (recipients.isEmpty()) return Result.success()
 
-        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
-        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
         val alertMessage = inputData.getString("auto_share_alert_message").orEmpty().ifBlank {
             "A health alert was detected by SoleMate."
         }
 
-        if (apiKey.isBlank() || fromEmail.isBlank()) {
-            return Result.retry()
+        val backendBaseUrl = BuildConfig.EMAIL_BACKEND_BASE_URL.trim()
+            .ifBlank { "http://10.0.2.2:3000" }
+            .trimEnd('/')
+        val sendUrl = "$backendBaseUrl/send-email"
+
+        val plainText = """
+            SoleMate Health Alert
+
+            Alert: $alertMessage
+            Time: ${java.util.Date()}
+
+            This email was sent because Auto-share is enabled and an alert was detected.
+        """.trimIndent()
+
+        val html = "<pre>${plainText.replace("&", "&amp;").replace("<", "&lt;")}</pre>"
+
+        var anyFailed = false
+        for (email in recipients) {
+            val success = runCatching {
+                val payload = JSONObject().apply {
+                    put("to", email)
+                    put("subject", "SoleMate Health Monitoring Alert")
+                    put("text", plainText)
+                    put("html", html)
+                }
+
+                val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = 15000
+                    readTimeout = 15000
+                }
+
+                OutputStreamWriter(connection.outputStream).use { writer ->
+                    writer.write(payload.toString())
+                    writer.flush()
+                }
+
+                val code = connection.responseCode
+                connection.disconnect()
+                code in 200..202
+            }.getOrElse { false }
+
+            if (!success) anyFailed = true
         }
 
-        return runCatching {
-            val plainText = """
-                SoleMate Health Alert
-
-                Alert: $alertMessage
-                Time: ${java.util.Date()}
-
-                This email was sent because Auto-share is enabled and an alert was detected.
-            """.trimIndent()
-
-            val payload = JSONObject().apply {
-                put("personalizations", JSONArray().put(
-                    JSONObject().put(
-                        "to",
-                        JSONArray().apply {
-                            recipients.forEach { email ->
-                                put(JSONObject().put("email", email))
-                            }
-                        }
-                    )
-                ))
-                put("from", JSONObject().put("email", fromEmail).put("name", "SoleMate"))
-                put("subject", "SoleMate Health Monitoring Alert")
-                put("content", JSONArray().put(
-                    JSONObject()
-                        .put("type", "text/plain")
-                        .put("value", plainText)
-                ))
-            }
-
-            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim().ifBlank { "https://api.sendgrid.com" }.trimEnd('/')
-            val sendUrl = "$baseUrl/v3/mail/send"
-
-            val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Authorization", "Bearer $apiKey")
-                setRequestProperty("Content-Type", "application/json")
-                connectTimeout = 15000
-                readTimeout = 15000
-            }
-
-            OutputStreamWriter(connection.outputStream).use { writer ->
-                writer.write(payload.toString())
-                writer.flush()
-            }
-
-            val code = connection.responseCode
-            connection.disconnect()
-
-            when (code) {
-                200, 201, 202 -> Result.success()
-                in 500..599 -> Result.retry()
-                else -> Result.failure()
-            }
-        }.getOrElse {
-            Result.retry()
-        }
+        return if (anyFailed) Result.retry() else Result.success()
     }
 }

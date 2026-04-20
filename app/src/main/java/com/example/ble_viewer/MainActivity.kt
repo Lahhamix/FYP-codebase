@@ -36,6 +36,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -106,6 +107,8 @@ class MainActivity : AppCompatActivity() {
     private var lastSpokenAtMs: Long = 0L
     private var lastAlertNotificationMessage: String? = null
     private var lastAlertNotificationAtMs: Long = 0L
+    private var isBluetoothEnablePromptVisible = false
+    private var isBluetoothPermissionRequestInFlight = false
 
     // --- Data Logging Members ---
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -233,6 +236,17 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "Failed to process sensor data on dashboard: ${e.message}")
                 }
             }
+        }
+    }
+
+    private val enableBluetoothLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        isBluetoothEnablePromptVisible = false
+        val isEnabled = runCatching { bluetoothAdapter?.isEnabled == true }.getOrDefault(false)
+        if (!isEnabled) {
+            updateDashboardStatus("Bluetooth Off", DashboardStatusVisual.TEXT_ONLY)
+            setDisconnectedMode(true)
         }
     }
 
@@ -540,12 +554,49 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestBluetoothConnectPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (isBluetoothPermissionRequestInFlight) return
+            if (isFinishing || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && isDestroyed)) {
+                return
+            }
+            isBluetoothPermissionRequestInFlight = true
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
                 BLUETOOTH_CONNECT_REQUEST_CODE
             )
         }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == BLUETOOTH_CONNECT_REQUEST_CODE) {
+            isBluetoothPermissionRequestInFlight = false
+            val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            if (granted) {
+                promptEnableBluetoothIfNeeded()
+            } else {
+                updateDashboardStatus("Permission Required", DashboardStatusVisual.TEXT_ONLY)
+                setDisconnectedMode(true)
+            }
+        }
+    }
+
+    private fun promptEnableBluetoothIfNeeded() {
+        if (bluetoothAdapter == null || isBluetoothEnablePromptVisible) return
+        if (!hasBluetoothConnectPermission()) {
+            requestBluetoothConnectPermission()
+            return
+        }
+
+        val isEnabled = runCatching { bluetoothAdapter?.isEnabled == true }.getOrDefault(false)
+        if (isEnabled) return
+
+        isBluetoothEnablePromptVisible = true
+        enableBluetoothLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
     }
 
     private fun formatValueWithUnit(value: String, unit: String): CharSequence {
@@ -663,6 +714,7 @@ class MainActivity : AppCompatActivity() {
         updateToolbarUsername()
         updateToolbarProfileImage()
         reconcileDisconnectedOverlay()
+        promptEnableBluetoothIfNeeded()
         // Stop any ongoing TTS speech in case the user disabled it in Settings
         if (!isVoiceReadHintsEnabled()) {
             tts?.stop()
@@ -740,6 +792,15 @@ class MainActivity : AppCompatActivity() {
                 updateDashboardStatus("Bluetooth Unavailable", DashboardStatusVisual.TEXT_ONLY)
                 setDisconnectedMode(true)
             }
+            return
+        }
+
+        if (runCatching { bluetoothAdapter?.isEnabled == true }.getOrDefault(false).not()) {
+            runOnUiThread {
+                updateDashboardStatus("Bluetooth Off", DashboardStatusVisual.TEXT_ONLY)
+                setDisconnectedMode(true)
+            }
+            promptEnableBluetoothIfNeeded()
             return
         }
         

@@ -1,263 +1,306 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="20dp"
-    android:background="@drawable/rounded_dialog_bg"
-    android:layoutDirection="locale"
-    android:orientation="vertical"
-    android:padding="20dp">
-
-    <TextView
-        android:id="@+id/auto_share_dialog_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/settings_auto_share_dialog_title"
-        android:textColor="#1A416B"
-        android:textSize="20sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/auto_share_dialog_message"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:fontFamily="@font/roboto_medium"
-        android:gravity="center"
-        android:text="@string/settings_auto_share_dialog_message"
-        android:textColor="#5F6D7B"
-        android:textSize="14sp" />
-
-    <TextView
-        android:id="@+id/auto_share_dialog_shared_with_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/rubik_medium"
-        android:text="@string/settings_auto_share_shared_with"
-        android:textColor="#2F3D4A"
-        android:layout_marginTop="18dp"
-
-        android:textSize="13sp"
-        android:textStyle="bold" />
+    android:layout_height="wrap_content">
 
     <LinearLayout
-        android:id="@+id/auto_share_dialog_verified_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_margin="8dp"
+        android:background="@drawable/rounded_dialog_bg"
+        android:layoutDirection="locale"
         android:orientation="vertical"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/auto_share_dialog_email_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:fontFamily="@font/rubik_medium"
-        android:text="@string/settings_auto_share_dialog_email_label"
-        android:textColor="#2F3D4A"
-        android:textSize="14sp" />
-
-    <LinearLayout
-        android:id="@+id/auto_share_dialog_email_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <EditText
-            android:id="@+id/auto_share_dialog_email"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/settings_outline_button_bg"
-            android:fontFamily="@font/roboto_medium"
-            android:hint="@string/settings_auto_share_dialog_email_hint"
-            android:imeOptions="actionNext"
-            android:inputType="textEmailAddress"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="12dp"
-            android:textColor="#1A416B"
-            android:textColorHint="#93A1AF"
-            android:textSize="15sp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/auto_share_dialog_verify_email_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:fontFamily="@font/rubik_medium"
-            android:minHeight="46dp"
-            android:paddingHorizontal="14dp"
-            android:text="@string/settings_auto_share_dialog_verify"
-            android:textAllCaps="false"
-            android:textColor="#2F5A80"
-            android:textSize="13sp"
-            app:backgroundTint="@android:color/white"
-            app:cornerRadius="14dp"
-            app:elevation="0dp"
-            app:strokeColor="#4E7EA8"
-            app:strokeWidth="1dp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/auto_share_dialog_code_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:orientation="vertical"
-        android:visibility="gone">
+        android:padding="20dp">
 
         <TextView
+            android:id="@+id/auto_share_dialog_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/settings_auto_share_dialog_title"
+            android:textColor="#1A416B"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/auto_share_dialog_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:fontFamily="@font/roboto_medium"
+            android:gravity="center"
+            android:text="@string/settings_auto_share_dialog_message"
+            android:textColor="#5F6D7B"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/auto_share_dialog_shared_with_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
             android:fontFamily="@font/rubik_medium"
-            android:text="@string/settings_auto_share_dialog_code_label"
+            android:text="@string/settings_auto_share_shared_with"
             android:textColor="#2F3D4A"
+
             android:textSize="13sp"
             android:textStyle="bold" />
 
         <LinearLayout
+            android:id="@+id/auto_share_dialog_verified_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/auto_share_dialog_email_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:fontFamily="@font/rubik_medium"
+            android:text="@string/settings_auto_share_dialog_email_label"
+            android:textColor="#2F3D4A"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/auto_share_dialog_email_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <EditText
-                android:id="@+id/auto_share_dialog_code"
+                android:id="@+id/auto_share_dialog_email"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/settings_outline_button_bg"
                 android:fontFamily="@font/roboto_medium"
-                android:hint="@string/settings_auto_share_dialog_code_hint"
-                android:imeOptions="actionDone"
-                android:inputType="number"
-                android:maxLength="6"
+                android:hint="@string/settings_auto_share_dialog_email_hint"
+                android:imeOptions="actionNext"
+                android:inputType="textEmailAddress"
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="12dp"
                 android:textColor="#1A416B"
                 android:textColorHint="#93A1AF"
                 android:textSize="15sp" />
 
-            <LinearLayout
-                android:id="@+id/auto_share_dialog_resend_container"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/auto_share_dialog_verify_email_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:gravity="center_horizontal"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:layout_marginStart="10dp"
+                android:fontFamily="@font/rubik_medium"
+                android:minHeight="46dp"
+                android:paddingHorizontal="14dp"
+                android:text="@string/settings_auto_share_dialog_verify"
+                android:textAllCaps="false"
+                android:textColor="#2F5A80"
+                android:textSize="13sp"
+                app:backgroundTint="@android:color/white"
+                app:cornerRadius="14dp"
+                app:elevation="0dp"
+                app:strokeColor="#4E7EA8"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/auto_share_dialog_code_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/rubik_medium"
+                android:text="@string/settings_auto_share_dialog_code_label"
+                android:textColor="#2F3D4A"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/auto_share_dialog_code"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/settings_outline_button_bg"
+                    android:fontFamily="@font/roboto_medium"
+                    android:hint="@string/settings_auto_share_dialog_code_hint"
+                    android:imeOptions="actionDone"
+                    android:inputType="number"
+                    android:maxLength="6"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="12dp"
+                    android:textColor="#1A416B"
+                    android:textColorHint="#93A1AF"
+                    android:textSize="15sp" />
+
+                <LinearLayout
+                    android:id="@+id/auto_share_dialog_resend_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/auto_share_dialog_resend_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="37dp"
+                        android:fontFamily="@font/rubik_medium"
+                        android:text="@string/settings_auto_share_dialog_resend"
+                        android:textAllCaps="false"
+                        android:textColor="#2F5A80"
+                        android:textSize="13sp"
+                        app:backgroundTint="@android:color/white"
+                        app:cornerRadius="14dp"
+                        app:elevation="0dp"
+                        app:strokeColor="#4E7EA8"
+                        app:strokeWidth="1dp" />
+
+                    <TextView
+                        android:id="@+id/auto_share_dialog_resend_timer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="@font/roboto_medium"
+                        android:textColor="#8F9AA6"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/auto_share_dialog_resend_button"
+                    android:id="@+id/auto_share_dialog_verify_code_button"
                     android:layout_width="wrap_content"
                     android:layout_height="37dp"
+                    android:layout_marginStart="8dp"
                     android:fontFamily="@font/rubik_medium"
-                    android:text="@string/settings_auto_share_dialog_resend"
+                    android:text="@string/settings_auto_share_dialog_verify"
                     android:textAllCaps="false"
                     android:textColor="#2F5A80"
                     android:textSize="13sp"
+                    android:visibility="gone"
                     app:backgroundTint="@android:color/white"
                     app:cornerRadius="14dp"
                     app:elevation="0dp"
                     app:strokeColor="#4E7EA8"
                     app:strokeWidth="1dp" />
-
-                <TextView
-                    android:id="@+id/auto_share_dialog_resend_timer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="@font/roboto_medium"
-                    android:textColor="#8F9AA6"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
             </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/auto_share_dialog_verified_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/auto_share_dialog_add_recipient_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/rubik_medium"
+                android:text="@string/settings_auto_share_add_recipient"
+                android:textAllCaps="false"
+                android:textColor="#2F5A80"
+                android:textSize="13sp"
+                app:backgroundTint="@android:color/white"
+                app:cornerRadius="14dp"
+                app:elevation="0dp"
+                app:strokeColor="#4E7EA8"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/auto_share_dialog_cancel_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/rubik_medium"
+                android:gravity="center"
+                android:minHeight="50dp"
+                android:text="@string/settings_auto_share_dialog_cancel"
+                android:textAllCaps="false"
+                android:textColor="#2F5A80"
+                android:textSize="14sp"
+                app:backgroundTint="@android:color/white"
+                app:cornerRadius="18dp"
+                app:elevation="0dp"
+                app:rippleColor="#110D3B66"
+                app:strokeColor="#4E7EA8"
+                app:strokeWidth="2dp" />
+
+
+            <View
+                android:layout_width="22dp"
+                android:layout_height="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/auto_share_dialog_save_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/rubik_medium"
+                android:gravity="center"
+                android:minHeight="50dp"
+                android:text="@string/settings_auto_share_dialog_save"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                app:backgroundTint="#0D3B66"
+                app:cornerRadius="18dp"
+                app:elevation="0dp"
+                app:rippleColor="#1AFFFFFF"
+                app:strokeWidth="0dp" />
         </LinearLayout>
 
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/auto_share_dialog_verified_section"
+    <FrameLayout
+        android:id="@+id/auto_share_dialog_loading_overlay"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:orientation="vertical"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="true"
         android:visibility="gone">
 
+        <ProgressBar
+            android:id="@+id/auto_share_dialog_verification_loading"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/blue" />
+    </FrameLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/auto_share_dialog_add_recipient_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:fontFamily="@font/rubik_medium"
-            android:text="@string/settings_auto_share_add_recipient"
-            android:textAllCaps="false"
-            android:textColor="#2F5A80"
-            android:textSize="13sp"
-            app:backgroundTint="@android:color/white"
-            app:cornerRadius="14dp"
-            app:elevation="0dp"
-            app:strokeColor="#4E7EA8"
-            app:strokeWidth="1dp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:orientation="horizontal"
-        android:weightSum="2">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/auto_share_dialog_cancel_button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:fontFamily="@font/rubik_medium"
-            android:gravity="center"
-            android:minHeight="50dp"
-            android:text="@string/settings_auto_share_dialog_cancel"
-            android:textAllCaps="false"
-            android:textColor="#2F5A80"
-            android:textSize="14sp"
-            app:backgroundTint="@android:color/white"
-            app:cornerRadius="18dp"
-            app:elevation="0dp"
-            app:rippleColor="#110D3B66"
-            app:strokeColor="#4E7EA8"
-            app:strokeWidth="2dp" />
-
-
-        <View
-            android:layout_width="22dp"
-            android:layout_height="1dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/auto_share_dialog_save_button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:fontFamily="@font/rubik_medium"
-            android:gravity="center"
-            android:minHeight="50dp"
-            android:text="@string/settings_auto_share_dialog_save"
-            android:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            app:backgroundTint="#0D3B66"
-            app:cornerRadius="18dp"
-            app:elevation="0dp"
-            app:rippleColor="#1AFFFFFF"
-            app:strokeWidth="0dp" />
-    </LinearLayout>
-
-</LinearLayout>
+</FrameLayout>

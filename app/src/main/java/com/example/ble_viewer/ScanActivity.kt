@@ -94,7 +94,6 @@ class ScanActivity : AppCompatActivity() {
         }
 
         if (!bluetoothAdapter!!.isEnabled) {
-            Toast.makeText(this, getString(R.string.toast_enable_bluetooth), Toast.LENGTH_LONG).show()
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, 1)
             return
