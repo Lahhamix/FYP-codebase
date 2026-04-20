@@ -1531,13 +1531,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun sendVerificationEmail(recipientEmail: String, code: String): Pair<Boolean, String?> {
-        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
-        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
-        if (apiKey.isBlank() || fromEmail.isBlank()) {
-            Log.e("SendGridEmail", "Missing API key or from email")
-            return false to "missing SendGrid key/from email"
-        }
-
         val patientName = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .getString("username", getString(R.string.settings_default_name))
             .orEmpty()
@@ -1553,76 +1546,10 @@ class SettingsActivity : AppCompatActivity() {
             This code expires in 24 hours.
         """.trimIndent()
 
-        return runCatching {
-            val payload = JSONObject().apply {
-                put("personalizations", JSONArray().put(
-                    JSONObject().put("to", JSONArray().put(JSONObject().put("email", recipientEmail)))
-                ))
-                put("from", JSONObject().put("email", fromEmail).put("name", "SoleMate"))
-                put("subject", "SoleMate Email Verification")
-                put("content", JSONArray().put(
-                    JSONObject().put("type", "text/plain").put("value", plainText)
-                ).put(
-                    JSONObject().put("type", "text/html").put("value", html)
-                ))
-            }
-
-            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim().ifBlank { "https://api.sendgrid.com" }.trimEnd('/')
-            val sendUrl = "$baseUrl/v3/mail/send"
-            val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Authorization", "Bearer $apiKey")
-                setRequestProperty("Content-Type", "application/json")
-                connectTimeout = 15000
-                readTimeout = 15000
-            }
-
-            OutputStreamWriter(connection.outputStream).use { writer ->
-                writer.write(payload.toString())
-                writer.flush()
-            }
-
-            val responseCode = connection.responseCode
-            val messageId = connection.getHeaderField("X-Message-Id").orEmpty()
-            Log.d("SendGridEmail", "Response code: $responseCode, endpoint: $sendUrl")
-            if (messageId.isNotBlank()) {
-                Log.i("SendGridEmail", "Accepted by SendGrid. Message ID: $messageId")
-            }
-            
-            if (responseCode !in 200..202) {
-                val errorStream = connection.errorStream?.bufferedReader()?.readText() ?: "No error details"
-                Log.e("SendGridEmail", "SendGrid error: $errorStream")
-                val parsedMessage = runCatching {
-                    val errorJson = JSONObject(errorStream)
-                    val errors = errorJson.optJSONArray("errors")
-                    if (errors != null && errors.length() > 0) {
-                        errors.optJSONObject(0)?.optString("message")
-                    } else {
-                        null
-                    }
-                }.getOrNull().orEmpty().ifBlank { null }
-                connection.disconnect()
-                return@runCatching (false to (parsedMessage ?: "HTTP $responseCode"))
-            }
-            
-            connection.disconnect()
-            true to null
-        }.onFailure { exception ->
-            Log.e("SendGridEmail", "Exception sending email: ${exception.message}", exception)
-        }.getOrElse { exception ->
-            false to (exception.message ?: "network error")
-        }
+        return sendEmailViaBackend(recipientEmail, "SoleMate Email Verification", plainText, html)
     }
 
     private fun sendSharingStoppedEmail(recipientEmail: String): Pair<Boolean, String?> {
-        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
-        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
-        if (apiKey.isBlank() || fromEmail.isBlank()) {
-            Log.e("SendGridEmail", "Missing API key or from email")
-            return false to "missing SendGrid key/from email"
-        }
-
         val patientName = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .getString("username", getString(R.string.settings_default_name))
             .orEmpty()
@@ -1640,60 +1567,7 @@ class SettingsActivity : AppCompatActivity() {
             This is an automated message. No action is required.
         """.trimIndent()
 
-        return runCatching {
-            val payload = JSONObject().apply {
-                put("personalizations", JSONArray().put(
-                    JSONObject().put("to", JSONArray().put(JSONObject().put("email", recipientEmail)))
-                ))
-                put("from", JSONObject().put("email", fromEmail).put("name", "SoleMate"))
-                put("subject", "Alert Sharing Update - SoleMate")
-                put("content", JSONArray().put(
-                    JSONObject().put("type", "text/plain").put("value", plainText)
-                ).put(
-                    JSONObject().put("type", "text/html").put("value", html)
-                ))
-            }
-
-            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim().ifBlank { "https://api.sendgrid.com" }.trimEnd('/')
-            val sendUrl = "$baseUrl/v3/mail/send"
-            val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Authorization", "Bearer $apiKey")
-                setRequestProperty("Content-Type", "application/json")
-                connectTimeout = 15000
-                readTimeout = 15000
-            }
-
-            OutputStreamWriter(connection.outputStream).use { writer ->
-                writer.write(payload.toString())
-                writer.flush()
-            }
-
-            val responseCode = connection.responseCode
-            if (responseCode !in 200..202) {
-                val errorStream = connection.errorStream?.bufferedReader()?.readText() ?: "No error details"
-                Log.e("SendGridEmail", "SendGrid error on removal email: $errorStream")
-                val parsedMessage = runCatching {
-                    val errorJson = JSONObject(errorStream)
-                    val errors = errorJson.optJSONArray("errors")
-                    if (errors != null && errors.length() > 0) {
-                        errors.optJSONObject(0)?.optString("message")
-                    } else {
-                        null
-                    }
-                }.getOrNull().orEmpty().ifBlank { null }
-                connection.disconnect()
-                return@runCatching (false to (parsedMessage ?: "HTTP $responseCode"))
-            }
-
-            connection.disconnect()
-            true to null
-        }.onFailure { exception ->
-            Log.e("SendGridEmail", "Exception sending removal email: ${exception.message}", exception)
-        }.getOrElse { exception ->
-            false to (exception.message ?: "network error")
-        }
+        return sendEmailViaBackend(recipientEmail, "Alert Sharing Update - SoleMate", plainText, html)
     }
 
     private fun sendAutoShareDisabledEmails(recipientEmails: List<String>) {
@@ -1730,13 +1604,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun sendAlertSharingDisabledEmail(recipientEmail: String): Pair<Boolean, String?> {
-        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
-        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
-        if (apiKey.isBlank() || fromEmail.isBlank()) {
-            Log.e("SendGridEmail", "Missing API key or from email")
-            return false to "missing SendGrid key/from email"
-        }
-
         val patientName = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .getString("username", getString(R.string.settings_default_name))
             .orEmpty()
@@ -1758,13 +1625,100 @@ class SettingsActivity : AppCompatActivity() {
             This is an automated message. No action is required.
         """.trimIndent()
 
+        return sendEmailViaBackend(recipientEmail, "Alert Sharing Disabled - SoleMate", plainText, html)
+    }
+
+    private fun sendEmailViaBackend(
+        recipientEmail: String,
+        subject: String,
+        plainText: String,
+        html: String
+    ): Pair<Boolean, String?> {
+        val backendBaseUrl = BuildConfig.EMAIL_BACKEND_BASE_URL.trim().ifBlank { "http://10.0.2.2:3000" }.trimEnd('/')
+        val sendUrl = "$backendBaseUrl/send-email"
+
+        val backendResult = runCatching {
+            val payload = JSONObject().apply {
+                put("to", recipientEmail)
+                put("subject", subject)
+                put("text", plainText)
+                put("html", html)
+            }
+
+            val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Accept", "application/json")
+                connectTimeout = 15000
+                readTimeout = 15000
+            }
+
+            OutputStreamWriter(connection.outputStream).use { writer ->
+                writer.write(payload.toString())
+                writer.flush()
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..202) {
+                val errorStream = connection.errorStream?.bufferedReader()?.readText() ?: "No error details"
+                Log.e("EmailBackend", "Backend error: $errorStream")
+                val parsedMessage = runCatching {
+                    val errorJson = JSONObject(errorStream)
+                    errorJson.optString("error").ifBlank {
+                        errorJson.optString("message")
+                    }
+                }.getOrNull().orEmpty().ifBlank { null }
+                connection.disconnect()
+                return@runCatching (false to (parsedMessage ?: "HTTP $responseCode"))
+            }
+
+            connection.disconnect()
+            true to null
+        }.onFailure { exception ->
+            Log.e("EmailBackend", "Exception sending email via backend: ${exception.message}", exception)
+        }.getOrElse { exception ->
+            false to (exception.message ?: "network error")
+        }
+
+        if (backendResult.first || !BuildConfig.DEBUG) {
+            return backendResult
+        }
+
+        Log.w("EmailBackend", "Backend send failed in debug build. Falling back to direct SendGrid.")
+        val directResult = sendEmailViaSendGridDirect(recipientEmail, subject, plainText, html)
+        if (directResult.first) {
+            return directResult
+        }
+
+        val backendError = backendResult.second.orEmpty()
+        val directError = directResult.second.orEmpty()
+        val combinedError = listOf(backendError, directError)
+            .filter { it.isNotBlank() }
+            .joinToString(" | ")
+            .ifBlank { "send failed" }
+        return false to combinedError
+    }
+
+    private fun sendEmailViaSendGridDirect(
+        recipientEmail: String,
+        subject: String,
+        plainText: String,
+        html: String
+    ): Pair<Boolean, String?> {
+        val apiKey = BuildConfig.SENDGRID_API_KEY.trim()
+        val fromEmail = BuildConfig.SENDGRID_FROM_EMAIL.trim()
+        if (apiKey.isBlank() || fromEmail.isBlank()) {
+            return false to "debug fallback missing SendGrid key/from email"
+        }
+
         return runCatching {
             val payload = JSONObject().apply {
                 put("personalizations", JSONArray().put(
                     JSONObject().put("to", JSONArray().put(JSONObject().put("email", recipientEmail)))
                 ))
                 put("from", JSONObject().put("email", fromEmail).put("name", "SoleMate"))
-                put("subject", "Alert Sharing Disabled - SoleMate")
+                put("subject", subject)
                 put("content", JSONArray().put(
                     JSONObject().put("type", "text/plain").put("value", plainText)
                 ).put(
@@ -1772,7 +1726,9 @@ class SettingsActivity : AppCompatActivity() {
                 ))
             }
 
-            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim().ifBlank { "https://api.sendgrid.com" }.trimEnd('/')
+            val baseUrl = BuildConfig.SENDGRID_API_BASE_URL.trim()
+                .ifBlank { "https://api.sendgrid.com" }
+                .trimEnd('/')
             val sendUrl = "$baseUrl/v3/mail/send"
             val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
@@ -1791,7 +1747,7 @@ class SettingsActivity : AppCompatActivity() {
             val responseCode = connection.responseCode
             if (responseCode !in 200..202) {
                 val errorStream = connection.errorStream?.bufferedReader()?.readText() ?: "No error details"
-                Log.e("SendGridEmail", "SendGrid error on disable email: $errorStream")
+                Log.e("SendGridEmail", "Debug fallback SendGrid error: $errorStream")
                 val parsedMessage = runCatching {
                     val errorJson = JSONObject(errorStream)
                     val errors = errorJson.optJSONArray("errors")
@@ -1808,7 +1764,7 @@ class SettingsActivity : AppCompatActivity() {
             connection.disconnect()
             true to null
         }.onFailure { exception ->
-            Log.e("SendGridEmail", "Exception sending disable email: ${exception.message}", exception)
+            Log.e("SendGridEmail", "Exception in debug fallback send: ${exception.message}", exception)
         }.getOrElse { exception ->
             false to (exception.message ?: "network error")
         }

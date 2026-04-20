@@ -145,7 +145,7 @@
     <string name="settings_auto_share_code_invalid">Verification code is invalid</string>
     <string name="settings_auto_share_code_expired">Verification code expired. Tap Verify to send a new code.</string>
     <string name="settings_auto_share_code_required">Please enter the verification code</string>
-    <string name="settings_auto_share_send_failed">Could not send verification email. Check SendGrid setup.</string>
+    <string name="settings_auto_share_send_failed">Could not send verification email. Check the email backend setup.</string>
     <string name="settings_auto_share_verified">Email verified successfully</string>
     <string name="settings_exports_encrypted">ALL EXPORTS ARE ENCRYPTED BEFORE DOWNLOAD</string>
 

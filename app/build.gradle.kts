@@ -19,6 +19,15 @@ android {
     val sendGridApiKey = (localProperties.getProperty("SENDGRID_API_KEY") ?: "").trim()
     val sendGridFromEmail = (localProperties.getProperty("SENDGRID_FROM_EMAIL") ?: "").trim()
     val sendGridApiBaseUrl = (localProperties.getProperty("SENDGRID_API_BASE_URL") ?: "https://api.sendgrid.com").trim()
+    val emailBackendBaseUrlDebug = (
+        localProperties.getProperty("EMAIL_BACKEND_BASE_URL_DEBUG")
+            ?: localProperties.getProperty("EMAIL_BACKEND_BASE_URL")
+            ?: "http://10.0.2.2:3000"
+    ).trim()
+    val emailBackendBaseUrlRelease = (
+        localProperties.getProperty("EMAIL_BACKEND_BASE_URL_RELEASE")
+            ?: "https://your-backend.example.com"
+    ).trim()
     val autoShareRecipientFallback = (localProperties.getProperty("AUTO_SHARE_RECIPIENT_FALLBACK") ?: "").trim()
 
     defaultConfig {
@@ -40,12 +49,19 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "EMAIL_BACKEND_BASE_URL", "\"$emailBackendBaseUrlDebug\"")
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "EMAIL_BACKEND_BASE_URL", "\"$emailBackendBaseUrlRelease\"")
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
         }
     }
     compileOptions {
