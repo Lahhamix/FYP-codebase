@@ -100,6 +100,10 @@ class MainActivity : AppCompatActivity() {
         }
     private var lastDeviceAddress: String? = null
     private var isDeviceConnected = false
+        set(value) {
+            field = value
+            isWearableConnected = value
+        }
     private var hasAttemptedConnection = false
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -124,6 +128,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val ACTION_SENSOR_DATA = "com.example.ble_viewer.ACTION_SENSOR_DATA"
         const val ACTION_DEVICE_DISCONNECTED = "com.example.ble_viewer.ACTION_DEVICE_DISCONNECTED"
+        @Volatile
+        var isWearableConnected = false
         const val EXTRA_UUID_STRING = "com.example.ble_viewer.EXTRA_UUID_STRING"
         const val EXTRA_DECRYPTED_DATA = "com.example.ble_viewer.EXTRA_DECRYPTED_DATA"
         private const val WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 101
@@ -447,6 +453,9 @@ class MainActivity : AppCompatActivity() {
         }
         attachLongPressReadAloud(toolbarUsername)
 
+        findViewById<View>(R.id.nav_home).setOnClickListener {
+            // Already on home, do nothing or scroll to top if needed
+        }
         findViewById<View>(R.id.nav_settings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
@@ -458,7 +467,6 @@ class MainActivity : AppCompatActivity() {
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
         attachLongPressReadAloud(findViewById(R.id.nav_home), getString(R.string.nav_home))
-        attachLongPressReadAloud(findViewById(R.id.nav_history), getString(R.string.nav_history))
         attachLongPressReadAloud(findViewById(R.id.nav_settings), getString(R.string.nav_settings))
         attachLongPressReadAloud(findViewById(R.id.nav_foot_overview), getString(R.string.nav_foot_overview))
 

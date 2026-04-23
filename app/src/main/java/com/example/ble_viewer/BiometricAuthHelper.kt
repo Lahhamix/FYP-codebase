@@ -7,13 +7,16 @@ import androidx.fragment.app.FragmentActivity
 
 object BiometricAuthHelper {
 
-    fun isAvailable(activity: FragmentActivity): Boolean {
-        return BiometricManager.from(activity).canAuthenticate(
-            BiometricManager.Authenticators.BIOMETRIC_STRONG
-        ) == BiometricManager.BIOMETRIC_SUCCESS
+    private val APP_LOCK_AUTHENTICATORS =
+        BiometricManager.Authenticators.BIOMETRIC_WEAK or
+            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+
+    fun isAppLockAvailable(activity: FragmentActivity): Boolean {
+        return BiometricManager.from(activity).canAuthenticate(APP_LOCK_AUTHENTICATORS) ==
+            BiometricManager.BIOMETRIC_SUCCESS
     }
 
-    fun authenticate(
+    fun authenticateForAppLock(
         activity: FragmentActivity,
         onSuccess: () -> Unit,
         onFailure: () -> Unit = {}
@@ -33,9 +36,9 @@ object BiometricAuthHelper {
         )
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(activity.getString(R.string.settings_biometric_signin))
-            .setSubtitle(activity.getString(R.string.settings_biometric_desc))
-            .setNegativeButtonText(activity.getString(R.string.cancel))
+            .setTitle(activity.getString(R.string.app_lock_prompt_title))
+            .setSubtitle(activity.getString(R.string.app_lock_prompt_subtitle))
+            .setAllowedAuthenticators(APP_LOCK_AUTHENTICATORS)
             .build()
 
         prompt.authenticate(promptInfo)

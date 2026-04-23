@@ -134,17 +134,10 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
         }
-
-        findViewById<LinearLayout>(R.id.nav_history).setOnClickListener {
-            startActivity(Intent(this, ReadingsActivity::class.java))
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }
-
         findViewById<LinearLayout>(R.id.nav_settings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
-
         findViewById<LinearLayout>(R.id.nav_foot_overview).setOnClickListener {
             startActivity(Intent(this, PressureMatrixActivity::class.java).apply {
                 putExtra(PressureMatrixActivity.EXTRA_SHOW_FOOT_OVERVIEW, true)

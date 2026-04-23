@@ -60,6 +60,11 @@ class SettingsActivity : AppCompatActivity() {
         private const val KEY_DEVICE_ALERTS_ENABLED = "device_alerts_enabled"
         private const val KEY_VOICE_READ_HINTS_ENABLED = "voice_read_hints_enabled"
         private const val KEY_VOICE_READ_HINTS_DIALOG_SEEN = "voice_read_hints_dialog_seen"
+        private const val KEY_AUTH_PROVIDER = "auth_provider"
+        private const val PROVIDER_GOOGLE = "google"
+        private const val KEY_GOOGLE_EMAIL = "google_email"
+        private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
+        private const val KEY_APP_LOCK_INFO_DIALOG_SEEN = "app_lock_info_dialog_seen"
         private const val KEY_PROFILE_IMAGE_PATH = "profile_image_path"
         private const val KEY_AUTO_SHARE_ENABLED = "auto_share_enabled"
         private const val KEY_AUTO_SHARE_EMAIL = "auto_share_email"
@@ -93,10 +98,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var autoShareSwitch: LabeledSwitch
     private lateinit var deviceAlertsSwitch: LabeledSwitch
     private lateinit var voiceReadHintsSwitch: LabeledSwitch
+    private lateinit var appLockSwitch: LabeledSwitch
     private lateinit var voiceReadHintsRow: LinearLayout
     private var suppressDeviceAlertsToggleCallback = false
     private var suppressAutoShareToggleCallback = false
     private var suppressVoiceReadToggleCallback = false
+    private var suppressAppLockToggleCallback = false
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var pendingSpeechText: String? = null
@@ -213,12 +220,15 @@ class SettingsActivity : AppCompatActivity() {
         autoShareSwitch = findViewById(R.id.settings_auto_share_switch)
         deviceAlertsSwitch = findViewById(R.id.settings_device_alerts_switch)
         voiceReadHintsSwitch = findViewById(R.id.settings_voice_read_hints_switch)
+        appLockSwitch = findViewById(R.id.settings_app_lock_switch)
         voiceReadHintsRow = findViewById(R.id.settings_voice_read_hints_row)
         updateUsername()
         updateProfileImage()
         updateLanguageChip()
         updateAutoShareSummary()
         setupAccessibilityToggles()
+        applySecurityVisibilityForAuthProvider()
+        setupAppLockToggle()
         setupAutoShareToggle()
         setupReadableResourceRows()
         setupTextSizeControls()
@@ -298,6 +308,10 @@ class SettingsActivity : AppCompatActivity() {
             showAutoShareDialog()
         }
 
+        findViewById<LinearLayout>(R.id.settings_manage_paired_row).setOnClickListener {
+            appLockSwitch.performClick()
+        }
+
         findViewById<LinearLayout>(R.id.settings_terms_of_use_row).setOnClickListener {
             showTermsOfUseDialog()
         }
@@ -311,16 +325,21 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         findViewById<LinearLayout>(R.id.nav_home).setOnClickListener {
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            })
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
         }
-
-        findViewById<LinearLayout>(R.id.nav_history).setOnClickListener {
-            startActivity(Intent(this, ReadingsActivity::class.java))
-            finish()
-        }
-
         findViewById<LinearLayout>(R.id.nav_settings).setOnClickListener {
-            // Already on settings.
+            // Already on settings, do nothing or scroll to top if needed
+        }
+        findViewById<LinearLayout>(R.id.nav_foot_overview).setOnClickListener {
+            startActivity(Intent(this, PressureMatrixActivity::class.java).apply {
+                putExtra(PressureMatrixActivity.EXTRA_SHOW_FOOT_OVERVIEW, true)
+            })
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            finish()
         }
     }
 
@@ -603,6 +622,20 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun applySecurityVisibilityForAuthProvider() {
+        if (!isGoogleSignedInSession()) return
+
+        findViewById<LinearLayout>(R.id.settings_change_passcode_row)?.visibility = GONE
+        findViewById<View>(R.id.settings_security_divider_app_lock_passcode)?.visibility = GONE
+    }
+
+    private fun isGoogleSignedInSession(): Boolean {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val provider = prefs.getString(KEY_AUTH_PROVIDER, null)
+        val googleEmail = prefs.getString(KEY_GOOGLE_EMAIL, null).orEmpty().trim()
+        return provider == PROVIDER_GOOGLE || googleEmail.isNotEmpty()
+    }
+
     private fun showVoiceReadHintsDialog() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_tts_info, null)
@@ -646,6 +679,77 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         dialog.show()
+    }
+
+    private fun handleAppLockToggleChanged(isChecked: Boolean) {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+
+        if (!isChecked) {
+            prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, false).apply()
+            Toast.makeText(this, getString(R.string.app_lock_disabled), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (!BiometricAuthHelper.isAppLockAvailable(this)) {
+            Toast.makeText(this, getString(R.string.app_lock_unavailable), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val skipInfoDialog = prefs.getBoolean(KEY_APP_LOCK_INFO_DIALOG_SEEN, false)
+        if (skipInfoDialog) {
+            startAppLockEnrollment()
+        } else {
+            showAppLockInfoDialog()
+        }
+    }
+
+    private fun showAppLockInfoDialog() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_app_lock_info, null)
+        TextSizeScaleManager.applyTo(dialogView, TextSizeScaleManager.scaleForMode(TextSizeScaleManager.getMode(this)))
+
+        val doNotShowAgain = dialogView.findViewById<CheckBox>(R.id.app_lock_dialog_do_not_show_again)
+        val cancelButton = dialogView.findViewById<MaterialButton>(R.id.app_lock_dialog_cancel_button)
+        val enableButton = dialogView.findViewById<MaterialButton>(R.id.app_lock_dialog_enable_button)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        cancelButton.setOnClickListener {
+            setAppLockSwitchChecked(false)
+            dialog.dismiss()
+        }
+
+        enableButton.setOnClickListener {
+            prefs.edit()
+                .putBoolean(KEY_APP_LOCK_INFO_DIALOG_SEEN, doNotShowAgain.isChecked)
+                .apply()
+            dialog.dismiss()
+            startAppLockEnrollment()
+        }
+
+        dialog.show()
+    }
+
+    private fun startAppLockEnrollment() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        BiometricAuthHelper.authenticateForAppLock(
+            activity = this,
+            onSuccess = {
+                prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, true).apply()
+                setAppLockSwitchChecked(true)
+                SolemateApplication.markSessionUnlocked()
+                Toast.makeText(this, getString(R.string.app_lock_enabled), Toast.LENGTH_SHORT).show()
+            },
+            onFailure = {
+                setAppLockSwitchChecked(false)
+                Toast.makeText(this, getString(R.string.app_lock_auth_cancelled), Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     private fun showTermsOfUseDialog() {
@@ -852,13 +956,18 @@ class SettingsActivity : AppCompatActivity() {
                             persistVerifiedEmails()
                             renderVerifiedEmails()
 
-                            if (verifiedEmails.isEmpty() && wasAutoShareEnabled) {
+                            if (verifiedEmails.isEmpty()) {
                                 prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
                                 AutoShareScheduler.cancel(this@SettingsActivity)
                                 setAutoShareSwitchChecked(false)
                                 updateAutoShareSummary()
                                 autoShareDialog?.dismiss()
-                                showAutoShareTurnedOffDialog()
+
+                                if (wasAutoShareEnabled) {
+                                    showAutoShareTurnedOffDialog()
+                                } else {
+                                    showAutoShareMissingRecipientsDialog()
+                                }
                             }
 
                             Thread {
@@ -1281,6 +1390,22 @@ class SettingsActivity : AppCompatActivity() {
         suppressAutoShareToggleCallback = false
     }
 
+    private fun setAppLockSwitchChecked(checked: Boolean) {
+        suppressAppLockToggleCallback = true
+        appLockSwitch.setOn(checked)
+        suppressAppLockToggleCallback = false
+    }
+
+    private fun setupAppLockToggle() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        setAppLockSwitchChecked(prefs.getBoolean(KEY_APP_LOCK_ENABLED, false))
+
+        appLockSwitch.setOnToggledListener { _, isChecked ->
+            if (suppressAppLockToggleCallback) return@setOnToggledListener
+            handleAppLockToggleChanged(isChecked)
+        }
+    }
+
     private fun setupAutoShareToggle() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val hasRecipients = getVerifiedAutoShareEmails(prefs).isNotEmpty()
@@ -1422,14 +1547,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // Biometric Sign-in toggle long-press TTS
-        findViewById<LinearLayout>(R.id.settings_biometric_signin_row)?.setOnLongClickListener {
-            if (isVoiceReadHintsEnabled()) {
-                speakSettingsText(getString(R.string.settings_biometric_signin) + ". " + getString(R.string.settings_biometric_desc))
-            }
-            true
-        }
-
         // Change Passcode long-press TTS
         findViewById<LinearLayout>(R.id.settings_change_passcode_row)?.setOnLongClickListener {
             if (isVoiceReadHintsEnabled()) {
@@ -1468,13 +1585,6 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<LinearLayout>(R.id.nav_home).setOnLongClickListener {
             if (isVoiceReadHintsEnabled()) {
                 speakSettingsText(getString(R.string.nav_home))
-            }
-            true
-        }
-
-        findViewById<LinearLayout>(R.id.nav_history).setOnLongClickListener {
-            if (isVoiceReadHintsEnabled()) {
-                speakSettingsText(getString(R.string.nav_history))
             }
             true
         }

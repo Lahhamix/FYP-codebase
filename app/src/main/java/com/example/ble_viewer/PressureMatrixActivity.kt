@@ -680,11 +680,11 @@ class PressureMatrixActivity : AppCompatActivity() {
         val scrollView = findViewById<ScrollView>(R.id.foot_overview_scroll)
 
         findViewById<LinearLayout>(R.id.nav_home)?.setOnClickListener {
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            })
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
-        }
-
-        findViewById<LinearLayout>(R.id.nav_history)?.setOnClickListener {
-            startActivity(Intent(this, ReadingsActivity::class.java))
         }
 
         findViewById<LinearLayout>(R.id.nav_settings)?.setOnClickListener {

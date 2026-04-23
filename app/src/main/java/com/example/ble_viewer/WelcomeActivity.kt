@@ -14,7 +14,6 @@ class WelcomeActivity : AppCompatActivity() {
         private const val KEY_AUTH_PROVIDER = "auth_provider"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_REMEMBER_ME = "remember_me"
-        private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
         private const val PROVIDER_GOOGLE = "google"
     }
 
@@ -34,7 +33,6 @@ class WelcomeActivity : AppCompatActivity() {
         val rememberMe = prefs.getBoolean(KEY_REMEMBER_ME, false)
         val isLoggedIn = prefs.getBoolean(KEY_IS_LOGGED_IN, false)
         val authProvider = prefs.getString(KEY_AUTH_PROVIDER, "local")
-        val biometricEnabled = prefs.getBoolean(KEY_BIOMETRIC_ENABLED, false)
 
         if (isFirstLaunch) {
             setContentView(R.layout.activity_welcome)
@@ -69,21 +67,8 @@ class WelcomeActivity : AppCompatActivity() {
             RegistrationActivity::class.java
         }
 
-        if (shouldKeepSignedIn && biometricEnabled && BiometricAuthHelper.isAvailable(this)) {
-            BiometricAuthHelper.authenticate(
-                this,
-                onSuccess = {
-                    startActivity(Intent(this, nextActivity))
-                    finish()
-                },
-                onFailure = {
-                    finish()
-                }
-            )
-        } else {
-            startActivity(Intent(this, nextActivity))
-            finish()
-        }
+        startActivity(Intent(this, nextActivity))
+        finish()
     }
 
     private fun isFreshInstall(): Boolean {

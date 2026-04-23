@@ -86,8 +86,19 @@
     <string name="settings_biometric_signin">Biometric sign-in</string>
     <string name="settings_biometric_desc">Use fingerprint or face unlock</string>
     <string name="settings_change_passcode">Change Passcode</string>
-    <string name="settings_manage_paired">Manage Paired Device</string>
-    <string name="settings_manage_paired_desc">Socks: Connected (SN: SM-902)</string>
+    <string name="settings_manage_paired">App Lock</string>
+    <string name="settings_manage_paired_desc">Require fingerprint, face unlock, or device PIN/password to open the app.</string>
+    <string name="app_lock_dialog_title">Enable App Lock</string>
+    <string name="app_lock_dialog_message">When App Lock is enabled, SoleMate will require fingerprint, face unlock, or your device PIN/password each time you return to the app.</string>
+    <string name="app_lock_dialog_do_not_show_again">Do not show this again</string>
+    <string name="app_lock_dialog_enable">Enable</string>
+    <string name="app_lock_dialog_cancel">Cancel</string>
+    <string name="app_lock_enabled">App Lock is enabled.</string>
+    <string name="app_lock_disabled">App Lock is disabled.</string>
+    <string name="app_lock_auth_cancelled">App Lock was not enabled.</string>
+    <string name="app_lock_unavailable">App Lock is unavailable. Set up biometrics or a device screen lock first.</string>
+    <string name="app_lock_prompt_title">Unlock SoleMate</string>
+    <string name="app_lock_prompt_subtitle">Authenticate to access the app</string>
 
     <string name="settings_privacy_data">Privacy &amp; Data</string>
     <string name="settings_privacy_desc">Manage your personal data sharing.</string>
@@ -219,7 +230,7 @@
     <string name="nav_history">History</string>
     <string name="nav_home">Home</string>
     <string name="nav_settings">Settings</string>
-    <string name="nav_foot_overview">Foot</string>
+    <string name="nav_foot_overview">Foot Overview</string>
 
     <string name="sock_disconnected">Sock Disconnected</string>
     <string name="sock_disconnected_desc">Your SoleMate sock is out of range. Make sure it is nearby and charged.</string>

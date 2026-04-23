@@ -346,7 +346,11 @@
                         android:src="@drawable/settings_chevron_right" />
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="10dp"
+                    android:background="#E7EBEF" />
 
                 <LinearLayout
                     android:id="@+id/settings_device_manual_row"
@@ -394,7 +398,11 @@
                         android:src="@drawable/settings_chevron_right" />
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="10dp"
+                    android:background="#E7EBEF" />
 
                 <LinearLayout
                     android:id="@+id/settings_datasheet_row"
@@ -705,98 +713,10 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
-                    android:id="@+id/settings_biometric_signin_row"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/settings_icon_circle_bg"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_shield_check"
-                        app:tint="#4B6B89" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/roboto_medium"
-                            android:text="@string/settings_biometric_signin"
-                            android:textColor="#2F3D4A"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/roboto_medium"
-                            android:text="@string/settings_biometric_desc"
-                            android:textColor="#8F9AA6"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <com.github.angads25.toggle.widget.LabeledSwitch
-                        android:layout_width="60dp"
-                        android:layout_height="36dp"
-                        android:textSize="0sp"
-                        app:colorBorder="#D5DAE0"
-                        app:colorOff="#FFFFFF"
-                        app:colorOn="#0D3B66"
-                        app:on="true"
-                        app:textOff=""
-                        app:textOn="" />
-                </LinearLayout>
-
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
-
-                <LinearLayout
-                    android:id="@+id/settings_change_passcode_row"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/settings_icon_circle_bg"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_lock_custom"
-                        app:tint="#4B6B89" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:fontFamily="@font/roboto_medium"
-                        android:text="@string/settings_change_passcode"
-                        android:textColor="#2F3D4A"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/settings_chevron_right" />
-                </LinearLayout>
-
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="10dp" android:background="#E7EBEF" />
-
-                <LinearLayout
                     android:id="@+id/settings_manage_paired_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
@@ -808,7 +728,7 @@
                         android:layout_height="36dp"
                         android:background="@drawable/settings_icon_circle_bg"
                         android:padding="8dp"
-                        android:src="@drawable/ic_smartphone_custom"
+                        android:src="@drawable/ic_user_lock"
                         app:tint="#4B6B89" />
 
                     <LinearLayout
@@ -835,6 +755,52 @@
                             android:textColor="#8F9AA6"
                             android:textSize="13sp" />
                     </LinearLayout>
+
+                    <com.github.angads25.toggle.widget.LabeledSwitch
+                        android:id="@+id/settings_app_lock_switch"
+                        android:layout_width="60dp"
+                        android:layout_height="36dp"
+                        android:textSize="0sp"
+                        app:colorBorder="#D5DAE0"
+                        app:colorOff="#FFFFFF"
+                        app:colorOn="#0D3B66"
+                        app:on="false"
+                        app:textOff=""
+                        app:textOn="" />
+                </LinearLayout>
+
+                <View
+                    android:id="@+id/settings_security_divider_app_lock_passcode"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="10dp"
+                    android:background="#E7EBEF" />
+
+                <LinearLayout
+                    android:id="@+id/settings_change_passcode_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/settings_icon_circle_bg"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_lock_custom"
+                        app:tint="#4B6B89" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/roboto_medium"
+                        android:text="@string/settings_change_passcode"
+                        android:textColor="#2F3D4A"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
 
                     <ImageView
                         android:layout_width="20dp"
@@ -1265,7 +1231,7 @@
         android:weightSum="3">
 
         <LinearLayout
-            android:id="@+id/nav_history"
+            android:id="@+id/nav_foot_overview"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -1275,7 +1241,7 @@
             <ImageView
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:src="@drawable/ic_nav_history"
+                android:src="@drawable/ic_foot_overview"
                 app:tint="#6B7480" />
 
             <TextView
@@ -1283,7 +1249,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:fontFamily="@font/rubik_medium"
-                android:text="@string/nav_history"
+                android:text="@string/nav_foot_overview"
                 android:textColor="#6B7480"
                 android:textSize="13sp" />
         </LinearLayout>

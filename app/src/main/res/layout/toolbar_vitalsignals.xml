@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/toolbar"
     android:layout_width="match_parent"
-    android:layout_height="?attr/actionBarSize">
+    android:layout_height="70dp">
 
     <TextView
         android:layout_width="wrap_content"
@@ -12,7 +12,7 @@
         android:fontFamily="@font/rubik_medium"
         android:text="@string/vital_signals"
         android:textColor="@android:color/white"
-        android:textSize="20sp"
+        android:textSize="18sp"
         android:textStyle="bold" />
 
 </com.google.android.material.appbar.MaterialToolbar>

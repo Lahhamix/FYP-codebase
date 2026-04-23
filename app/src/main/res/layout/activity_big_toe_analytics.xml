@@ -610,7 +610,7 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Bottom navigation (4 items) -->
+    <!-- Bottom navigation (3 items) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="72dp"
@@ -618,10 +618,10 @@
         android:gravity="center"
         android:orientation="horizontal"
         android:paddingHorizontal="18dp"
-        android:weightSum="4">
+        android:weightSum="3">
 
         <LinearLayout
-            android:id="@+id/nav_history"
+            android:id="@+id/nav_foot_overview"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -631,9 +631,9 @@
             <ImageView
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:contentDescription="@string/nav_history"
-                android:src="@drawable/ic_nav_history"
-                app:tint="#6B7480" />
+                android:contentDescription="@string/nav_foot_overview"
+                android:src="@drawable/ic_foot_overview"
+                app:tint="#3F93E9" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -641,9 +641,10 @@
                 android:layout_marginTop="4dp"
                 android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
-                android:text="@string/nav_history"
-                android:textColor="#6B7480"
-                android:textSize="13sp" />
+                android:text="@string/nav_foot_overview"
+                android:textColor="#3F93E9"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
@@ -670,33 +671,6 @@
                 android:text="@string/nav_home"
                 android:textColor="#6B7480"
                 android:textSize="13sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/nav_foot_overview"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@string/nav_foot_overview"
-                android:src="@drawable/foot"
-                app:tint="#3F93E9" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="@font/roboto_medium"
-                android:gravity="center"
-                android:text="@string/nav_foot_overview"
-                android:textColor="#3F93E9"
-                android:textSize="14sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout

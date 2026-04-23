@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="20dp"
+    android:background="@drawable/tts_info_dialog_bg"
+    android:layoutDirection="locale"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/app_lock_dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/app_lock_dialog_title"
+        android:textColor="#1A416B"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/app_lock_dialog_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/roboto_medium"
+        android:text="@string/app_lock_dialog_message"
+        android:textColor="#5F6D7B"
+        android:textSize="14sp" />
+
+    <CheckBox
+        android:id="@+id/app_lock_dialog_do_not_show_again"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:buttonTint="#0D3B66"
+        android:fontFamily="@font/roboto_medium"
+        android:layoutDirection="locale"
+        android:textDirection="locale"
+        android:text="@string/app_lock_dialog_do_not_show_again"
+        android:textColor="#0D3B66"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/app_lock_dialog_cancel_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/rubik_medium"
+            android:minHeight="50dp"
+            android:text="@string/app_lock_dialog_cancel"
+            android:textAllCaps="false"
+            android:textColor="#2F5A80"
+            android:textSize="14sp"
+            app:backgroundTint="@android:color/white"
+            app:cornerRadius="18dp"
+            app:elevation="0dp"
+            app:rippleColor="#110D3B66"
+            app:strokeColor="#4E7EA8"
+            app:strokeWidth="2dp" />
+
+        <View
+            android:layout_width="22dp"
+            android:layout_height="1dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/app_lock_dialog_enable_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/rubik_medium"
+            android:minHeight="50dp"
+            android:text="@string/app_lock_dialog_enable"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            app:backgroundTint="#0D3B66"
+            app:cornerRadius="18dp"
+            app:elevation="0dp"
+            app:rippleColor="#1AFFFFFF"
+            app:strokeWidth="0dp" />
+    </LinearLayout>
+
+</LinearLayout>

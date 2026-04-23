@@ -153,25 +153,18 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
     }
 
     private fun bindBottomNavigation() {
-        findViewById<android.view.View>(R.id.nav_home).setOnClickListener {
+        findViewById<View>(R.id.nav_home).setOnClickListener {
             startActivity(Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             })
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
         }
-
-        findViewById<android.view.View>(R.id.nav_history).setOnClickListener {
-            startActivity(Intent(this, ReadingsActivity::class.java))
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }
-
-        findViewById<android.view.View>(R.id.nav_settings).setOnClickListener {
+        findViewById<View>(R.id.nav_settings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
-
-        findViewById<android.view.View>(R.id.nav_foot_overview).setOnClickListener {
+        findViewById<View>(R.id.nav_foot_overview).setOnClickListener {
             startActivity(Intent(this, PressureMatrixActivity::class.java).apply {
                 putExtra(PressureMatrixActivity.EXTRA_SHOW_FOOT_OVERVIEW, true)
             })
