@@ -10,8 +10,21 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingHorizontal="16dp">
+        android:paddingLeft="3dp"
+        android:paddingRight="5dp">
 
+
+        <ImageView
+            android:id="@+id/toolbar_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/analytics_back_to_foot"
+            android:padding="8dp"
+            android:src="@drawable/ic_chevron_left"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@android:color/white" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/profile_card"

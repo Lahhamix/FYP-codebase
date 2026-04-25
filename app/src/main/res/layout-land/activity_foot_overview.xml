@@ -37,19 +37,25 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="420dp">
+                    android:layout_height="550dp">
 
+                    <androidx.constraintlayout.widget.Guideline
+                        android:id="@+id/image_bottom_guide"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        app:layout_constraintGuide_percent="0.875" />
 
                     <ImageView
                         android:id="@+id/foot_overview_map_image"
                         android:layout_width="380dp"
-                        android:layout_height="440dp"
+                        android:layout_height="550dp"
                         android:contentDescription="@string/foot_overview_image_desc"
                         android:scaleType="centerCrop"
                         android:src="@drawable/foot_overview_exact_v2"
                         app:layout_constraintBottom_toTopOf="@+id/image_bottom_guide"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="1.0"
+                        app:layout_constraintHorizontal_bias="0.0"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintVertical_bias="1.0" />
@@ -58,7 +64,6 @@
                         android:id="@+id/zone_marker_3"
                         android:layout_width="62dp"
                         android:layout_height="62dp"
-                        android:layout_marginTop="64dp"
                         android:background="@drawable/foot_overview_marker_inactive"
                         android:clickable="true"
                         android:focusable="true"
@@ -80,7 +85,6 @@
                         android:id="@+id/zone_marker_1"
                         android:layout_width="62dp"
                         android:layout_height="62dp"
-                        android:layout_marginTop="232dp"
                         android:background="@drawable/foot_overview_marker_inactive"
                         android:clickable="true"
                         android:focusable="true"
@@ -93,7 +97,7 @@
                         android:textStyle="bold"
                         app:layout_constraintBottom_toTopOf="@+id/image_bottom_guide"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="0.299"
+                        app:layout_constraintHorizontal_bias="0.283"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintVertical_bias="0.542" />
@@ -102,7 +106,6 @@
                         android:id="@+id/zone_marker_2"
                         android:layout_width="62dp"
                         android:layout_height="62dp"
-                        android:layout_marginTop="304dp"
                         android:background="@drawable/foot_overview_marker_inactive"
                         android:clickable="true"
                         android:focusable="true"
@@ -115,7 +118,7 @@
                         android:textStyle="bold"
                         app:layout_constraintBottom_toTopOf="@+id/image_bottom_guide"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="0.766"
+                        app:layout_constraintHorizontal_bias="0.778"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintVertical_bias="0.747" />
@@ -123,17 +126,15 @@
                     <TextView
                         android:id="@+id/tap_zone_label"
                         android:layout_width="0dp"
-                        android:layout_height="20dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_height="0dp"
                         android:fontFamily="@font/roboto_medium"
                         android:gravity="center"
                         android:text="@string/foot_overview_subtitle"
-                        android:textColor="@color/blue"
+                        android:textColor="#1A2940"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="0.0"
                         app:layout_constraintStart_toStartOf="parent" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>

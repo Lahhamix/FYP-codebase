@@ -6,7 +6,7 @@
     android:background="#EEF1F4"
     android:orientation="vertical">
 
-    <include layout="@layout/toolbar_main" />
+    <include layout="@layout/toolbar_view_analytics" />
 
     <ScrollView
         android:id="@+id/big_toe_scroll"
@@ -15,26 +15,43 @@
         android:layout_weight="1"
         android:fillViewport="true">
 
+
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            app:cardCornerRadius="14dp">
 
-
-
-            <TextView
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/big_toe_info_banner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="#F1F8FD"
-                android:fontFamily="@font/roboto_medium"
-                android:lineSpacingExtra="2dp"
-                android:padding="12dp"
-                android:text="@string/big_toe_banner"
-                android:textColor="#0A2C4D"
-                android:textSize="13sp" />
+                android:layout_marginTop="12dp"
+
+                android:background="@drawable/foot_overview_zone_pill_bg"
+                app:cardBackgroundColor="#DEE5EC"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/roboto_medium"
+                        android:text="@string/big_toe_banner"
+                        android:textColor="#0D3B66"
+                        android:textAlignment="center"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Heart Rate card -->
             <com.google.android.material.card.MaterialCardView

@@ -64,6 +64,10 @@
             android:label="Big Toe"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
+            android:name=".AnkleCuffAnalyticsActivity"
+            android:label="Ankle Cuff"
+            android:theme="@style/Theme.Test.NoActionBar" />
+        <activity
             android:name=".SettingsActivity"
             android:label="Settings"
             android:theme="@style/Theme.Test.NoActionBar" />

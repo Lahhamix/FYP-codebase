@@ -39,7 +39,7 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
     private lateinit var stepsChart: BarChart
     private lateinit var analyticsScroll: ScrollView
     private lateinit var shareHealthReportButton: com.google.android.material.button.MaterialButton
-    private lateinit var analyticsBackButton: com.google.android.material.button.MaterialButton
+    private lateinit var toolbarBack: ImageView
 
     private val uiHandler = Handler(Looper.getMainLooper())
     private val refreshRunnable = object : Runnable {
@@ -61,7 +61,10 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
         stepsChart = findViewById(R.id.stepsConsistencyChart)
         analyticsScroll = findViewById(R.id.analytics_scroll)
         shareHealthReportButton = findViewById(R.id.share_health_report_button)
-        analyticsBackButton = findViewById(R.id.analytics_back_button)
+        toolbarBack = findViewById(R.id.toolbar_back)
+
+        // Only show back button if started from foot overview
+        toolbarBack.visibility = View.VISIBLE
 
         bindToolbar()
         bindBottomNavigation()
@@ -71,7 +74,7 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
     }
 
     private fun bindActions() {
-        analyticsBackButton.setOnClickListener {
+        toolbarBack.setOnClickListener {
             startActivity(Intent(this, PressureMatrixActivity::class.java).apply {
                 putExtra(PressureMatrixActivity.EXTRA_SHOW_FOOT_OVERVIEW, true)
             })

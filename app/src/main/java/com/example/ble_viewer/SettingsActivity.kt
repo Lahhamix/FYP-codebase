@@ -684,14 +684,26 @@ class SettingsActivity : AppCompatActivity() {
     private fun handleAppLockToggleChanged(isChecked: Boolean) {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
-        if (!isChecked) {
-            prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, false).apply()
-            Toast.makeText(this, getString(R.string.app_lock_disabled), Toast.LENGTH_SHORT).show()
+        if (!BiometricAuthHelper.isAppLockAvailable(this)) {
+            Toast.makeText(this, getString(R.string.app_lock_unavailable), Toast.LENGTH_SHORT).show()
+            setAppLockSwitchChecked(prefs.getBoolean(KEY_APP_LOCK_ENABLED, false))
             return
         }
 
-        if (!BiometricAuthHelper.isAppLockAvailable(this)) {
-            Toast.makeText(this, getString(R.string.app_lock_unavailable), Toast.LENGTH_SHORT).show()
+        if (!isChecked) {
+            // Require authentication to turn OFF app lock
+            BiometricAuthHelper.authenticateForAppLock(
+                activity = this,
+                onSuccess = {
+                    prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, false).apply()
+                    setAppLockSwitchChecked(false)
+                    Toast.makeText(this, getString(R.string.app_lock_disabled), Toast.LENGTH_SHORT).show()
+                },
+                onFailure = {
+                    setAppLockSwitchChecked(true)
+                    Toast.makeText(this, getString(R.string.app_lock_auth_cancelled), Toast.LENGTH_SHORT).show()
+                }
+            )
             return
         }
 

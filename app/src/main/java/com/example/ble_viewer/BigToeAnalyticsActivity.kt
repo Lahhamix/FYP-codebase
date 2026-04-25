@@ -20,6 +20,7 @@ import java.util.Locale
 import java.text.NumberFormat
 
 class BigToeAnalyticsActivity : AppCompatActivity() {
+    private lateinit var toolbarBack: ImageView
 
     companion object {
         private const val PREFS_NAME = "SolematePrefs"
@@ -68,6 +69,12 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
 
         toolbarUsername = findViewById(R.id.toolbar_username)
         toolbarProfileImage = findViewById(R.id.toolbar_profile_image)
+        toolbarBack = findViewById(R.id.toolbar_back)
+        toolbarBack.visibility = View.VISIBLE
+        toolbarBack.setOnClickListener {
+            finish()
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
         bindToolbar()
 
         setupCharts()

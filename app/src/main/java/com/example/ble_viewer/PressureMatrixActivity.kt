@@ -1,9 +1,11 @@
 package com.example.ble_viewer
 
+import android.animation.ValueAnimator
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.view.animation.DecelerateInterpolator
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -700,51 +702,45 @@ class PressureMatrixActivity : AppCompatActivity() {
     }
 
     private fun bindFootOverviewInteractions() {
-        val comingSoonMessage = getString(R.string.foot_overview_coming_soon)
         val scrollView = findViewById<ScrollView>(R.id.foot_overview_scroll)
         val zoneCard1 = findViewById<View>(R.id.zone_card_1)
         val zoneCard2 = findViewById<View>(R.id.zone_card_2)
         val zoneCard3 = findViewById<View>(R.id.zone_card_3)
 
-        findViewById<View>(R.id.zone_1_view_analytics)?.setOnClickListener {
-            startActivity(Intent(this, PlantarFootAnalyticsActivity::class.java))
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }
-        
-        findViewById<View>(R.id.zone_2_view_analytics)?.setOnClickListener {
-            startActivity(Intent(this, BigToeAnalyticsActivity::class.java))
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }
-
         findViewById<View>(R.id.zone_marker_1)?.setOnClickListener {
             scrollToAndHighlightZone(scrollView, zoneCard1)
         }
-
         findViewById<View>(R.id.zone_marker_2)?.setOnClickListener {
             scrollToAndHighlightZone(scrollView, zoneCard2)
         }
-
         findViewById<View>(R.id.zone_marker_3)?.setOnClickListener {
             scrollToAndHighlightZone(scrollView, zoneCard3)
         }
 
-        val zoneViews = listOf(
-            R.id.zone_3_view_analytics,
-            R.id.zone_card_1,
-            R.id.zone_card_2,
-            R.id.zone_card_3
-        )
-
-        zoneViews.forEach { id ->
-            findViewById<View>(id)?.setOnClickListener {
-                Toast.makeText(this, comingSoonMessage, Toast.LENGTH_SHORT).show()
-            }
+        findViewById<View>(R.id.zone_1_view_analytics)?.setOnClickListener {
+            startActivity(Intent(this, PlantarFootAnalyticsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+        findViewById<View>(R.id.zone_2_view_analytics)?.setOnClickListener {
+            startActivity(Intent(this, BigToeAnalyticsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+            findViewById<View>(R.id.zone_3_view_analytics)?.setOnClickListener {
+                startActivity(Intent(this, AnkleCuffAnalyticsActivity::class.java))
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            }
     }
 
     private fun scrollToAndHighlightZone(scrollView: ScrollView, target: View) {
         scrollView.post {
-            scrollView.smoothScrollTo(0, target.top)
+            val startY = scrollView.scrollY
+            val endY = target.top
+            ValueAnimator.ofInt(startY, endY).apply {
+                duration = 900
+                interpolator = DecelerateInterpolator()
+                addUpdateListener { scrollView.scrollTo(0, it.animatedValue as Int) }
+                start()
+            }
             target.setBackgroundResource(R.drawable.foot_overview_zone_card_highlight_bg)
             target.postDelayed({
                 target.setBackgroundResource(R.drawable.foot_overview_zone_card_bg)

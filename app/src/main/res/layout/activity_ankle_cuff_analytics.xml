@@ -9,13 +9,10 @@
     <include layout="@layout/toolbar_view_analytics" />
 
     <ScrollView
-        android:id="@+id/analytics_scroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true">
-
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -28,6 +25,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
+
+                android:background="@drawable/foot_overview_zone_pill_bg"
                 app:cardBackgroundColor="#DEE5EC"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="0dp">
@@ -43,19 +42,18 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/roboto_medium"
-                        android:text="@string/analytics_zone_description"
+                        android:text="Your ankle swelling is currently within the Normal Range. Measurements are taken every 5 minutes by your smart sock."
                         android:textColor="#0D3B66"
                         android:textAlignment="center"
                         android:textSize="13sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-
+            <!-- Swelling Severity Classification -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardBackgroundColor="@color/white"
+                android:layout_marginTop="16dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp">
 
@@ -63,60 +61,146 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="12dp">
+                    android:padding="16dp">
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Swelling Severity Classification"
+                        android:textColor="#0D3B66"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
+
+                    <!-- Gauge Placeholder -->
                     <ImageView
-                        android:id="@+id/analytics_heatmap_image"
+                        android:id="@+id/ankle_gauge"
                         android:layout_width="match_parent"
-                        android:layout_height="320dp"
-                        android:background="#F4F7FA"
-                        android:contentDescription="@string/analytics_heatmap_desc"
+                        android:layout_height="120dp"
+                        android:layout_marginTop="8dp"
+                        android:src="@drawable/ic_launcher_foreground"
                         android:scaleType="fitCenter" />
 
+                    <TextView
+                        android:id="@+id/ankle_severity_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:text="SEVERE LEVEL DETECTED"
+                        android:textColor="#EC4D75"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <!-- Severity Legend -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
                         android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:contentDescription="@string/analytics_updated_icon_desc"
-                            android:src="@drawable/ic_nav_history"
-                            app:tint="#343842" />
-
-                        <TextView
-                            android:id="@+id/analytics_heatmap_updated_at"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:fontFamily="@font/roboto_medium"
-                            android:text="@string/analytics_updated_waiting"
-                            android:textColor="#343842"
-                            android:textSize="16sp" />
-
-                        <View
-                            android:layout_width="0dp"
-                            android:layout_height="1dp"
-                            android:layout_weight="1" />
-
-                        <TextView
-                            android:id="@+id/analytics_heatmap_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-
-                            android:fontFamily="@font/roboto_medium"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="4dp"
-                            android:text="@string/analytics_pressure_status_placeholder"
-                            android:textColor="#16181D"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No swelling risk" android:textSize="12sp" android:textColor="#0D3B66" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Subclinical  " android:textSize="12sp" android:textColor="#0D3B66" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Mild  " android:textSize="12sp" android:textColor="#0D3B66" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Moderate  " android:textSize="12sp" android:textColor="#0D3B66" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Severe  " android:textSize="12sp" android:textColor="#EC4D75" />
                     </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Immediate clinical attention is advised for severe symptoms."
+                        android:textColor="#EC4D75"
+                        android:textSize="12sp"
+                        android:gravity="center" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Swelling Trend -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Swelling Trend (Last 24 hours)"
+                        android:textColor="#0D3B66"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <!-- Chart Placeholder -->
+                    <ImageView
+                        android:id="@+id/ankle_trend_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="100dp"
+                        android:layout_marginTop="8dp"
+                        android:src="@drawable/ic_launcher_foreground"
+                        android:scaleType="fitCenter" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Severe"
+                        android:textColor="#EC4D75"
+                        android:textSize="13sp"
+                        android:background="@drawable/foot_overview_zone_pill_bg"
+                        android:padding="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Updated 2m ago"
+                        android:textColor="#6B7480"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Health Tip -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="#FFF9E5">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_circle_alert"
+                        android:tint="#F7B801" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="Health Tip\nRest and elevate your feet. If swelling persists, consult your doctor."
+                        android:textColor="#0D3B66"
+                        android:textSize="13sp" />
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -142,7 +226,7 @@
                             android:layout_width="22dp"
                             android:layout_height="22dp"
                             android:layout_marginTop="2dp"
-                            android:contentDescription="@string/analytics_ataxia_title"
+                            android:contentDescription="What is Edema?"
                             android:src="@drawable/ic_circle_alert"
                             app:tint="#0D3B66" />
 
@@ -151,7 +235,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="12dp"
                             android:fontFamily="@font/roboto_medium"
-                            android:text="@string/analytics_ataxia_title"
+                            android:text="What is Edema?"
                             android:textColor="@color/blue"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -163,73 +247,27 @@
                         android:layout_marginTop="6dp"
                         android:layout_marginStart="34dp"
                         android:fontFamily="@font/roboto_medium"
-                        android:text="@string/analytics_ataxia_desc"
+                        android:text="Edema is when parts of your body, like your feet or legs, swell up because there is extra fluid inside the tissues. This can happen when you’re injured, have inflammation, or certain health conditions. It can make the skin feel tight and puffy."
                         android:textColor="#0D3B66"
                         android:textSize="14sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/roboto_medium"
-                            android:text="@string/analytics_steps_consistency"
-                            android:textColor="@color/blue"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/roboto_medium"
-                            android:text="@string/analytics_steps_period"
-                            android:textColor="#0D3B66"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <com.github.mikephil.charting.charts.BarChart
-                        android:id="@+id/stepsConsistencyChart"
-                        android:layout_width="match_parent"
-                        android:layout_height="220dp"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/share_health_report_button"
+                android:id="@+id/big_toe_share_button"
                 android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:layout_marginTop="16dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="12dp"
                 android:fontFamily="@font/roboto_medium"
                 android:text="@string/analytics_share_health_report"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
-                android:textSize="16sp"
-                app:backgroundTint="@color/background"
-                app:cornerRadius="24dp"
+                android:textSize="14sp"
+                app:backgroundTint="@color/blue"
+                app:cornerRadius="18dp"
                 app:elevation="0dp"
                 app:icon="@drawable/ic_share_report"
+                app:iconGravity="textStart"
                 app:iconPadding="10dp"
                 app:iconTint="@null"
                 app:rippleColor="#1AFFFFFF"
@@ -238,15 +276,17 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="8dp"
                 android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/analytics_secure_pdf_note"
-                android:textColor="#4A5462"
-                android:textSize="14sp" />
+                android:textColor="#7A8DA1"
+                android:textSize="11sp" />
+
         </LinearLayout>
     </ScrollView>
 
+    <!-- Bottom Navigation -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="66dp"
@@ -257,7 +297,7 @@
         android:weightSum="3">
 
         <LinearLayout
-            android:id="@+id/nav_foot_overview"
+            android:id="@+id/nav_history"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -267,9 +307,9 @@
             <ImageView
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:contentDescription="@string/nav_foot_overview"
-                android:src="@drawable/ic_foot_overview"
-                app:tint="#3F93E9" />
+                android:contentDescription="@string/nav_history"
+                android:src="@drawable/ic_nav_history"
+                app:tint="#6B7480" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -277,10 +317,9 @@
                 android:layout_marginTop="4dp"
                 android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
-                android:text="@string/nav_foot_overview"
-                android:textColor="#3F93E9"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:text="@string/nav_history"
+                android:textColor="#6B7480"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -296,7 +335,7 @@
                 android:layout_height="22dp"
                 android:contentDescription="@string/nav_home"
                 android:src="@drawable/ic_nav_home"
-                app:tint="#6B7480" />
+                app:tint="#3F93E9" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -305,7 +344,7 @@
                 android:fontFamily="@font/roboto_medium"
                 android:gravity="center"
                 android:text="@string/nav_home"
-                android:textColor="#6B7480"
+                android:textColor="#3F93E9"
                 android:textSize="13sp" />
         </LinearLayout>
 
@@ -335,5 +374,4 @@
                 android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
-
 </LinearLayout>
