@@ -1353,7 +1353,7 @@ class MainActivity : AppCompatActivity() {
     private fun reconcileDisconnectedOverlay() {
         // After navigation (e.g. Foot Overview → analytics), MainActivity may be recreated while
         // BleGattSession still holds a live GATT. Instance flags reset to defaults, so we must align
-        // with the system ACL/GATT connection state or we falsely show "Sock Offline".
+        // with the system ACL/GATT connection state or we falsely show "shoe Offline".
         val sessionGatt = BleGattSession.gatt
         val btManager = getSystemService(BluetoothManager::class.java)
         if (sessionGatt != null && btManager != null) {
@@ -1406,7 +1406,7 @@ class MainActivity : AppCompatActivity() {
             applyDashboardFade(0.42f)
             statusPrimaryRow.setBackgroundResource(R.drawable.status_offline_chip_bg)
             offlineCenterHint.visibility = View.VISIBLE
-            updateDashboardStatus("Sock Offline", DashboardStatusVisual.ALERT)
+            updateDashboardStatus("shoe Offline", DashboardStatusVisual.ALERT)
         } else {
             disconnectedPanelUnderlay.visibility = View.GONE
             disconnectedPanel.visibility = View.GONE

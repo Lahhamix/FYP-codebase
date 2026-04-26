@@ -12,7 +12,6 @@
         android:layout_height="match_parent"
         android:paddingHorizontal="16dp">
 
-
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/profile_card"
             android:layout_width="40dp"
@@ -20,7 +19,7 @@
             app:cardCornerRadius="8dp"
             app:cardElevation="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/toolbar_back"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
@@ -36,17 +35,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
+            android:maxWidth="140dp"
+            android:ellipsize="end"
             android:fontFamily="@font/rubik_medium"
+            android:maxLines="1"
             android:text="Username"
             android:textColor="@android:color/white"
             android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="@id/profile_card"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/profile_card"
-            app:layout_constraintTop_toTopOf="@id/profile_card" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
+            android:id="@+id/battery_layout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:background="@drawable/charging_background"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -68,7 +72,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:fontFamily="@font/rubik_medium"
-                android:text="L 95% | R 92%"
+                android:text="@string/battery_lr_sample"
                 android:textColor="@android:color/white"
                 android:textSize="12sp" />
         </LinearLayout>

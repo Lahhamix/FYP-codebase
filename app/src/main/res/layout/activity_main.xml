@@ -54,7 +54,7 @@
                             android:layout_alignBottom="@id/wearable_image"
                             android:background="@drawable/dashboard_image_shadow" />
 
-                        <include layout="@layout/view_sock_status_overlay" />
+                        <include layout="@layout/view_shoe_status_overlay" />
 
                         <View
                             android:id="@+id/disconnected_panel_underlay"
@@ -107,7 +107,7 @@
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:fontFamily="@font/rubik_medium"
-                                        android:text="@string/sock_disconnected"
+                                        android:text="@string/shoe_disconnected"
                                         android:textColor="#1E2A36"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
@@ -117,7 +117,7 @@
                                         android:layout_height="wrap_content"
                                         android:layout_marginTop="2dp"
                                         android:fontFamily="@font/rubik_medium"
-                                        android:text="@string/sock_disconnected_desc"
+                                        android:text="@string/shoe_disconnected_desc"
                                         android:textColor="#6A7784"
                                         android:textSize="11sp" />
                                 </LinearLayout>

@@ -94,7 +94,8 @@ class RegistrationActivity : AppCompatActivity() {
             saveUserDataAndProceed(
                 username = username,
                 password = password,
-                authProvider = PROVIDER_LOCAL
+                authProvider = PROVIDER_LOCAL,
+                proceedToScan = false
             )
         }
 
@@ -137,7 +138,8 @@ class RegistrationActivity : AppCompatActivity() {
         password: String,
         authProvider: String,
         googleEmail: String? = null,
-        googleId: String? = null
+        googleId: String? = null,
+        proceedToScan: Boolean = true
     ) {
         val sharedPref = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
@@ -148,12 +150,13 @@ class RegistrationActivity : AppCompatActivity() {
             putString(KEY_AUTH_PROVIDER, authProvider)
             putString(KEY_GOOGLE_EMAIL, googleEmail)
             putString(KEY_GOOGLE_ID, googleId)
-            putBoolean(KEY_IS_LOGGED_IN, true)
-            putBoolean(KEY_REMEMBER_ME, authProvider == PROVIDER_GOOGLE)
+            putBoolean(KEY_IS_LOGGED_IN, proceedToScan)
+            putBoolean(KEY_REMEMBER_ME, authProvider == PROVIDER_GOOGLE && proceedToScan)
             apply()
         }
 
-        val intent = Intent(this, ScanActivity::class.java)
+        val destination = if (proceedToScan) ScanActivity::class.java else LoginActivity::class.java
+        val intent = Intent(this, destination)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()

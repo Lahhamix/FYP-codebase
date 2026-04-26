@@ -42,7 +42,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/roboto_medium"
-                        android:text="Your ankle swelling is currently within the Normal Range. Measurements are taken every 5 minutes by your smart sock."
+                        android:text="Your ankle swelling is currently within the Normal Range. Measurements are taken every 5 minutes by your smart shoe."
                         android:textColor="#0D3B66"
                         android:textAlignment="center"
                         android:textSize="13sp" />

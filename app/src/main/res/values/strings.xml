@@ -54,7 +54,7 @@
     <string name="settings_app_tutorial">Open App Tutorial</string>
     <string name="settings_app_tutorial_desc">Quick visual guide for SoleMate</string>
     <string name="settings_device_manual">Device User Manual</string>
-    <string name="settings_device_manual_desc">Full guide for your smart socks</string>
+    <string name="settings_device_manual_desc">Full guide for your smart shoe</string>
     <string name="settings_datasheet">Download Datasheet</string>
     <string name="settings_datasheet_desc">Technical specifications v2.1</string>
 
@@ -232,8 +232,8 @@
     <string name="nav_settings">Settings</string>
     <string name="nav_foot_overview">Foot Overview</string>
 
-    <string name="sock_disconnected">Sock Disconnected</string>
-    <string name="sock_disconnected_desc">Your SoleMate sock is out of range. Make sure it is nearby and charged.</string>
+    <string name="shoe_disconnected">shoe Disconnected</string>
+    <string name="shoe_disconnected_desc">Your SoleMate shoe is out of range. Make sure it is nearby and charged.</string>
     <string name="reconnect_now">Reconnect Now</string>
     <string name="scan_devices">Scan Devices</string>
     <string name="current_vitals">Current Vitals</string>
@@ -251,7 +251,7 @@
     <string name="foot_overview_subtitle">Tap a zone to view readings</string>
     <string name="foot_overview_image_desc">SoleMate foot overview map</string>
     <string name="foot_overview_tip_desc">Foot overview information</string>
-    <string name="foot_overview_tip">Each zone represents a smart sensor in your SoleMate sock. Tapping a zone on your map shows personal health data.</string>
+    <string name="foot_overview_tip">Each zone represents a smart sensor in your SoleMate shoe. Tapping a zone on your map shows personal health data.</string>
     <string name="zone_1_title">Zone 1: Plantar Foot</string>
     <string name="zone_1_desc">Monitors plantar foot pressure while standing or walking.</string>
     <string name="zone_1_metric_title">Ataxia Risk</string>
@@ -285,7 +285,7 @@
     <string name="toast_share_report_coming_soon">Share report action coming soon</string>
 
     <string name="big_toe_title">Big Toe</string>
-    <string name="big_toe_banner">Your vitals are currently within the Normal Range.\nMeasurements are taken every 15 minutes by your smart sock.</string>
+    <string name="big_toe_banner">Your vitals are currently within the Normal Range.\nMeasurements are taken every 15 minutes by your smart shoe.</string>
     <string name="big_toe_spo2_title">Oxygen (SpO₂)</string>
     <string name="big_toe_last_30_minutes">Last 30 minutes</string>
     <string name="big_toe_last_1_hour">Last 1 hour</string>
@@ -379,8 +379,8 @@
     <string name="status_no_backend">No Backend</string>
     <string name="need_assistance">Need assistance?\nQuick tips and support are one tap away.</string>
 
-    <string name="left_sock_active">LEFT SOCK ACTIVE</string>
-    <string name="right_sock_active">RIGHT SOCK ACTIVE</string>
+    <string name="left_shoe_active">LEFT shoe ACTIVE</string>
+    <string name="right_shoe_active">RIGHT shoe ACTIVE</string>
 
     <string name="toast_scan_bluetooth_unavailable">Bluetooth is not available on this device</string>
     <string name="toast_enable_location_for_ble">Location services MUST be enabled for BLE scanning.</string>

@@ -32,14 +32,14 @@
     <string name="status_pending">En attente</string>
     <string name="status_no_backend">Aucun backend</string>
     <string name="need_assistance">Besoin d’aide?\nAstuces rapides et assistance à portée de main.</string>
-    <string name="left_sock_active">CÔTÉ GAUCHE ACTIVE</string>
-    <string name="right_sock_active">CÔTÉ DROITE ACTIVE</string>
+    <string name="left_shoe_active">CÔTÉ GAUCHE ACTIVE</string>
+    <string name="right_shoe_active">CÔTÉ DROITE ACTIVE</string>
 
     <string name="current_vitals">Signes Vitaux</string>
     <string name="see_more_detailed">Voir plus de details</string>
 
-    <string name="sock_disconnected">Chaussette deconnectee</string>
-    <string name="sock_disconnected_desc">Votre chaussette SoleMate est hors de portee. Assurez-vous qu elle est a proximite et chargee.</string>
+    <string name="shoe_disconnected">Chaussette deconnectee</string>
+    <string name="shoe_disconnected_desc">Votre chaussette SoleMate est hors de portee. Assurez-vous qu elle est a proximite et chargee.</string>
     <string name="reconnect_now">Reconnecter</string>
     <string name="scan_devices">Scanner</string>
 
@@ -310,4 +310,24 @@
     <string name="contact_support_note">Notre équipe d\'assistance examinera vos commentaires et répondra par les canaux appropriés lorsque cela sera possible.</string>
     <string name="contact_support_email">E-mail: SoleMate26\@gmail.com</string>
     <string name="contact_support_emergency_note">En cas d\'urgence médicale, veuillez composer le 140 immédiatement.</string>
+
+    <string name="nav_foot_overview">Vue du pied</string>
+    <string name="foot_overview_title">Vue du pied</string>
+    <string name="foot_overview_subtitle">Touchez une zone pour voir les mesures</string>
+    <string name="foot_overview_image_desc">Carte de vue du pied SoleMate</string>
+    <string name="foot_overview_tip_desc">Informations sur la vue du pied</string>
+    <string name="foot_overview_tip">Chaque zone représente un capteur intelligent de votre chaussure SoleMate. En touchant une zone de la carte, vous affichez vos données de santé.</string>
+    <string name="zone_1_title">Zone 1 : Plante du pied</string>
+    <string name="zone_1_desc">Surveille la pression plantaire lorsque vous êtes debout ou en marche.</string>
+    <string name="zone_1_metric_title">Risque d\'ataxie</string>
+    <string name="zone_1_metric_subtitle">Distribution actuelle de la pression plantaire</string>
+    <string name="zone_2_title">Zone 2 : Gros orteil</string>
+    <string name="zone_2_desc">Mesure la fréquence cardiaque et la SpO2 au repos et en mouvement.</string>
+    <string name="zone_2_metric_title">Santé cardiaque</string>
+    <string name="zone_2_metric_subtitle">Paramètres cardiovasculaires actuels</string>
+    <string name="zone_3_title">Zone 3 : Manchette de cheville</string>
+    <string name="zone_3_desc">Surveille les gonflements et vérifie la circulation sanguine.</string>
+    <string name="zone_3_metric_title">Gonflement</string>
+    <string name="zone_3_metric_subtitle">Rétention liquidienne actuelle à la cheville</string>
+    <string name="view_full_analytics">Voir l\'analyse complète</string>
 </resources>
