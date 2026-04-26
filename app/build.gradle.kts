@@ -104,6 +104,12 @@ dependencies {
     // Charting library
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
+    // ExecuTorch runtime (BP model inference)
+    implementation("org.pytorch:executorch-android:1.2.0")
+
+    // FFT for STFT / spectrogram preprocessing (Option A)
+    implementation("com.github.wendykierp:JTransforms:3.1")
+
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

@@ -81,8 +81,10 @@ static bool maxim_max30102_init() {
   if (!maxim_max30102_write_reg(REG_FIFO_WR_PTR, 0x00)) return false;
   if (!maxim_max30102_write_reg(REG_OVF_COUNTER, 0x00)) return false;
   if (!maxim_max30102_write_reg(REG_FIFO_RD_PTR, 0x00)) return false;
-  if (!maxim_max30102_write_reg(REG_FIFO_CONFIG, 0x4F)) return false;
+  /* 0x0F: FIFO sample average = 1 (no decimation). With SPO2 100 SPS -> effective 100 Hz for RF (was 0x4F = 4x avg -> ~25 Hz). */
+  if (!maxim_max30102_write_reg(REG_FIFO_CONFIG, 0x0F)) return false;
   if (!maxim_max30102_write_reg(REG_MODE_CONFIG, 0x03)) return false;
+  /* 0x27: ADC range 4096 nA, sample rate 100 Hz, pulse width 411 µs (see MAX30102 datasheet). */
   if (!maxim_max30102_write_reg(REG_SPO2_CONFIG, 0x27)) return false;
   if (!maxim_max30102_write_reg(REG_LED1_PA, 0x24)) return false;
   if (!maxim_max30102_write_reg(REG_LED2_PA, 0x24)) return false;
@@ -134,8 +136,8 @@ static bool maxim_max30102_read_fifo(uint32_t *pun_red_led, uint32_t *pun_ir_led
 // RF HR/SpO2 algorithm (internal — Robert Fraczkiewicz / MAX30102_by_RF)
 // =============================================================================
 
-#define FS 25
-#define BUFFER_SIZE (FS * PPG_RF_ST_SECONDS)
+#define FS PPG_FS_HZ
+#define BUFFER_SIZE ((FS * PPG_RF_ST_NUM) / PPG_RF_ST_DEN)
 
 /** sum_{i=0}^{N-1} (i - (N-1)/2)^2 = N(N^2-1)/12 — must match BUFFER_SIZE */
 static const float sum_X2 =
@@ -366,6 +368,108 @@ static uint32_t redBuffer[BUFFER_SIZE];
 static int collectIdx = 0;
 static uint32_t lastNoFingerPrintMs = 0;
 
+#ifndef PPG_METRICS_COMPUTE_MS
+#define PPG_METRICS_COMPUTE_MS 0u
+#endif
+static uint32_t s_lastMetricsComputeMs = 0;
+static bool s_metricsEnabled = true;
+
+void ppg_set_metrics_enabled(bool enabled) {
+  s_metricsEnabled = enabled;
+}
+
+#if PPG_WAVEFORM_STREAM_ENABLED
+void ppg_set_plot_mode(bool enabled) {
+  // Switch the MAX30102 sample rate to a high rate so that "print latest at 125 Hz" yields fresh values.
+  // Keep pulse width at 411us (LED_PW=0b11) like current code; per datasheet this still allows 400 sps.
+  // REG_SPO2_CONFIG format: [7:5]=ADC_RGE, [4:2]=SPO2_SR, [1:0]=LED_PW
+  // Default init uses 0x27 (ADC_RGE=01, SR=001 (100sps), PW=11).
+  // Plot mode uses SR=011 (400sps) -> 0x2F.
+  const uint8_t spo2Cfg = enabled ? 0x2F : 0x27;
+  (void)maxim_max30102_write_reg(REG_SPO2_CONFIG, spo2Cfg);
+  // FIFO averaging must remain 1 (0x0F) to avoid effective decimation.
+  (void)maxim_max30102_write_reg(REG_FIFO_CONFIG, 0x0F);
+}
+#endif
+
+#if PPG_WAVEFORM_STREAM_ENABLED
+// Ring buffer of raw IR samples used for stable waveform streaming.
+// We keep it independent from HR/SpO2 processing so pressure/BLE can't jitter the output.
+static uint32_t s_waveIrRing[PPG_WAVEFORM_RING_SAMPLES];
+static volatile uint16_t s_waveWr = 0;
+static volatile uint16_t s_waveRd = 0;
+static inline uint16_t wave_next(uint16_t v) { return (uint16_t)((v + 1u) % (uint16_t)PPG_WAVEFORM_RING_SAMPLES); }
+
+static void wave_push(uint32_t ir) {
+  const uint16_t nextWr = wave_next(s_waveWr);
+  if (nextWr == s_waveRd) {
+    // Overflow: drop oldest (advance read) to keep newest samples.
+    s_waveRd = wave_next(s_waveRd);
+  }
+  s_waveIrRing[s_waveWr] = ir;
+  s_waveWr = nextWr;
+}
+
+static bool wave_pop(uint32_t* out) {
+  if (s_waveRd == s_waveWr) return false;
+  *out = s_waveIrRing[s_waveRd];
+  s_waveRd = wave_next(s_waveRd);
+  return true;
+}
+
+bool ppg_waveform_take_latest(uint32_t* outIr) {
+  if (outIr == nullptr) return false;
+  uint32_t v = 0;
+  bool any = false;
+  // Drain whatever accumulated and keep only the newest sample (matches ppg_waveform.ino which
+  // prints the latest FIFO value at each output tick).
+  while (wave_pop(&v)) {
+    any = true;
+  }
+  if (any) {
+    *outIr = v;
+  }
+  return any;
+}
+
+bool ppg_waveform_acquire_latest(uint32_t* outIr) {
+  if (outIr == nullptr) return false;
+  // Non-blocking check: if FIFO has samples, drain them and return the latest IR value.
+  uint8_t wr = 0, rd = 0;
+  if (!maxim_max30102_read_reg(REG_FIFO_WR_PTR, &wr)) return false;
+  if (!maxim_max30102_read_reg(REG_FIFO_RD_PTR, &rd)) return false;
+  if ((wr & 0x1Fu) == (rd & 0x1Fu)) {
+    return false; // no samples
+  }
+
+  uint32_t red = 0;
+  uint32_t ir = 0;
+  // Drain up to FIFO depth (32). Keep only the newest value.
+  uint8_t guard = 0;
+  while (guard < 32) {
+    if (!maxim_max30102_read_reg(REG_FIFO_WR_PTR, &wr)) break;
+    if (!maxim_max30102_read_reg(REG_FIFO_RD_PTR, &rd)) break;
+    if ((wr & 0x1Fu) == (rd & 0x1Fu)) break;
+    if (!maxim_max30102_read_fifo(&red, &ir)) break;
+#if PPG_WAVEFORM_STREAM_ENABLED
+    wave_push(ir); // keep ring populated too, in case you want to switch back to ring-based reads
+#endif
+    guard++;
+  }
+  *outIr = ir;
+  return true;
+}
+
+bool ppg_waveform_next(int32_t* outSample) {
+  if (outSample == nullptr) return false;
+  uint32_t v = 0;
+  if (!wave_pop(&v)) return false;
+  // Output as signed int for plotter. Keep "raw-ish": no filtering here.
+  *outSample = (int32_t)v;
+  return true;
+}
+#endif
+
 /** Wait for PPG_RDY / non-empty FIFO, then read one sample (used by software mode and INT fallback). */
 static bool readNextSampleFromFifo(uint32_t *outRed, uint32_t *outIr, uint32_t timeoutMs) {
   const uint32_t t0 = millis();
@@ -455,7 +559,7 @@ bool ppg_init() {
 }
 
 PPGData ppg_tick() {
-  /* Drain multiple FIFO samples when the main loop was slow — keeps ~25 Hz samples in the buffer
+  /* Drain multiple FIFO samples when the main loop was slow — keeps ~FS Hz samples in the buffer
    * without needing one full (slow) iteration per sample. */
   if (collectIdx < BUFFER_SIZE) {
     unsigned gained = 0;
@@ -467,6 +571,9 @@ PPGData ppg_tick() {
       }
       redBuffer[collectIdx] = red;
       irBuffer[collectIdx] = ir;
+#if PPG_WAVEFORM_STREAM_ENABLED
+      wave_push(ir);
+#endif
       collectIdx++;
       gained++;
       ble_yield();
@@ -493,6 +600,25 @@ PPGData ppg_tick() {
     PPGData stale = latestPublished;
     stale.newWindow = false;
     return stale;
+  }
+
+  // Full RF window collected. Always reset the buffer, but only run expensive HR/SpO2 compute when due.
+  if (!s_metricsEnabled) {
+    collectIdx = 0;
+    PPGData stale = latestPublished;
+    stale.newWindow = false;
+    return stale;
+  }
+
+  if (PPG_METRICS_COMPUTE_MS > 0u) {
+    const uint32_t nowMs = (uint32_t)millis();
+    if ((uint32_t)(nowMs - s_lastMetricsComputeMs) < (uint32_t)PPG_METRICS_COMPUTE_MS) {
+      collectIdx = 0;
+      PPGData stale = latestPublished;
+      stale.newWindow = false;
+      return stale;
+    }
+    s_lastMetricsComputeMs = nowMs;
   }
 
   float spo2 = -999.0f;
@@ -543,10 +669,8 @@ void ppg_print_serial_on_new_window(const PPGData& d) {
   LOG_PPG(Serial.println(d.spO2, 1));
 
   if (d.validHeartRate && d.validSPO2) {
-    const int nLines = (PPG_RED_IR_CSV_LINES < BUFFER_SIZE) ? PPG_RED_IR_CSV_LINES : BUFFER_SIZE;
+    const int nLines = (PPG_IR_CSV_LINES < BUFFER_SIZE) ? PPG_IR_CSV_LINES : BUFFER_SIZE;
     for (int li = 0; li < nLines; li++) {
-      LOG_PPG(Serial.print(redBuffer[li]));
-      LOG_PPG(Serial.print(F(",")));
       LOG_PPG(Serial.println(irBuffer[li]));
     }
   }

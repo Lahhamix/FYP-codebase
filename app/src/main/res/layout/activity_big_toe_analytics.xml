@@ -368,10 +368,17 @@
                             android:paddingVertical="10dp"
                             android:text="@string/big_toe_bp_placeholder"
                             android:textColor="#1E2A36"
-                            android:textSize="14sp"
+                            android:textSize="10sp"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:autoSizeTextType="uniform"
+                            android:autoSizeMinTextSize="8sp"
+                            android:autoSizeMaxTextSize="10sp"
+                            android:autoSizeStepGranularity="1sp"
                             android:textStyle="bold" />
 
                         <ImageView
+                            android:id="@+id/big_toe_bp_caret"
                             android:layout_width="14dp"
                             android:layout_height="10dp"
                             android:layout_marginTop="-1dp"
@@ -379,6 +386,7 @@
                             android:src="@drawable/ic_bp_scale_caret" />
 
                         <LinearLayout
+                            android:id="@+id/big_toe_bp_bar"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"

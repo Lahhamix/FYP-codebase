@@ -41,9 +41,12 @@ static bool s_unitsDetected = false;
 static float s_accelToG = 1.0f;
 
 /** Drain accel FIFO and update step count. Returns number of accel samples processed. */
-static int imu_drain_accel_for_steps(uint32_t nowMs) {
+static int imu_drain_accel_for_steps(uint32_t nowMs, int maxReads) {
+  if (maxReads <= 0) {
+    maxReads = IMU_MAX_ACCEL_READS_PER_LOOP;
+  }
   int n = 0;
-  while (IMU.accelerationAvailable()) {
+  while (IMU.accelerationAvailable() && n < maxReads) {
     float ax, ay, az;
     IMU.readAcceleration(ax, ay, az);
     s_lastAx = ax;
@@ -90,7 +93,7 @@ static int imu_drain_accel_for_steps(uint32_t nowMs) {
 }
 
 void imu_pump_steps() {
-  (void)imu_drain_accel_for_steps((uint32_t)millis());
+  (void)imu_drain_accel_for_steps((uint32_t)millis(), IMU_MAX_ACCEL_READS_PER_LOOP);
 }
 
 bool imu_init() {
@@ -105,14 +108,16 @@ IMUData readIMU() {
   static bool hasLast = false;
 
   bool any = false;
-  while (IMU.gyroscopeAvailable()) {
+  int nGyro = 0;
+  while (IMU.gyroscopeAvailable() && nGyro < IMU_MAX_GYRO_READS_PER_LOOP) {
     IMU.readGyroscope(s_lastGx, s_lastGy, s_lastGz);
     any = true;
+    nGyro++;
     yield();
   }
 
   const uint32_t now = (uint32_t)millis();
-  const int nAccel = imu_drain_accel_for_steps(now);
+  const int nAccel = imu_drain_accel_for_steps(now, IMU_MAX_ACCEL_READS_PER_LOOP);
   if (nAccel > 0) {
     any = true;
   }

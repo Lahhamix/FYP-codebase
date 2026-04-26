@@ -1,6 +1,9 @@
 package com.example.ble_viewer
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
@@ -11,19 +14,22 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.google.android.material.button.MaterialButton
-import java.util.Locale
 import java.text.NumberFormat
+import java.util.Locale
 
 class BigToeAnalyticsActivity : AppCompatActivity() {
     private lateinit var toolbarBack: ImageView
 
     companion object {
         private const val PREFS_NAME = "SolematePrefs"
+        private const val HR_CHAR_UUID = "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00"
+        private const val SPO2_CHAR_UUID = "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00"
     }
 
     private lateinit var toolbarUsername: TextView
@@ -39,6 +45,43 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
     private var hrWindow: HistoryWindow = HistoryWindow.H4
     private var spo2Window: HistoryWindow = HistoryWindow.H4
 
+    /**
+     * While MainActivity is stopped (e.g. user is on this screen), its receiver is unregistered —
+     * we must append HR/SpO2 to [VitalsHistoryStore] here so history matches the dashboard.
+     */
+    private val sensorDataReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                MainActivity.ACTION_SENSOR_DATA -> {
+                    val uuidString = intent.getStringExtra(MainActivity.EXTRA_UUID_STRING) ?: return
+                    val encryptedBytes = intent.getByteArrayExtra(MainActivity.EXTRA_DECRYPTED_DATA) ?: return
+                    runOnUiThread {
+                        try {
+                            when (uuidString) {
+                                HR_CHAR_UUID -> {
+                                    val bpm = AESCrypto.decryptHeartRate(encryptedBytes).trim().toIntOrNull() ?: return@runOnUiThread
+                                    VitalsHistoryStore.appendHeartRate(this@BigToeAnalyticsActivity, bpm)
+                                    refreshHeartRate()
+                                }
+                                SPO2_CHAR_UUID -> {
+                                    val spo2 = AESCrypto.decryptSpO2(encryptedBytes).trim().toDoubleOrNull() ?: return@runOnUiThread
+                                    VitalsHistoryStore.appendSpo2(this@BigToeAnalyticsActivity, spo2)
+                                    refreshSpo2()
+                                }
+                            }
+                        } catch (_: Exception) { }
+                    }
+                }
+                MainActivity.ACTION_BP_PREDICTION -> {
+                    val sbp = intent.getFloatExtra(MainActivity.EXTRA_SBP, Float.NaN)
+                    val dbp = intent.getFloatExtra(MainActivity.EXTRA_DBP, Float.NaN)
+                    if (!sbp.isFinite() || !dbp.isFinite()) return
+                    runOnUiThread { updateBpUi(sbp, dbp) }
+                }
+            }
+        }
+    }
+
     private lateinit var hrValue: TextView
     private lateinit var hrStatus: TextView
     private lateinit var hrChart: LineChart
@@ -50,6 +93,10 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
     private lateinit var spo2Chart: LineChart
     private lateinit var spo2Updated: TextView
     private lateinit var spo2Period: TextView
+
+    private lateinit var bpValue: TextView
+    private lateinit var bpCaret: ImageView
+    private lateinit var bpBar: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +113,10 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         spo2Chart = findViewById(R.id.big_toe_spo2_chart)
         spo2Updated = findViewById(R.id.big_toe_spo2_updated)
         spo2Period = findViewById(R.id.big_toe_spo2_period)
+
+        bpValue = findViewById(R.id.big_toe_bp_value)
+        bpCaret = findViewById(R.id.big_toe_bp_caret)
+        bpBar = findViewById(R.id.big_toe_bp_bar)
 
         toolbarUsername = findViewById(R.id.toolbar_username)
         toolbarProfileImage = findViewById(R.id.toolbar_profile_image)
@@ -84,13 +135,46 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         hrPeriod.setOnClickListener { v -> showHistoryPopup(v, forHr = true) }
         spo2Period.setOnClickListener { v -> showHistoryPopup(v, forHr = false) }
 
+        hrPeriod.text = getString(hrWindow.labelRes)
+        spo2Period.text = getString(spo2Window.labelRes)
+
         refreshHeartRate()
         refreshSpo2()
     }
 
     override fun onResume() {
         super.onResume()
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            sensorDataReceiver,
+            IntentFilter().apply {
+                addAction(MainActivity.ACTION_SENSOR_DATA)
+                addAction(MainActivity.ACTION_BP_PREDICTION)
+            }
+        )
         updateToolbarUserFromPrefs()
+        refreshHeartRate()
+        refreshSpo2()
+    }
+
+    override fun onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(sensorDataReceiver)
+        super.onPause()
+    }
+
+    private fun updateBpUi(sbp: Float, dbp: Float) {
+        // Bubble text (replace placeholder "120/80") with current prediction + unit.
+        bpValue.text = "${sbp.toInt()}±${BpModelRunner.SBP_RANGE_PLUS_MINUS} / ${dbp.toInt()}±${BpModelRunner.DBP_RANGE_PLUS_MINUS} mmHg"
+
+        // Move caret over Hypotension / Normal / Hypertension bar.
+        // We map the 3 classes to left/center/right and translate the caret within the bar width.
+        bpBar.post {
+            val cls = BpUi.classify(sbp, dbp)
+            val pos = BpUi.classToNormalizedPos(cls)
+            val barW = bpBar.width.toFloat().coerceAtLeast(1f)
+            val caretW = bpCaret.width.toFloat().coerceAtLeast(1f)
+            val x = (barW * pos) - (caretW / 2f)
+            bpCaret.translationX = x
+        }
     }
 
     private fun bindToolbar() {
@@ -203,16 +287,20 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         hrUpdated.text = formatUpdatedAgo(latest?.epochMs)
 
         val entries = samples.toEntries()
-        hrChart.data = LineData(LineDataSet(entries, "HR").apply {
-            color = Color.parseColor("#EC4D75")
-            setDrawCircles(false)
-            setDrawValues(false)
-            lineWidth = 2.5f
-            mode = LineDataSet.Mode.CUBIC_BEZIER
-            setDrawFilled(true)
-            fillColor = Color.parseColor("#33EC4D75")
-            highLightColor = Color.TRANSPARENT
-        })
+        if (entries.isEmpty()) {
+            hrChart.clear()
+        } else {
+            hrChart.data = LineData(LineDataSet(entries, "HR").apply {
+                color = Color.parseColor("#EC4D75")
+                setDrawCircles(false)
+                setDrawValues(false)
+                lineWidth = 2.5f
+                mode = LineDataSet.Mode.CUBIC_BEZIER
+                setDrawFilled(true)
+                fillColor = Color.parseColor("#33EC4D75")
+                highLightColor = Color.TRANSPARENT
+            })
+        }
         hrChart.invalidate()
     }
 
@@ -233,21 +321,25 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         spo2Updated.text = formatUpdatedAgo(latest?.epochMs)
 
         val entries = samples.toEntries()
-        spo2Chart.data = LineData(LineDataSet(entries, "SpO2").apply {
-            color = Color.parseColor("#2D7EEA")
-            setDrawCircles(false)
-            setDrawValues(false)
-            lineWidth = 2.5f
-            mode = LineDataSet.Mode.CUBIC_BEZIER
-            setDrawFilled(true)
-            fillColor = Color.parseColor("#332D7EEA")
-            highLightColor = Color.TRANSPARENT
-        })
+        if (entries.isEmpty()) {
+            spo2Chart.clear()
+        } else {
+            spo2Chart.data = LineData(LineDataSet(entries, "SpO2").apply {
+                color = Color.parseColor("#2D7EEA")
+                setDrawCircles(false)
+                setDrawValues(false)
+                lineWidth = 2.5f
+                mode = LineDataSet.Mode.CUBIC_BEZIER
+                setDrawFilled(true)
+                fillColor = Color.parseColor("#332D7EEA")
+                highLightColor = Color.TRANSPARENT
+            })
+        }
         spo2Chart.invalidate()
     }
 
     private fun List<VitalsHistoryStore.Sample>.toEntries(): List<Entry> {
-        if (isEmpty()) return listOf(Entry(0f, 0f))
+        if (isEmpty()) return emptyList()
         val t0 = first().epochMs
         return mapIndexed { _, s ->
             val minutes = ((s.epochMs - t0) / 60_000.0).toFloat().coerceAtLeast(0f)

@@ -2,6 +2,9 @@
 #include "serial_log.h"
 
 static uint16_t frameBuffer[NUM_ROWS][NUM_COLS];
+static uint16_t s_scanCol = 0;
+static volatile bool s_frameReady = false;
+static PressureFrame s_readyFrame;
 
 void setMux4(int s0, int s1, int s2, int s3, int channel) {
   digitalWrite(s0, (channel & 0x01) ? HIGH : LOW);
@@ -68,37 +71,61 @@ bool pressure_init() {
   return true;
 }
 
-PressureFrame readPressure() {
-  return readPressureWithYield(nullptr);
+void pressure_scan_begin() {
+  s_scanCol = 0;
+  s_frameReady = false;
 }
 
-PressureFrame readPressureWithYield(void (*yieldFn)(void)) {
-  PressureFrame frame;
-  frame.available = false;
-
-  // Scan matrix
-  for (int c = 0; c < NUM_COLS; c++) {
-    setColumn(c);
-    for (int r = 0; r < NUM_ROWS; r++) {
-      frameBuffer[r][c] = readRow12(r);
-    }
-    if (yieldFn != nullptr && PRESSURE_IMU_YIELD_EVERY_N_COLS > 0 &&
-        ((c + 1) % PRESSURE_IMU_YIELD_EVERY_N_COLS) == 0) {
-      yieldFn();
-    }
-  }
-  disableAllColumns();
-
-  // Flatten to row-major order
+static void finalize_ready_frame() {
+  // Flatten to row-major order into the ready frame.
   int idx = 0;
   for (int r = 0; r < NUM_ROWS; r++) {
     for (int c = 0; c < NUM_COLS; c++) {
-      frame.data[idx++] = frameBuffer[r][c] & 0x0FFF;
+      s_readyFrame.data[idx++] = frameBuffer[r][c] & 0x0FFF;
+    }
+  }
+  s_readyFrame.available = true;
+  s_frameReady = true;
+}
+
+bool pressure_scan_step(int maxCols, void (*yieldFn)(void)) {
+  if (maxCols <= 0) maxCols = 1;
+  if (s_frameReady) {
+    return true;
+  }
+
+  int did = 0;
+  while (s_scanCol < NUM_COLS && did < maxCols) {
+    setColumn((int)s_scanCol);
+    for (int r = 0; r < NUM_ROWS; r++) {
+      frameBuffer[r][s_scanCol] = readRow12(r);
+    }
+    s_scanCol++;
+    did++;
+    if (yieldFn != nullptr && PRESSURE_IMU_YIELD_EVERY_N_COLS > 0 &&
+        ((int)s_scanCol % PRESSURE_IMU_YIELD_EVERY_N_COLS) == 0) {
+      yieldFn();
     }
   }
 
-  frame.available = true;
-  return frame;
+  if (s_scanCol >= NUM_COLS) {
+    disableAllColumns();
+    finalize_ready_frame();
+    // Prepare for next scan immediately; caller can call pressure_scan_begin() if they want explicit control.
+    s_scanCol = 0;
+    return true;
+  }
+
+  return false;
+}
+
+bool pressure_take_frame(PressureFrame* out) {
+  if (out == nullptr || !s_frameReady) {
+    return false;
+  }
+  *out = s_readyFrame;
+  s_frameReady = false;
+  return true;
 }
 
 void packSamples12(const uint16_t* samples, int count, uint8_t* out12) {

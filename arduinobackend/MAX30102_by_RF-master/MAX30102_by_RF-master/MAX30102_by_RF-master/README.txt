@@ -1,1 +1,0 @@
-Copy paste the codes in the .txt files into the .ino file named "MAX30102_by_RF" to avoid having to deal with errors.

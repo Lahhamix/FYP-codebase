@@ -23,6 +23,7 @@ static const char PURPOSE_STEPS[] = "STEPS";
 static const char PURPOSE_MOTION[] = "MOTION";
 static const char PURPOSE_FLEX[] = "FLEX";
 static const char PURPOSE_PRESSURE[] = "PRESSURE";
+static const char PURPOSE_PPG_WAVE[] = "PPG_WAVE";
 
 static uint8_t s_sharedSecret[SHARED_SECRET_SIZE];
 static uint8_t s_stepsKey[DERIVED_KEY_SIZE];
@@ -31,6 +32,7 @@ static uint8_t s_heartRateKey[DERIVED_KEY_SIZE];
 static uint8_t s_spo2Key[DERIVED_KEY_SIZE];
 static uint8_t s_flexKey[DERIVED_KEY_SIZE];
 static uint8_t s_pressureKey[DERIVED_KEY_SIZE];
+static uint8_t s_ppgWaveKey[DERIVED_KEY_SIZE];
 
 static uint8_t s_peripheralPublicKey[PUBLIC_KEY_UNCOMPRESSED_SIZE];
 static uint8_t s_privateKey[32];
@@ -97,6 +99,7 @@ bool key_exchange_process_phone_key(const uint8_t* phonePublicKey, size_t len) {
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_SPO2, s_spo2Key);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_FLEX, s_flexKey);
   deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_PRESSURE, s_pressureKey);
+  deriveKey(s_sharedSecret, SHARED_SECRET_SIZE, PURPOSE_PPG_WAVE, s_ppgWaveKey);
 
   s_keyExchangeComplete = true;
   LOG_ENCRYPT(Serial.println("[KEY_EXCHANGE] Key derivation complete."));
@@ -133,4 +136,8 @@ void key_exchange_get_flex_key(uint8_t* outKey) {
 
 void key_exchange_get_pressure_key(uint8_t* outKey) {
   memcpy(outKey, s_pressureKey, DERIVED_KEY_SIZE);
+}
+
+void key_exchange_get_ppg_wave_key(uint8_t* outKey) {
+  memcpy(outKey, s_ppgWaveKey, DERIVED_KEY_SIZE);
 }

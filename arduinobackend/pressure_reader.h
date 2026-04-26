@@ -42,11 +42,20 @@ struct PressureFrame {
 // Initialize pressure matrix hardware
 bool pressure_init();
 
-// Scan matrix and return frame data
-PressureFrame readPressure();
+// -----------------------------------------------------------------------------
+// Non-blocking scan API (recommended)
+// -----------------------------------------------------------------------------
+/** Start a new scan from column 0. Safe to call at any time. */
+void pressure_scan_begin();
 
-/** Same as readPressure but calls yieldFn every N columns so IMU can be serviced (see serial_log.h). */
-PressureFrame readPressureWithYield(void (*yieldFn)(void));
+/**
+ * Scan up to maxCols columns this call. Returns true if a full frame completed during this step.
+ * Calls yieldFn every PRESSURE_IMU_YIELD_EVERY_N_COLS columns (if provided).
+ */
+bool pressure_scan_step(int maxCols, void (*yieldFn)(void));
+
+/** If a completed frame is ready, copy it into out and clear the ready flag. */
+bool pressure_take_frame(PressureFrame* out);
 
 // Pack 12-bit samples into BLE packet format
 void packSamples12(const uint16_t* samples, int count, uint8_t* out12);

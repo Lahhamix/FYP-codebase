@@ -33,5 +33,6 @@ void key_exchange_get_heart_rate_key(uint8_t* outKey);
 void key_exchange_get_spo2_key(uint8_t* outKey);
 void key_exchange_get_flex_key(uint8_t* outKey);
 void key_exchange_get_pressure_key(uint8_t* outKey);
+void key_exchange_get_ppg_wave_key(uint8_t* outKey);
 
 #endif

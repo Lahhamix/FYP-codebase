@@ -219,7 +219,9 @@
                     android:minHeight="@dimen/dashboard_metric_card_min_height"
                     app:cardBackgroundColor="@color/white"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    app:cardElevation="0dp"
+                    app:strokeColor="#EC4D75"
+                    app:strokeWidth="3dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -286,19 +288,14 @@
                             </LinearLayout>
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:fontFamily="@font/rubik_medium"
                                 android:text="@string/dashboard_heart_rate_label"
                                 android:textColor="#8697A8"
-                                android:textSize="@dimen/dashboard_card_title_text_size" />
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="4dp"
-                                android:layout_marginTop="4dp"
-                                android:background="#EC4D75" />
+                                android:textSize="@dimen/dashboard_card_title_text_size"
+                                android:gravity="center_horizontal" />
                         </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -311,7 +308,9 @@
                     android:minHeight="@dimen/dashboard_metric_card_min_height"
                     app:cardBackgroundColor="@color/white"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    app:cardElevation="0dp"
+                    app:strokeColor="#2D7EEA"
+                    app:strokeWidth="3dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -378,19 +377,14 @@
                             </LinearLayout>
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:fontFamily="@font/rubik_medium"
                                 android:text="@string/dashboard_spo2_label"
                                 android:textColor="#8697A8"
-                                android:textSize="@dimen/dashboard_card_title_text_size" />
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="4dp"
-                                android:layout_marginTop="4dp"
-                                android:background="#2D7EEA" />
+                                android:textSize="@dimen/dashboard_card_title_text_size"
+                                android:gravity="center_horizontal" />
                         </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -411,7 +405,9 @@
                     android:minHeight="@dimen/dashboard_metric_card_min_height"
                     app:cardBackgroundColor="@color/white"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    app:cardElevation="0dp"
+                    app:strokeColor="#31567D"
+                    app:strokeWidth="3dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -447,33 +443,47 @@
                                     android:layout_height="1dp"
                                     android:layout_weight="1" />
 
-                                <TextView
-                                    android:id="@+id/bpStatus"
+                                <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:background="@drawable/status_chip_bg"
-                                    android:fontFamily="@font/rubik_medium"
-                                    android:paddingHorizontal="10dp"
-                                    android:paddingVertical="3dp"
-                                    android:text="@string/dashboard_status_normal"
-                                    android:textColor="@color/dark_blue"
-                                    android:textSize="@dimen/dashboard_status_chip_text_size" />
+                                    android:gravity="end"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/bpStatus"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:background="@drawable/status_chip_bg"
+                                        android:fontFamily="@font/rubik_medium"
+                                        android:paddingHorizontal="10dp"
+                                        android:paddingVertical="3dp"
+                                        android:text="@string/dashboard_status_normal"
+                                        android:textColor="@color/dark_blue"
+                                        android:textSize="@dimen/dashboard_status_chip_text_size" />
+
+                                    <TextView
+                                        android:id="@+id/bpValueText"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:fontFamily="@font/rubik_medium"
+                                        android:text="--/-- mmHg"
+                                        android:textColor="@color/dark_blue"
+                                        android:textSize="12sp"
+                                        android:maxLines="1"
+                                        android:ellipsize="end" />
+                                </LinearLayout>
                             </LinearLayout>
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:fontFamily="@font/rubik_medium"
                                 android:text="@string/dashboard_bp_range_label"
                                 android:textColor="#8697A8"
-                                android:textSize="@dimen/dashboard_card_title_text_size" />
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="4dp"
-                                android:layout_marginTop="4dp"
-                                android:background="#31567D" />
+                                android:textSize="@dimen/dashboard_card_title_text_size"
+                                android:gravity="center_horizontal" />
                         </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -486,7 +496,9 @@
                     android:minHeight="@dimen/dashboard_metric_card_min_height"
                     app:cardBackgroundColor="@color/white"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    app:cardElevation="0dp"
+                    app:strokeColor="#36B8BF"
+                    app:strokeWidth="3dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -536,19 +548,14 @@
                             </LinearLayout>
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:fontFamily="@font/rubik_medium"
                                 android:text="@string/dashboard_swelling_label"
                                 android:textColor="#8697A8"
-                                android:textSize="@dimen/dashboard_card_title_text_size" />
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="4dp"
-                                android:layout_marginTop="4dp"
-                                android:background="#36B8BF" />
+                                android:textSize="@dimen/dashboard_card_title_text_size"
+                                android:gravity="center_horizontal" />
                         </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -569,7 +576,9 @@
                         android:minHeight="@dimen/dashboard_metric_card_min_height"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp">
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/dashboard_steps_accent"
+                        app:strokeWidth="3dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -637,19 +646,14 @@
                             </LinearLayout>
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:fontFamily="@font/rubik_medium"
                                 android:text="@string/dashboard_steps_label"
                                 android:textColor="#8697A8"
-                                android:textSize="@dimen/dashboard_card_title_text_size" />
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="4dp"
-                                android:layout_marginTop="4dp"
-                                android:background="@color/dashboard_steps_accent" />
+                                android:textSize="@dimen/dashboard_card_title_text_size"
+                                android:gravity="center_horizontal" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
@@ -662,7 +666,9 @@
                         android:minHeight="@dimen/dashboard_metric_card_min_height"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp">
+                        app:cardElevation="0dp"
+                        app:strokeColor="#2D6BC9"
+                        app:strokeWidth="3dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -712,19 +718,14 @@
                             </LinearLayout>
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:fontFamily="@font/rubik_medium"
                                 android:text="@string/dashboard_ataxia_label"
                                 android:textColor="#8697A8"
-                                android:textSize="@dimen/dashboard_card_title_text_size" />
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="4dp"
-                                android:layout_marginTop="4dp"
-                                android:background="#2D6BC9" />
+                                android:textSize="@dimen/dashboard_card_title_text_size"
+                                android:gravity="center_horizontal" />
                         </LinearLayout>
 
                     </com.google.android.material.card.MaterialCardView>

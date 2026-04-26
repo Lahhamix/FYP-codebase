@@ -34,6 +34,11 @@ static const uint8_t pressureIV[16] = {
   0x58, 0x59, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F
 };
 
+static const uint8_t ppgWaveIV[16] = {
+  0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67,
+  0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F
+};
+
 // Keys from key exchange (populated after ECDH)
 static uint8_t stepsKey[16];
 static uint8_t motionKey[16];
@@ -41,6 +46,7 @@ static uint8_t heartRateKey[16];
 static uint8_t spo2Key[16];
 static uint8_t flexKey[16];
 static uint8_t pressureKey[16];
+static uint8_t ppgWaveKey[16];
 
 static bool encryptionReady = false;
 
@@ -58,6 +64,7 @@ void encryption_init_from_key_exchange() {
   key_exchange_get_spo2_key(spo2Key);
   key_exchange_get_flex_key(flexKey);
   key_exchange_get_pressure_key(pressureKey);
+  key_exchange_get_ppg_wave_key(ppgWaveKey);
   encryptionReady = true;
   cbc.setKey(stepsKey, 16);
   cbc.setIV(stepsIV, 16);
@@ -144,6 +151,26 @@ bool encryptSpO2(const String& plaintext, EncryptedPayload& payload) {
 
 bool encryptFlex(const String& plaintext, EncryptedPayload& payload) {
   return encryptWithKeyIV(plaintext, flexKey, flexIV, payload);
+}
+
+bool encryptPpgWaveChunk(const uint8_t* plaintext, size_t plaintextLen, EncryptedPayload& payload) {
+  if (!encryptionReady || plaintext == nullptr || plaintextLen == 0) {
+    return false;
+  }
+  const size_t MAX_PLAINTEXT = 64;
+  if (plaintextLen > MAX_PLAINTEXT) {
+    return false;
+  }
+  uint8_t padded[MAX_PLAINTEXT + 16];
+  size_t actualPaddedLen = addPKCS5Padding(plaintext, plaintextLen, padded, sizeof(padded));
+  if (actualPaddedLen == 0 || actualPaddedLen > sizeof(payload.data)) {
+    return false;
+  }
+  cbc.setKey(ppgWaveKey, 16);
+  cbc.setIV(ppgWaveIV, 16);
+  cbc.encrypt(payload.data, padded, actualPaddedLen);
+  payload.length = actualPaddedLen;
+  return true;
 }
 
 bool encryptPressurePayload(const uint8_t* payload, size_t payloadLen, uint8_t* encryptedOut, size_t* encryptedLen) {

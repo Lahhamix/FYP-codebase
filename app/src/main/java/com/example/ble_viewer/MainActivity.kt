@@ -45,8 +45,9 @@ import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -82,6 +83,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var stepsText: TextView
     private lateinit var stepsMotionStatus: TextView
     private lateinit var bpCard: View
+    private lateinit var bpValueText: TextView
     private lateinit var swellingStatus: TextView
     private lateinit var swellingCard: View
     private lateinit var ataxiaCard: View
@@ -132,6 +134,9 @@ class MainActivity : AppCompatActivity() {
         var isWearableConnected = false
         const val EXTRA_UUID_STRING = "com.example.ble_viewer.EXTRA_UUID_STRING"
         const val EXTRA_DECRYPTED_DATA = "com.example.ble_viewer.EXTRA_DECRYPTED_DATA"
+        const val ACTION_BP_PREDICTION = "com.example.ble_viewer.ACTION_BP_PREDICTION"
+        const val EXTRA_SBP = "com.example.ble_viewer.EXTRA_SBP"
+        const val EXTRA_DBP = "com.example.ble_viewer.EXTRA_DBP"
         private const val WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 101
         private const val BLUETOOTH_CONNECT_REQUEST_CODE = 102
         private const val PERIPHERAL_PUBLIC_KEY_LENGTH = 65
@@ -145,6 +150,7 @@ class MainActivity : AppCompatActivity() {
         private const val DEVICE_ALERTS_NOTIFICATION_ID = 1001
         private const val ALERT_NOTIFICATION_COOLDOWN_MS = 12_000L
         val pressureCharUuid = UUID.fromString("9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00")
+        val ppgWaveCharUuid = UUID.fromString("9a8b0008-6d5e-4c10-b6d9-1f25c09d9e00")
         const val PRESSURE_MATRIX_ENCRYPTION_ENABLED = true
     }
 
@@ -163,8 +169,7 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationQueue = ConcurrentLinkedQueue<BluetoothGattCharacteristic>()
     private var isProcessingQueue = false
-    private val characteristicBuffers = mutableMapOf<UUID, ByteArrayOutputStream>()
-    /** Serializes notify chunk reassembly (must match Arduino length-prefix + AES ciphertext framing). */
+    /** Serializes notify parsing. */
     private val bleNotifyAssemblyLock = Any()
     private val maxPayloadLength = 80
     /** Request ATT MTU only after CCCD setup — calling requestMtu in onServicesDiscovered breaks some stacks (stuck on Discovering). */
@@ -237,12 +242,116 @@ class MainActivity : AppCompatActivity() {
                             if (raw.isEmpty() || raw.startsWith("DECRYPT_ERROR")) return@runOnUiThread
                             stepsMotionStatus.text = motionStatusLabel(raw)
                         }
+                        ppgWaveCharUuid.toString() -> {
+                            // Reassemble 625 int32 waveform window (2500 bytes) sent in encrypted chunks.
+                            // Plain chunk format: 'P''W' frameId chunkId totalChunks dataLen 0 0 + data[dataLen]
+                            val plain = AESCrypto.decryptPpgWaveChunk(encryptedBytes) ?: return@runOnUiThread
+                            if (plain.size < 8) return@runOnUiThread
+                            if (plain[0] != 'P'.code.toByte() || plain[1] != 'W'.code.toByte()) return@runOnUiThread
+
+                            val frameId = plain[2].toInt() and 0xFF
+                            val chunkId = plain[3].toInt() and 0xFF
+                            val totalChunks = plain[4].toInt() and 0xFF
+                            val dataLen = plain[5].toInt() and 0xFF
+                            if (totalChunks <= 0 || totalChunks > 200) return@runOnUiThread
+                            if (dataLen < 0 || dataLen > 56) return@runOnUiThread
+                            if (plain.size < 8 + dataLen) return@runOnUiThread
+
+                            // Lazy state: track one frame at a time (latest wins)
+                            if (ppgWaveRxFrameId != frameId || ppgWaveRxTotalChunks != totalChunks) {
+                                ppgWaveRxFrameId = frameId
+                                ppgWaveRxTotalChunks = totalChunks
+                                ppgWaveRxReceived = BooleanArray(totalChunks)
+                                ppgWaveRxChunks = Array(totalChunks) { ByteArray(0) }
+                            }
+                            if (chunkId >= totalChunks) return@runOnUiThread
+                            if (!ppgWaveRxReceived[chunkId]) {
+                                ppgWaveRxReceived[chunkId] = true
+                                ppgWaveRxChunks[chunkId] = plain.copyOfRange(8, 8 + dataLen)
+                            }
+
+                            val got = ppgWaveRxReceived.count { it }
+                            if (got == totalChunks) {
+                                val assembled = ByteArray(ppgWaveRxChunks.sumOf { it.size })
+                                var w = 0
+                                for (i in 0 until totalChunks) {
+                                    val b = ppgWaveRxChunks[i]
+                                    System.arraycopy(b, 0, assembled, w, b.size)
+                                    w += b.size
+                                }
+                                // Expect exactly 2500 bytes (625 int32 LE)
+                                if (assembled.size >= 12) {
+                                    val s0 = readInt32LE(assembled, 0)
+                                    val s1 = readInt32LE(assembled, 4)
+                                    val s2 = readInt32LE(assembled, 8)
+                                    Log.i(TAG, "PPG_WAVE window ok frame=$frameId bytes=${assembled.size} s0=$s0 s1=$s1 s2=$s2")
+                                } else {
+                                    Log.i(TAG, "PPG_WAVE window ok frame=$frameId bytes=${assembled.size}")
+                                }
+
+                                // Run BP inference on the full window, then update UI + broadcast.
+                                val window = IntArray(assembled.size / 4)
+                                var j = 0
+                                var off = 0
+                                while (off + 4 <= assembled.size && j < window.size) {
+                                    window[j++] = readInt32LE(assembled, off)
+                                    off += 4
+                                }
+                                runBpInferenceAndUpdateUi(window)
+
+                                // Reset so next frame starts clean
+                                ppgWaveRxFrameId = -1
+                                ppgWaveRxTotalChunks = 0
+                                ppgWaveRxReceived = BooleanArray(0)
+                                ppgWaveRxChunks = emptyArray()
+                            }
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to process sensor data on dashboard: ${e.message}")
                 }
             }
         }
+    }
+
+    // --- PPG waveform window reassembly state (single-frame) ---
+    private var ppgWaveRxFrameId: Int = -1
+    private var ppgWaveRxTotalChunks: Int = 0
+    private var ppgWaveRxReceived: BooleanArray = BooleanArray(0)
+    private var ppgWaveRxChunks: Array<ByteArray> = emptyArray()
+
+    private fun readInt32LE(buf: ByteArray, off: Int): Int {
+        if (off + 4 > buf.size) return 0
+        return (buf[off].toInt() and 0xFF) or
+            ((buf[off + 1].toInt() and 0xFF) shl 8) or
+            ((buf[off + 2].toInt() and 0xFF) shl 16) or
+            ((buf[off + 3].toInt() and 0xFF) shl 24)
+    }
+
+    // --- BP model ---
+    private val bpRunner by lazy { BpModelRunner(this) }
+
+    private fun runBpInferenceAndUpdateUi(window: IntArray) {
+        Thread {
+            val pred = bpRunner.predictFromWaveform(window) ?: return@Thread
+            val cls = BpUi.classify(pred.sbp, pred.dbp)
+            runOnUiThread {
+                // Chip: classification. Text below: numeric BP with unit.
+                bpCard.findViewById<TextView>(R.id.bpStatus)?.text = when (cls) {
+                    BpClass.HYPOTENSION -> "Hypotension"
+                    BpClass.NORMAL -> "Normal"
+                    BpClass.HYPERTENSION -> "Hypertension"
+                }
+                bpValueText.text = "${pred.sbp.toInt()}/${pred.dbp.toInt()} mmHg"
+            }
+
+            // Broadcast so other screens (e.g. BigToeAnalyticsActivity) can update BP classification UI.
+            val intent = Intent(ACTION_BP_PREDICTION).apply {
+                putExtra(EXTRA_SBP, pred.sbp)
+                putExtra(EXTRA_DBP, pred.dbp)
+            }
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        }.start()
     }
 
     private val enableBluetoothLauncher = registerForActivityResult(
@@ -290,6 +399,7 @@ class MainActivity : AppCompatActivity() {
         stepsText = findViewById(R.id.stepsText)
         stepsMotionStatus = findViewById(R.id.stepsMotionStatus)
         bpCard = findViewById(R.id.bpCard)
+        bpValueText = findViewById(R.id.bpValueText)
         swellingStatus = findViewById(R.id.swellingStatus)
         swellingCard = findViewById(R.id.swellingCard)
         ataxiaCard = findViewById(R.id.ataxiaCard)
@@ -317,6 +427,7 @@ class MainActivity : AppCompatActivity() {
         spo2Text.text = formatValueWithUnit("--", "%")
         stepsText.text = "--"
         stepsMotionStatus.text = getString(R.string.motion_static)
+        bpValueText.text = "--/-- mmHg"
 
         updateToolbarUsername()
         updateToolbarProfileImage()
@@ -1065,9 +1176,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             synchronized(bleNotifyAssemblyLock) {
-                val buffer = characteristicBuffers.getOrPut(characteristic.uuid) { ByteArrayOutputStream() }
-                buffer.write(bytes)
-                drainBuffer(characteristic, buffer)
+                // Arduino sends [len][ciphertext] as one BLENotify. Treat each notification as atomic.
+                handleFramedNotification(characteristic, bytes)
             }
         }
 
@@ -1127,7 +1237,8 @@ class MainActivity : AppCompatActivity() {
             imuService.getCharacteristic(heartRateCharUuid),
             imuService.getCharacteristic(spo2CharUuid),
             imuService.getCharacteristic(edemaCharUuid),
-            imuService.getCharacteristic(pressureCharUuid)
+            imuService.getCharacteristic(pressureCharUuid),
+            imuService.getCharacteristic(ppgWaveCharUuid)
         )
         
         val validCharacteristics = characteristics.filterNotNull()
@@ -1196,6 +1307,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun cleanup() {
         isDeviceConnected = false
+        // Must reset per-session MTU negotiation so reconnects (e.g. peripheral reset/reflash) don't stay at MTU=23.
+        // If we don't re-request MTU, notifications > 20 bytes will be truncated and appear as "short notify".
+        attMtuRequestedThisSession = false
         uiHandler.removeCallbacks(loadingDotsRunnable)
         discoverServicesRunnable?.let { uiHandler.removeCallbacks(it) }
         discoverServicesRunnable = null
@@ -1204,8 +1318,7 @@ class MainActivity : AppCompatActivity() {
         notificationQueue.clear()
         isProcessingQueue = false
         synchronized(bleNotifyAssemblyLock) {
-            characteristicBuffers.values.forEach { it.reset() }
-            characteristicBuffers.clear()
+            // no per-characteristic buffers anymore
         }
         BleGattSession.gatt?.close()
         BleGattSession.gatt = null
@@ -1417,34 +1530,27 @@ class MainActivity : AppCompatActivity() {
             .getBoolean(KEY_DEVICE_ALERTS_ENABLED, true)
     }
 
-    private fun drainBuffer(characteristic: BluetoothGattCharacteristic, buffer: ByteArrayOutputStream) {
-        while (buffer.size() > 0) {
-            val packet = buffer.toByteArray()
-            val payloadLength = packet[0].toInt() and 0xFF
-            // Wait until a full frame is present before validating (avoid partial chunks on default MTU)
-            if (packet.size - 1 < payloadLength) return
-            if (payloadLength <= 0 || payloadLength > maxPayloadLength) {
-                Log.w(TAG, "BLE framing: invalid ciphertext length $payloadLength for ${characteristic.uuid}; clearing buffer")
-                buffer.reset()
-                return
-            }
-            // Arduino AES-CBC ciphertext length is always a multiple of 16 (PKCS-padded plaintext)
-            if (payloadLength % 16 != 0) {
-                Log.w(TAG, "BLE framing: length $payloadLength not AES-aligned for ${characteristic.uuid}; clearing buffer")
-                buffer.reset()
-                return
-            }
-            val messageBytes = packet.copyOfRange(1, payloadLength + 1)
-            val remainingBytes = packet.copyOfRange(payloadLength + 1, packet.size)
-            buffer.reset()
-            buffer.write(remainingBytes)
-
-            val intent = Intent(ACTION_SENSOR_DATA).apply {
-                putExtra(EXTRA_UUID_STRING, characteristic.uuid.toString())
-                putExtra(EXTRA_DECRYPTED_DATA, messageBytes)
-            }
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    private fun handleFramedNotification(characteristic: BluetoothGattCharacteristic, bytes: ByteArray) {
+        if (bytes.isEmpty()) return
+        val payloadLength = bytes[0].toInt() and 0xFF
+        if (payloadLength <= 0 || payloadLength > maxPayloadLength) {
+            Log.w(TAG, "BLE framing: invalid ciphertext length $payloadLength for ${characteristic.uuid}; dropping notify")
+            return
         }
+        if (payloadLength % 16 != 0) {
+            Log.w(TAG, "BLE framing: length $payloadLength not AES-aligned for ${characteristic.uuid}; dropping notify")
+            return
+        }
+        if (bytes.size < payloadLength + 1) {
+            Log.w(TAG, "BLE framing: short notify ${bytes.size} (<${payloadLength + 1}) for ${characteristic.uuid}; dropping notify")
+            return
+        }
+        val messageBytes = bytes.copyOfRange(1, payloadLength + 1)
+        val intent = Intent(ACTION_SENSOR_DATA).apply {
+            putExtra(EXTRA_UUID_STRING, characteristic.uuid.toString())
+            putExtra(EXTRA_DECRYPTED_DATA, messageBytes)
+        }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     private fun exportDataToCsv() {

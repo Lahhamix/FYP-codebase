@@ -421,7 +421,7 @@
     <string name="dashboard_heart_rate_label">HEART RATE</string>
     <string name="dashboard_spo2_label" translatable="false">SPO2</string>
     <string name="dashboard_bp_class_label">BP Classification</string>
-    <string name="dashboard_bp_range_label">BP RANGE</string>
+    <string name="dashboard_bp_range_label">BLOOD PRESSURE</string>
     <string name="dashboard_status_pending">Pending</string>
     <string name="dashboard_swelling_label">SWELLING</string>
     <string name="dashboard_ataxia_label">ATAXIA</string>

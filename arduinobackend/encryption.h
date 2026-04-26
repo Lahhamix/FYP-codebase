@@ -32,6 +32,9 @@ bool encryptHeartRate(const String& plaintext, EncryptedPayload& payload);
 bool encryptSpO2(const String& plaintext, EncryptedPayload& payload);
 bool encryptFlex(const String& plaintext, EncryptedPayload& payload);
 
+// Binary encryption for PPG waveform window chunks (<= 64 bytes plaintext)
+bool encryptPpgWaveChunk(const uint8_t* plaintext, size_t plaintextLen, EncryptedPayload& payload);
+
 // Binary encryption for pressure matrix packets (encrypts 12-byte payload)
 bool encryptPressurePayload(const uint8_t* payload, size_t payloadLen, uint8_t* encryptedOut, size_t* encryptedLen);
 

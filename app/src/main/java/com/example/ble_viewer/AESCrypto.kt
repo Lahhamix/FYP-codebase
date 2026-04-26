@@ -18,6 +18,7 @@ object AESCrypto {
     private lateinit var motionKey: SecretKeySpec
     private lateinit var flexKey: SecretKeySpec
     private lateinit var pressureKey: SecretKeySpec
+    private lateinit var ppgWaveKey: SecretKeySpec
 
     // IVs can remain static as they don't need to be secret, just unique for each encryption.
     // These MUST match the values in the Arduino code.
@@ -27,6 +28,7 @@ object AESCrypto {
     private val motionIV = IvParameterSpec(ByteArray(16) { (0x10 + it).toByte() })
     private val flexIV = IvParameterSpec(ByteArray(16) { (0x40 + it).toByte() })
     private val pressureIV = IvParameterSpec(ByteArray(16) { (0x50 + it).toByte() })
+    private val ppgWaveIV = IvParameterSpec(ByteArray(16) { (0x60 + it).toByte() })
 
     /**
      * Fallback: Initialize with legacy static keys (for Arduino firmware without key exchange).
@@ -57,6 +59,10 @@ object AESCrypto {
             0x50, 0x72, 0x65, 0x73, 0x73, 0x4B, 0x65, 0x79,
             0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38
         ), "AES")
+        ppgWaveKey = SecretKeySpec(byteArrayOf(
+            0x50, 0x50, 0x47, 0x57, 0x61, 0x76, 0x65, 0x4B,
+            0x65, 0x79, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36
+        ), "AES")
         isInitialized = true
         Log.d(TAG, "AESCrypto initialized with legacy keys (no key exchange).")
     }
@@ -74,6 +80,7 @@ object AESCrypto {
         motionKey = SecretKeySpec(deriveKey(sharedSecret, "MOTION"), "AES")
         flexKey = SecretKeySpec(deriveKey(sharedSecret, "FLEX"), "AES")
         pressureKey = SecretKeySpec(deriveKey(sharedSecret, "PRESSURE"), "AES")
+        ppgWaveKey = SecretKeySpec(deriveKey(sharedSecret, "PPG_WAVE"), "AES")
         isInitialized = true
         Log.d(TAG, "AESCrypto initialized successfully from shared secret.")
     }
@@ -118,6 +125,21 @@ object AESCrypto {
     fun decryptSteps(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, stepsKey, stepsIV)
     fun decryptMotion(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, motionKey, motionIV)
     fun decryptFlex(encryptedBytes: ByteArray): String = decryptWithKeyIV(encryptedBytes, flexKey, flexIV)
+
+    fun decryptPpgWaveChunk(encryptedBytes: ByteArray): ByteArray? {
+        if (!isInitialized) {
+            Log.e(TAG, "Decryption failed: AESCrypto has not been initialized.")
+            return null
+        }
+        return try {
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, ppgWaveKey, ppgWaveIV)
+            cipher.doFinal(encryptedBytes)
+        } catch (e: Exception) {
+            Log.e(TAG, "decryptPpgWaveChunk failed: ${e.message}", e)
+            null
+        }
+    }
     
     // Binary decryption for pressure matrix (decrypts 16-byte encrypted payload, returns 12-byte decrypted)
     // Arduino pads 12-byte payload to 16 with PKCS7; Cipher.doFinal() returns plaintext with padding already removed.
