@@ -110,6 +110,7 @@ class SettingsActivity : AppCompatActivity() {
     private var editProfileDialogImageView: ImageView? = null
     private var pendingProfileImagePath: String? = null
     private var pendingCropSourceUri: Uri? = null
+    private var pendingCameraImageUri: Uri? = null
 
     private val postNotificationsPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -133,16 +134,16 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private val takeProfilePhotoLauncher = registerForActivityResult(
-        ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        bitmap ?: return@registerForActivityResult
-        val tempSourceUri = persistBitmapToCache(bitmap)
-        if (tempSourceUri == null) {
-            Toast.makeText(this, getString(R.string.toast_profile_image_update_failed), Toast.LENGTH_SHORT).show()
+        ActivityResultContracts.TakePicture()
+    ) { isSaved ->
+        val sourceUri = pendingCameraImageUri
+        pendingCameraImageUri = null
+
+        if (!isSaved || sourceUri == null) {
             return@registerForActivityResult
         }
 
-        launchProfileCrop(tempSourceUri)
+        launchProfileCrop(sourceUri)
     }
 
     private val cropProfileImageLauncher = registerForActivityResult(
@@ -468,7 +469,7 @@ class SettingsActivity : AppCompatActivity() {
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> pickProfileImageLauncher.launch("image/*")
-                    1 -> takeProfilePhotoLauncher.launch(null)
+                    1 -> launchProfileCameraCapture()
                     2 -> {
                         pendingProfileImagePath = null
                         editProfileDialogImageView?.let {
@@ -494,7 +495,7 @@ class SettingsActivity : AppCompatActivity() {
         runCatching {
             val cropIntent = UCrop.of(sourceUri, destinationUri)
                 .withAspectRatio(1f, 1f)
-                .withMaxResultSize(1024, 1024)
+                .withMaxResultSize(2048, 2048)
                 .withOptions(
                     UCrop.Options().apply {
                         val appBlue = ContextCompat.getColor(this@SettingsActivity, R.color.blue)
@@ -514,7 +515,7 @@ class SettingsActivity : AppCompatActivity() {
                         setCropGridColor(white)
                         setCropGridStrokeWidth(1)
                         setCropFrameStrokeWidth(3)
-                        setCompressionQuality(90)
+                        setCompressionQuality(100)
                     }
                 )
                 .getIntent(this)
@@ -530,6 +531,18 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this, getString(R.string.toast_profile_image_update_failed), Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun launchProfileCameraCapture() {
+        val outputFile = File(cacheDir, "profile_camera_${System.currentTimeMillis()}.jpg")
+        val outputUri = FileProvider.getUriForFile(
+            this,
+            "${packageName}.fileprovider",
+            outputFile
+        )
+
+        pendingCameraImageUri = outputUri
+        takeProfilePhotoLauncher.launch(outputUri)
     }
 
     private fun persistProfileImageFromUri(uri: Uri): String? {
