@@ -93,20 +93,9 @@ class ScanActivity : AppCompatActivity() {
             return
         }
 
-        if (!bluetoothAdapter!!.isEnabled) {
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(enableBtIntent, 1)
-            return
-        }
-
-        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        if (!LocationManagerCompat.isLocationEnabled(locationManager)) {
-            Toast.makeText(this, getString(R.string.toast_enable_location_for_ble), Toast.LENGTH_LONG).show()
-            val locationIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-            startActivity(locationIntent)
-            return
-        }
-
+        // Request runtime permissions first — on Android 12+ BLUETOOTH_CONNECT is required
+        // before we can even send ACTION_REQUEST_ENABLE, so permissions must come before the
+        // Bluetooth-enable step.
         val permissionsToRequest = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
@@ -123,21 +112,39 @@ class ScanActivity : AppCompatActivity() {
         if (permissionsToRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), PERMISSION_REQUEST_CODE)
         } else {
-            startScan()
+            checkBluetoothAndScan()
         }
+    }
+
+    private fun checkBluetoothAndScan() {
+        if (!bluetoothAdapter!!.isEnabled) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, 1)
+            return
+        }
+
+        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+        if (!LocationManagerCompat.isLocationEnabled(locationManager)) {
+            Toast.makeText(this, getString(R.string.toast_enable_location_for_ble), Toast.LENGTH_LONG).show()
+            val locationIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+            startActivity(locationIntent)
+            return
+        }
+
+        startScan()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1 && bluetoothAdapter?.isEnabled == true) {
-            requestPermissionsAndStartScan()
+            checkBluetoothAndScan()
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            startScan()
+            checkBluetoothAndScan()
         } else {
             Toast.makeText(this, getString(R.string.toast_ble_permissions_required), Toast.LENGTH_LONG).show()
         }
