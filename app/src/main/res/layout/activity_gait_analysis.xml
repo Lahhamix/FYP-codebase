@@ -8,7 +8,7 @@
     android:orientation="vertical"
     tools:context=".GaitAnalysisActivity">
 
-    <include layout="@layout/toolbar_gaitanalysis" />
+    <include layout="@layout/toolbar_view_analytics" />
 
     <ScrollView
         android:layout_width="match_parent"

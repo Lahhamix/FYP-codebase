@@ -4,9 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -20,7 +22,14 @@ class GaitAnalysisActivity : AppCompatActivity() {
     private lateinit var edemaDeviationText: TextView
     private lateinit var edemaIndicator: View
     private lateinit var edemaGradientBar: View
+    private lateinit var toolbarUsername: TextView
+    private lateinit var toolbarProfileImage: ImageView
+    private lateinit var toolbarBack: ImageView
     private var disconnectDialog: AlertDialog? = null
+
+    companion object {
+        private const val PREFS_NAME = "SolematePrefs"
+    }
 
     private val sensorDataReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -75,6 +84,43 @@ class GaitAnalysisActivity : AppCompatActivity() {
         edemaDeviationText = findViewById(R.id.edemaDeviationText)
         edemaIndicator = findViewById(R.id.edemaIndicator)
         edemaGradientBar = findViewById(R.id.edemaGradientBar)
+        toolbarUsername = findViewById(R.id.toolbar_username)
+        toolbarProfileImage = findViewById(R.id.toolbar_profile_image)
+        toolbarBack = findViewById(R.id.toolbar_back)
+
+        bindToolbar()
+    }
+
+    private fun bindToolbar() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val username = prefs.getString("username", getString(R.string.username_placeholder))
+            .orEmpty()
+            .ifBlank { getString(R.string.username_placeholder) }
+        toolbarUsername.text = username
+
+        val imagePath = prefs.getString("profile_image_path", null)
+        if (!imagePath.isNullOrBlank()) {
+            val bitmap = BitmapFactory.decodeFile(imagePath)
+            if (bitmap != null) {
+                toolbarProfileImage.setImageBitmap(bitmap)
+            } else {
+                toolbarProfileImage.setImageResource(R.drawable.profile)
+            }
+        } else {
+            toolbarProfileImage.setImageResource(R.drawable.profile)
+        }
+
+        toolbarBack.setOnClickListener { finish() }
+
+        findViewById<View>(R.id.profile_card).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+
+        toolbarUsername.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
     }
 
     private fun updateEdemaDisplay(data: String) {
