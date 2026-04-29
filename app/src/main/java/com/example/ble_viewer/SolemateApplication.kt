@@ -3,6 +3,7 @@ package com.example.ble_viewer
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+
 import android.os.Handler
 import android.os.Looper
 import androidx.fragment.app.FragmentActivity
@@ -21,6 +22,10 @@ class SolemateApplication : Application() {
 
         fun markSessionUnlocked() {
             isUnlockedThisForegroundSession = true
+        }
+
+        fun setAuthInProgress(value: Boolean) {
+            isAuthInProgress = value
         }
     }
 
@@ -62,18 +67,13 @@ class SolemateApplication : Application() {
                 if (!appLockEnabled || isUnlockedThisForegroundSession || isAuthInProgress) return
                 if (!BiometricAuthHelper.isAppLockAvailable(activity)) return
 
-                isAuthInProgress = true
-                BiometricAuthHelper.authenticateForAppLock(
-                    activity = activity,
-                    onSuccess = {
-                        isAuthInProgress = false
-                        markSessionUnlocked()
-                    },
-                    onFailure = {
-                        isAuthInProgress = false
-                        activity.finishAffinity()
-                    }
-                )
+                // Launch AppLockActivity if not already showing
+                if (activity !is com.example.ble_viewer.AppLockActivity) {
+                    isAuthInProgress = true
+                    setAuthInProgress(true)
+                    val intent = android.content.Intent(activity, com.example.ble_viewer.AppLockActivity::class.java)
+                    activity.startActivity(intent)
+                }
             }
 
             override fun onActivityPaused(activity: Activity) = Unit

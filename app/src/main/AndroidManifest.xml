@@ -74,6 +74,11 @@
             android:theme="@style/Theme.Test.NoActionBar" />
 
         <activity
+            android:name=".AppLockActivity"
+            android:theme="@style/Theme.Test.NoActionBar"
+            android:exported="false" />
+
+        <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"
             android:screenOrientation="portrait"
