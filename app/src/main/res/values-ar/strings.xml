@@ -108,7 +108,7 @@
     <string name="toast_edit_profile_coming_soon">تعديل الملف الشخصي قريبًا</string>
     <string name="toast_bluetooth_permission_connect">إذن البلوتوث مطلوب للاتصال</string>
     <string name="toast_bluetooth_not_available">البلوتوث غير متاح</string>
-    <string name="right_shoe_active">الجورب الأيمن نشط</string>
+    <string name="right_shoe_active">SoleMate الأيمن نشط</string>
     <string name="toast_scan_bluetooth_unavailable">البلوتوث غير متاح على هذا الجهاز</string>
     <string name="bluetooth_not_enabled">البلوتوث غير مفعّل. يُرجى تفعيله وإعادة تشغيل التطبيق</string>
     <string name="toast_device_missing_service">يفتقد الجهاز خدمة بيانات المستشعر</string>
@@ -183,7 +183,7 @@
     <string name="share_report">مشاركة التقرير</string>
     <string name="export_csv">تصدير CSV</string>
     <string name="toast_export_failed">فشل التصدير</string>
-    <string name="settings_manage_paired_desc">الجوارب: متصلة (SN: SM-902)</string>
+    <string name="settings_manage_paired_desc">SoleMate: متصل (SN: SM-902)</string>
     <string name="settings_privacy_data">الخصوصية والبيانات</string>
     <string name="settings_privacy_desc">إدارة مشاركة بياناتك الشخصية</string>
     <string name="settings_export_data">تصدير بياناتي (CSV/PDF)</string>
@@ -221,7 +221,7 @@
     <string name="status_pending">قيد الانتظار</string>
     <string name="status_no_backend">لا يوجد خادم خلفي</string>
     <string name="need_assistance">هل تحتاج إلى مساعدة؟\n نصائح سريعة ودعم بنقرة واحدة</string>
-    <string name="left_shoe_active">الجورب الأيسر نشط</string>
+    <string name="left_shoe_active">SoleMate الأيسر نشط</string>
     <string name="toast_enable_bluetooth">يُرجى تفعيل البلوتوث</string>
     <string name="toast_enable_location_for_ble">يجب تفعيل خدمات الموقع للبحث عبر البلوتوث منخفض الطاقة (BLE)</string>
     <string name="settings_manage_paired">إدارة الجهاز المقترن</string>
@@ -239,7 +239,7 @@
     <string name="toast_ble_permissions_required">الأذونات مطلوبة للبحث عن أجهزة BLE</string>
     <string name="permissions_not_granted">لم يتم منح الأذونات. لا يمكن للتطبيق العمل بدونها</string>
     <string name="settings_privacy_policy">سياسة الخصوصية</string>
-    <string name="shoe_disconnected_desc">جورب SoleMate خارج النطاق. تأكد من أنه قريب ومشحون</string>
+    <string name="shoe_disconnected_desc">SoleMate خارج النطاق. تأكد من أنه قريب ومشحون</string>
     <string name="reconnect_now">إعادة الاتصال الآن</string>
     <string name="remember_me">تذكرني</string>
     <string name="see_more_detailed">عرض المزيد من التفاصيل</string>
@@ -251,7 +251,7 @@
     <string name="sign_in_google">تسجيل الدخول باستخدام Google</string>
     <string name="sign_up_title">إنشاء حساب</string>
     <string name="sign_up_google">إنشاء حساب باستخدام Google</string>
-    <string name="shoe_disconnected">الجورب غير متصل</string>
+    <string name="shoe_disconnected">SoleMate غير متصل</string>
     <string name="dialog_wearable_disconnected">تم فصل الجهاز القابل للارتداء</string>
     <string name="to_solemate">إلى SoleMate</string>
     <string name="unknown_error">غير معروف</string>
@@ -310,7 +310,7 @@
     <string name="foot_overview_subtitle">اضغط على منطقة لعرض القراءات</string>
     <string name="foot_overview_image_desc">خريطة نظرة عامة على قدم SoleMate</string>
     <string name="foot_overview_tip_desc">معلومات نظرة عامة على القدم</string>
-    <string name="foot_overview_tip">تمثل كل منطقة مستشعرًا ذكيًا في حذاء SoleMate الخاص بك. عند الضغط على أي منطقة في الخريطة، ستظهر بياناتك الصحية.</string>
+    <string name="foot_overview_tip">تمثل كل منطقة مستشعرًا ذكيًا في SoleMate. عند الضغط على أي منطقة في الخريطة، ستظهر بياناتك الصحية.</string>
     <string name="zone_1_title">المنطقة 1: باطن القدم</string>
     <string name="zone_1_desc">تراقب ضغط باطن القدم أثناء الوقوف أو المشي.</string>
     <string name="zone_1_metric_title">خطر الرنح</string>

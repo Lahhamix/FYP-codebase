@@ -12,7 +12,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.bluetooth.*
+import android.content.res.ColorStateList
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -32,6 +34,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -84,9 +87,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var stepsMotionStatus: TextView
     private lateinit var bpCard: View
     private lateinit var bpValueText: TextView
+    private lateinit var bpUnitText: TextView
     private lateinit var swellingStatus: TextView
+    private lateinit var swellingValueText: TextView
     private lateinit var swellingCard: View
     private lateinit var ataxiaCard: View
+    private lateinit var ataxiaValueText: TextView
     private lateinit var sharingExportCard: View
     private lateinit var pressureMatrixCard: View
     private lateinit var vitalSignsCard: View
@@ -214,6 +220,7 @@ class MainActivity : AppCompatActivity() {
                             latestBpm = bpm
                             heartRateText.text = formatValueWithUnit(bpm.toString(), "BPM")
                             heartStatus.text = heartRateState(bpm)
+                            applyNeonChip(heartStatus, "#EC4D75")
                             VitalsHistoryStore.appendHeartRate(this@MainActivity, bpm)
                         }
                         spo2CharUuid.toString() -> {
@@ -221,6 +228,7 @@ class MainActivity : AppCompatActivity() {
                             latestSpo2 = spo2
                             spo2Text.text = formatValueWithUnit(String.format(Locale.US, "%.1f", spo2), "%")
                             spo2Status.text = spo2State(spo2)
+                            applyNeonChip(spo2Status, "#2D7EEA")
                             VitalsHistoryStore.appendSpo2(this@MainActivity, spo2)
                         }
                         edemaCharUuid.toString() -> {
@@ -229,7 +237,11 @@ class MainActivity : AppCompatActivity() {
                             val edema = edemaPayload.split(",").firstOrNull()?.trim().orEmpty()
                             if (edema.isEmpty()) return@runOnUiThread
                             latestEdema = edema
-                            swellingStatus.text = swellingState(edema)
+                            SwellingHistoryStore.appendLabel(this@MainActivity, edema)
+                            val state = swellingState(edema)
+                            swellingStatus.text = state
+                            swellingValueText.text = state
+                            applyNeonChip(swellingStatus, "#2FAA96")
                         }
                         stepsCharUuid.toString() -> {
                             val steps = AESCrypto.decryptSteps(encryptedBytes).trim()
@@ -241,6 +253,7 @@ class MainActivity : AppCompatActivity() {
                             val raw = AESCrypto.decryptMotion(encryptedBytes).trim()
                             if (raw.isEmpty() || raw.startsWith("DECRYPT_ERROR")) return@runOnUiThread
                             stepsMotionStatus.text = motionStatusLabel(raw)
+                            applyNeonChip(stepsMotionStatus, "#7E3EEA")
                         }
                         ppgWaveCharUuid.toString() -> {
                             // Reassemble 625 int32 waveform window (2500 bytes) sent in encrypted chunks.
@@ -335,6 +348,7 @@ class MainActivity : AppCompatActivity() {
         Thread {
             val pred = bpRunner.predictFromWaveform(window) ?: return@Thread
             val cls = BpUi.classify(pred.sbp, pred.dbp)
+            BpPredictionStore.save(this, pred.sbp, pred.dbp)
             runOnUiThread {
                 // Chip: classification. Text below: numeric BP with unit.
                 bpCard.findViewById<TextView>(R.id.bpStatus)?.text = when (cls) {
@@ -342,7 +356,9 @@ class MainActivity : AppCompatActivity() {
                     BpClass.NORMAL -> "Normal"
                     BpClass.HYPERTENSION -> "Hypertension"
                 }
-                bpValueText.text = "${pred.sbp.toInt()}/${pred.dbp.toInt()} mmHg"
+                bpCard.findViewById<TextView>(R.id.bpStatus)?.let { applyNeonChip(it, "#31567D") }
+                bpValueText.text = "${pred.sbp.toInt()}/${pred.dbp.toInt()}"
+                bpUnitText.text = "mmHg"
             }
 
             // Broadcast so other screens (e.g. BigToeAnalyticsActivity) can update BP classification UI.
@@ -384,6 +400,9 @@ class MainActivity : AppCompatActivity() {
         wearableImage = findViewById(R.id.wearable_image)
         disconnectedPanelUnderlay = findViewById(R.id.disconnected_panel_underlay)
         disconnectedPanel = findViewById(R.id.disconnected_panel)
+        findViewById<TextView>(R.id.disconnected_title).text = "SoleMate Disconnected"
+        findViewById<TextView>(R.id.disconnected_description).text =
+            "Your SoleMate is out of range. Make sure it is nearby and charged."
         reconnectInlineButton = findViewById(R.id.reconnect_inline_button)
         scanDevicesInlineButton = findViewById(R.id.scan_devices_inline_button)
         toolbarUsername = findViewById(R.id.toolbar_username)
@@ -400,9 +419,12 @@ class MainActivity : AppCompatActivity() {
         stepsMotionStatus = findViewById(R.id.stepsMotionStatus)
         bpCard = findViewById(R.id.bpCard)
         bpValueText = findViewById(R.id.bpValueText)
+        bpUnitText = findViewById(R.id.bpUnitText)
         swellingStatus = findViewById(R.id.swellingStatus)
+        swellingValueText = findViewById(R.id.swellingValueText)
         swellingCard = findViewById(R.id.swellingCard)
         ataxiaCard = findViewById(R.id.ataxiaCard)
+        ataxiaValueText = findViewById(R.id.ataxiaValueText)
         sharingExportCard = findViewById(R.id.sharingExportCard)
         pressureMatrixCard = findViewById(R.id.pressureMatrixCard)
         vitalSignsCard = findViewById(R.id.vitalSignsCard)
@@ -427,7 +449,11 @@ class MainActivity : AppCompatActivity() {
         spo2Text.text = formatValueWithUnit("--", "%")
         stepsText.text = "--"
         stepsMotionStatus.text = getString(R.string.motion_static)
-        bpValueText.text = "--/-- mmHg"
+        bpValueText.text = "--/--"
+        bpUnitText.text = "mmHg"
+        swellingValueText.text = getString(R.string.dashboard_status_stable)
+        ataxiaValueText.text = "--"
+        styleDashboardMetricCards()
 
         updateToolbarUsername()
         updateToolbarProfileImage()
@@ -818,6 +844,37 @@ class MainActivity : AppCompatActivity() {
                 false
             }
         }
+    }
+
+    private fun styleDashboardMetricCards() {
+        tintIconCircle(R.id.heartIconCircle, "#EC4D75")
+        tintIconCircle(R.id.spo2IconCircle, "#2D7EEA")
+        tintIconCircle(R.id.bpIconCircle, "#31567D")
+        tintIconCircle(R.id.stepsIconCircle, "#7E3EEA")
+        tintIconCircle(R.id.swellingIconCircle, "#2FAA96")
+        tintIconCircle(R.id.ataxiaIconCircle, "#F58433")
+
+        applyNeonChip(heartStatus, "#EC4D75")
+        applyNeonChip(spo2Status, "#2D7EEA")
+        applyNeonChip(bpCard.findViewById(R.id.bpStatus), "#31567D")
+        applyNeonChip(stepsMotionStatus, "#7E3EEA")
+        applyNeonChip(swellingStatus, "#2FAA96")
+        applyNeonChip(ataxiaCard.findViewById(R.id.ataxiaStatus), "#F58433")
+    }
+
+    private fun tintIconCircle(viewId: Int, colorHex: String) {
+        findViewById<FrameLayout>(viewId)?.backgroundTintList =
+            ColorStateList.valueOf(colorWithAlpha(Color.parseColor(colorHex), 30))
+    }
+
+    private fun applyNeonChip(chip: TextView, colorHex: String) {
+        val color = Color.parseColor(colorHex)
+        chip.setTextColor(color)
+        chip.backgroundTintList = ColorStateList.valueOf(colorWithAlpha(color, 28))
+    }
+
+    private fun colorWithAlpha(color: Int, alpha: Int): Int {
+        return (alpha.coerceIn(0, 255) shl 24) or (color and 0x00FFFFFF)
     }
 
     override fun onStart() {
@@ -1353,7 +1410,7 @@ class MainActivity : AppCompatActivity() {
     private fun reconcileDisconnectedOverlay() {
         // After navigation (e.g. Foot Overview → analytics), MainActivity may be recreated while
         // BleGattSession still holds a live GATT. Instance flags reset to defaults, so we must align
-        // with the system ACL/GATT connection state or we falsely show "shoe Offline".
+        // with the system ACL/GATT connection state or we falsely show "SoleMate Offline".
         val sessionGatt = BleGattSession.gatt
         val btManager = getSystemService(BluetoothManager::class.java)
         if (sessionGatt != null && btManager != null) {
@@ -1406,7 +1463,7 @@ class MainActivity : AppCompatActivity() {
             applyDashboardFade(0.42f)
             statusPrimaryRow.setBackgroundResource(R.drawable.status_offline_chip_bg)
             offlineCenterHint.visibility = View.VISIBLE
-            updateDashboardStatus("shoe Offline", DashboardStatusVisual.ALERT)
+            updateDashboardStatus("SoleMate Offline", DashboardStatusVisual.ALERT)
         } else {
             disconnectedPanelUnderlay.visibility = View.GONE
             disconnectedPanel.visibility = View.GONE
@@ -1664,6 +1721,7 @@ class MainActivity : AppCompatActivity() {
             "mild" -> "Mild"
             "moderate" -> "Moderate"
             "severe" -> "Severe"
+            "calibrating" -> "Calibrating"
             else -> "Stable"
         }
     }

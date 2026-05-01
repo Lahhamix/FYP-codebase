@@ -2,8 +2,9 @@
 <resources>
     <!-- Dashboard metric cards: keep SPO2/BP/Swelling/Ataxia (and HR/Steps pair) visually aligned -->
     <!-- Tune dashboard card row height: lower = shorter cards (icons + status + value + label + stripe) -->
-    <dimen name="dashboard_metric_card_min_height">104dp</dimen>
+    <dimen name="dashboard_metric_card_min_height">110dp</dimen>
+    <dimen name="dashboard_metric_card_height">148dp</dimen>
     <dimen name="dashboard_card_title_text_size">12sp</dimen>
     <dimen name="dashboard_card_value_text_size">24sp</dimen>
-    <dimen name="dashboard_status_chip_text_size">12sp</dimen>
+    <dimen name="dashboard_status_chip_text_size">10sp</dimen>
 </resources>

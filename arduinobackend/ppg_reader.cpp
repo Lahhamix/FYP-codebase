@@ -505,6 +505,15 @@ static bool readNextSampleFromFifo(uint32_t *outRed, uint32_t *outIr, uint32_t t
 /** One sample: INT path + FIFO, or software PPG_RDY/FIFO poll. */
 static bool ppg_read_one_sample(uint32_t *outRed, uint32_t *outIr) {
 #if PPG_USE_INTERRUPT_PIN
+  // Nano 33 BLE: D13 is shared with the LED; relying on the INT pin can add huge per-sample stalls
+  // (e.g. ~PPG_INT_WAIT_MS for *each* sample). Prefer FIFO pointer check first; only wait if FIFO is empty.
+  uint8_t wr = 0, rd = 0;
+  if (maxim_max30102_read_reg(REG_FIFO_WR_PTR, &wr) && maxim_max30102_read_reg(REG_FIFO_RD_PTR, &rd)) {
+    if ((wr & 0x1Fu) != (rd & 0x1Fu)) {
+      return maxim_max30102_read_fifo(outRed, outIr);
+    }
+  }
+
   {
     const uint32_t tWait = millis();
     while (digitalRead(PPG_INTERRUPT_PIN) == HIGH) {

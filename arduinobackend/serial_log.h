@@ -11,13 +11,19 @@
 // Master switch
 #define LOG_ENABLED 1
 
+// Serial baud rate for this firmware.
+// Default stays high for waveform streaming; change to 115200/9600 if your Serial Monitor isn't set to 2,000,000.
+#ifndef SERIAL_BAUD
+#define SERIAL_BAUD 2000000UL
+#endif
+
 // -----------------------------------------------------------------------------
 // Per-sensor pipeline (1 = init + read + encrypt + BLE notify each loop)
 // Set 0 to remove that sensor entirely (no I2C/ADC work, no crypto, no TX) — use to profile loop time.
 // BLE characteristics still exist; key-exchange may skip init writes for disabled sensors.
 // -----------------------------------------------------------------------------
 #define SENSOR_IMU_ENABLED       1  // steps + motion + readIMU + IMU logs
-#define SENSOR_FLEX_ENABLED        1  // flex read + edema characteristic
+#define SENSOR_FLEX_ENABLED        1   // flex read + edema characteristic
 #define SENSOR_PPG_ENABLED         1  // MAX30102 + HR/SpO2 + ppg_print_serial
 #define SENSOR_PRESSURE_ENABLED    0  // matrix scan + pressure packets
 
@@ -67,7 +73,7 @@
 // PPG sample timing:
 // - 0 = software (PPG_RDY / FIFO poll) — recommended on Nano 33 BLE (D13 is shared with LED; INT pin often unreliable).
 // - 1 = try INT pin first, then software fallback; still uses PPG_INT_WAIT_MS timeout so the loop never hangs forever.
-#define PPG_USE_INTERRUPT_PIN 1
+#define PPG_USE_INTERRUPT_PIN 0
 #define PPG_INTERRUPT_PIN 13
 
 // Effective PPG rate (Hz). Must match firmware: REG_SPO2_CONFIG = 100 SPS (e.g. 0x27) and REG_FIFO_CONFIG = 0x0F (FIFO avg = 1).
@@ -145,7 +151,7 @@
 // then returns to normal. Repeats forever.
 // -----------------------------------------------------------------------------
 #ifndef PLOT_MODE_EVERY_MS
-#define PLOT_MODE_EVERY_MS 60000u
+#define PLOT_MODE_EVERY_MS 30000u
 #endif
 #ifndef PLOT_MODE_DURATION_MS
 #define PLOT_MODE_DURATION_MS 6000u

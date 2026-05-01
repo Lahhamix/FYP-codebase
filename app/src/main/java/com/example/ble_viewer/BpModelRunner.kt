@@ -80,25 +80,29 @@ class BpModelRunner(private val context: Context) {
         if (windowInt32.size != L) return null
 
         // Convert to float
-        val ppg = FloatArray(L) { windowInt32[it].toFloat() }
-        val ppg1 = firstDerivative(ppg)
-        val ppg2 = firstDerivative(ppg1)
-
-        // Normalize each channel (robust default; adjust if your training used different scaling)
-        zNormalizeInPlace(ppg)
+        // Python reference (testing/plot_ppg_model.py):
+        // 1) ppg0 = z-norm(raw)
+        // 2) ppg1 = gradient(ppg0)
+        // 3) ppg2 = gradient(ppg1)
+        // 4) z-norm each of {ppg0, ppg1, ppg2} (again)
+        val ppg0 = FloatArray(L) { windowInt32[it].toFloat() }
+        zNormalizeInPlace(ppg0)
+        val ppg1 = gradient1d(ppg0)
+        val ppg2 = gradient1d(ppg1)
+        zNormalizeInPlace(ppg0)
         zNormalizeInPlace(ppg1)
         zNormalizeInPlace(ppg2)
 
-        val spec0 = logSpectrogram(ppg)
-        val spec1 = logSpectrogram(ppg1)
-        val spec2 = logSpectrogram(ppg2)
+        val spec0 = logSpectrogramTorchLike(ppg0)
+        val spec1 = logSpectrogramTorchLike(ppg1)
+        val spec2 = logSpectrogramTorchLike(ppg2)
 
         val m = ensureLoaded()
 
         val t = spec0.size / F_BINS
         if (t <= 0) return null
 
-        val inPpg = Tensor.fromBlob(ppg, longArrayOf(1, 1, L.toLong()))
+        val inPpg = Tensor.fromBlob(ppg0, longArrayOf(1, 1, L.toLong()))
         val inPpg1 = Tensor.fromBlob(ppg1, longArrayOf(1, 1, L.toLong()))
         val inPpg2 = Tensor.fromBlob(ppg2, longArrayOf(1, 1, L.toLong()))
 
@@ -127,11 +131,25 @@ class BpModelRunner(private val context: Context) {
         }
     }
 
-    private fun firstDerivative(x: FloatArray): FloatArray {
-        val out = FloatArray(x.size)
-        if (x.isEmpty()) return out
-        out[0] = 0f
-        for (i in 1 until x.size) out[i] = x[i] - x[i - 1]
+    /**
+     * NumPy/PyTorch-like gradient for 1D (edge_order=1):
+     * - out[0]     = x[1] - x[0]
+     * - out[n-1]   = x[n-1] - x[n-2]
+     * - out[i]     = (x[i+1] - x[i-1]) / 2
+     */
+    private fun gradient1d(x: FloatArray): FloatArray {
+        val n = x.size
+        val out = FloatArray(n)
+        if (n == 0) return out
+        if (n == 1) {
+            out[0] = 0f
+            return out
+        }
+        out[0] = x[1] - x[0]
+        for (i in 1 until n - 1) {
+            out[i] = 0.5f * (x[i + 1] - x[i - 1])
+        }
+        out[n - 1] = x[n - 1] - x[n - 2]
         return out
     }
 
@@ -158,8 +176,9 @@ class BpModelRunner(private val context: Context) {
      *
      * Returns flattened float array of shape (T, F_BINS) in row-major, matching (B, T, F) for GRU.
      */
-    private fun logSpectrogram(x: FloatArray): FloatArray {
-        val padded = if (CENTER) reflectPad(x, PAD) else x
+    private fun logSpectrogramTorchLike(x: FloatArray): FloatArray {
+        // Match torch.stft(center=True, pad_mode="reflect", window=None, onesided=True)
+        val padded = if (CENTER) reflectPadTorch(x, PAD) else x
         val t = 1 + ((padded.size - WIN) / HOP).coerceAtLeast(0)
         val out = FloatArray(t * F_BINS)
 
@@ -188,22 +207,36 @@ class BpModelRunner(private val context: Context) {
         return out
     }
 
-    private fun reflectPad(x: FloatArray, pad: Int): FloatArray {
+    /**
+     * PyTorch reflect padding (pad_mode="reflect") for 1D.
+     * This excludes the edge value (unlike a naive mirror that can repeat endpoints).
+     *
+     * Left pad of size p:  x[1..p] reversed
+     * Right pad of size p: x[n-2 .. n-1-p] reversed
+     */
+    private fun reflectPadTorch(x: FloatArray, pad: Int): FloatArray {
         if (pad <= 0) return x
         val n = x.size
+        if (n < 2) return x
+
+        val p = min(pad, n - 1) // reflect requires at least 2 samples
         val out = FloatArray(n + 2 * pad)
-        // left reflect
+
+        // Left: x[1..p] reversed into out[0..pad-1], repeating pattern if pad > n-1
         for (i in 0 until pad) {
-            val src = min(n - 1, pad - i)
-            out[i] = x[src]
+            val idx = 1 + (i % p)
+            out[pad - 1 - i] = x[idx]
         }
-        // center
+
+        // Center
         for (i in 0 until n) out[pad + i] = x[i]
-        // right reflect
+
+        // Right: x[n-2 .. n-1-p] reversed into out[pad+n .. pad+n+pad-1]
         for (i in 0 until pad) {
-            val src = max(0, n - 2 - i)
-            out[pad + n + i] = x[src]
+            val idx = (n - 2) - (i % p)
+            out[pad + n + i] = x[idx]
         }
+
         return out
     }
 }

@@ -166,12 +166,15 @@ class ReadingsActivity : AppCompatActivity() {
         val entries = bpmHistory.mapIndexed { index, value -> Entry(index.toFloat(), value) }
         val dataSet = LineDataSet(entries, "BPM").apply {
             color = Color.parseColor("#FF6B6B")
-            setCircleColor(Color.parseColor("#FF6B6B"))
-            circleRadius = 4f
-            lineWidth = 2f
-            setDrawCircles(true)
+            lineWidth = 2.5f
+            setDrawCircles(false)
+            setDrawCircleHole(false)
             setDrawValues(false)
             mode = LineDataSet.Mode.CUBIC_BEZIER
+            cubicIntensity = 0.15f
+            setDrawFilled(true)
+            fillColor = Color.parseColor("#33FF6B6B")
+            highLightColor = Color.TRANSPARENT
         }
         heartRateChart.data = LineData(dataSet)
         heartRateChart.invalidate()
@@ -181,12 +184,15 @@ class ReadingsActivity : AppCompatActivity() {
         val entries = spo2History.mapIndexed { index, value -> Entry(index.toFloat(), value) }
         val dataSet = LineDataSet(entries, "SpO2").apply {
             color = Color.parseColor("#4ECDC4")
-            setCircleColor(Color.parseColor("#4ECDC4"))
-            circleRadius = 4f
-            lineWidth = 2f
-            setDrawCircles(true)
+            lineWidth = 2.5f
+            setDrawCircles(false)
+            setDrawCircleHole(false)
             setDrawValues(false)
             mode = LineDataSet.Mode.CUBIC_BEZIER
+            cubicIntensity = 0.15f
+            setDrawFilled(true)
+            fillColor = Color.parseColor("#334ECDC4")
+            highLightColor = Color.TRANSPARENT
         }
         spo2Chart.data = LineData(dataSet)
         spo2Chart.invalidate()

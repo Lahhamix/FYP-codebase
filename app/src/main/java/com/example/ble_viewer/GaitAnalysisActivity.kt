@@ -125,17 +125,14 @@ class GaitAnalysisActivity : AppCompatActivity() {
 
     private fun updateEdemaDisplay(data: String) {
         if (data.startsWith("DECRYPT_ERROR")) return
-        // Data format: "edemaLabel,totalDeviation,deviation1,deviation2"
-        // Example: "none,2,1,1" or "moderate,15,7,8"
-        val parts = data.split(",")
-        if (parts.size < 2) return
+        // NEW firmware format: label only (e.g. "none", "mild", "moderate", "severe", "calibrating")
+        val edemaLevel = data.trim().split(",").firstOrNull()?.trim().orEmpty()
+        if (edemaLevel.isEmpty()) return
 
-        val edemaLevel = parts[0].trim()
-        val totalDeviation = parts[1].trim().toIntOrNull() ?: 0
-
-        // Update status text
         edemaStatusText.text = edemaLevel.replaceFirstChar { it.uppercase() }
-        edemaDeviationText.text = "Deviation: $totalDeviation"
+        // No numeric deviation is sent anymore (requested). Keep the UI stable.
+        edemaDeviationText.text = ""
+        edemaDeviationText.visibility = View.GONE
 
         // Position indicator on gradient bar based on edema level
         // Gradient goes from left (severe/red) to right (none/green)

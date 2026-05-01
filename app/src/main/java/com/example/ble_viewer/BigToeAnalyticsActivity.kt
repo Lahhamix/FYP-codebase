@@ -4,9 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.ColorStateList
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
@@ -30,6 +32,8 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         private const val PREFS_NAME = "SolematePrefs"
         private const val HR_CHAR_UUID = "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00"
         private const val SPO2_CHAR_UUID = "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00"
+        private const val PPG_WAVE_CHAR_UUID = "9a8b0008-6d5e-4c10-b6d9-1f25c09d9e00"
+        private const val TAG = "BIG_TOE_ANALYTICS"
     }
 
     private lateinit var toolbarUsername: TextView
@@ -68,6 +72,9 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
                                     VitalsHistoryStore.appendSpo2(this@BigToeAnalyticsActivity, spo2)
                                     refreshSpo2()
                                 }
+                                PPG_WAVE_CHAR_UUID -> {
+                                    processPpgWaveChunk(encryptedBytes)
+                                }
                             }
                         } catch (_: Exception) { }
                     }
@@ -97,6 +104,11 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
     private lateinit var bpValue: TextView
     private lateinit var bpCaret: ImageView
     private lateinit var bpBar: View
+    private val bpRunner by lazy { BpModelRunner(this) }
+    private var ppgWaveRxFrameId: Int = -1
+    private var ppgWaveRxTotalChunks: Int = 0
+    private var ppgWaveRxReceived: BooleanArray = BooleanArray(0)
+    private var ppgWaveRxChunks: Array<ByteArray> = emptyArray()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,6 +164,7 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
             }
         )
         updateToolbarUserFromPrefs()
+        BpPredictionStore.latest(this)?.let { updateBpUi(it.sbp, it.dbp) }
         refreshHeartRate()
         refreshSpo2()
     }
@@ -162,19 +175,92 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
     }
 
     private fun updateBpUi(sbp: Float, dbp: Float) {
-        // Bubble text (replace placeholder "120/80") with current prediction + unit.
-        bpValue.text = "${sbp.toInt()}±${BpModelRunner.SBP_RANGE_PLUS_MINUS} / ${dbp.toInt()}±${BpModelRunner.DBP_RANGE_PLUS_MINUS} mmHg"
+        bpValue.text = "${sbp.toInt()}/${dbp.toInt()} mmHg"
 
-        // Move caret over Hypotension / Normal / Hypertension bar.
-        // We map the 3 classes to left/center/right and translate the caret within the bar width.
         bpBar.post {
             val cls = BpUi.classify(sbp, dbp)
             val pos = BpUi.classToNormalizedPos(cls)
             val barW = bpBar.width.toFloat().coerceAtLeast(1f)
-            val caretW = bpCaret.width.toFloat().coerceAtLeast(1f)
-            val x = (barW * pos) - (caretW / 2f)
-            bpCaret.translationX = x
+            val bubbleW = bpValue.width.toFloat().coerceAtLeast(1f)
+            val desiredCenter = (barW * pos).coerceIn(bubbleW / 2f, barW - (bubbleW / 2f))
+            val offsetFromCenter = desiredCenter - (barW / 2f)
+            bpValue.translationX = offsetFromCenter
+            bpCaret.translationX = offsetFromCenter
         }
+    }
+
+    private fun processPpgWaveChunk(encryptedBytes: ByteArray) {
+        val plain = AESCrypto.decryptPpgWaveChunk(encryptedBytes) ?: return
+        if (plain.size < 8) return
+        if (plain[0] != 'P'.code.toByte() || plain[1] != 'W'.code.toByte()) return
+
+        val frameId = plain[2].toInt() and 0xFF
+        val chunkId = plain[3].toInt() and 0xFF
+        val totalChunks = plain[4].toInt() and 0xFF
+        val dataLen = plain[5].toInt() and 0xFF
+        if (totalChunks <= 0 || totalChunks > 200) return
+        if (dataLen > 56) return
+        if (plain.size < 8 + dataLen) return
+
+        if (ppgWaveRxFrameId != frameId || ppgWaveRxTotalChunks != totalChunks) {
+            ppgWaveRxFrameId = frameId
+            ppgWaveRxTotalChunks = totalChunks
+            ppgWaveRxReceived = BooleanArray(totalChunks)
+            ppgWaveRxChunks = Array(totalChunks) { ByteArray(0) }
+        }
+        if (chunkId >= totalChunks) return
+        if (!ppgWaveRxReceived[chunkId]) {
+            ppgWaveRxReceived[chunkId] = true
+            ppgWaveRxChunks[chunkId] = plain.copyOfRange(8, 8 + dataLen)
+        }
+
+        if (ppgWaveRxReceived.count { it } != totalChunks) return
+
+        val assembled = ByteArray(ppgWaveRxChunks.sumOf { it.size })
+        var writeOffset = 0
+        for (i in 0 until totalChunks) {
+            val chunk = ppgWaveRxChunks[i]
+            System.arraycopy(chunk, 0, assembled, writeOffset, chunk.size)
+            writeOffset += chunk.size
+        }
+
+        if (assembled.size >= 12) {
+            Log.i(
+                TAG,
+                "PPG_WAVE window ok frame=$frameId bytes=${assembled.size} " +
+                    "s0=${readInt32LE(assembled, 0)} s1=${readInt32LE(assembled, 4)} s2=${readInt32LE(assembled, 8)}"
+            )
+        }
+
+        val window = IntArray(assembled.size / 4)
+        var j = 0
+        var off = 0
+        while (off + 4 <= assembled.size && j < window.size) {
+            window[j++] = readInt32LE(assembled, off)
+            off += 4
+        }
+        runBpInferenceFromWaveform(window)
+
+        ppgWaveRxFrameId = -1
+        ppgWaveRxTotalChunks = 0
+        ppgWaveRxReceived = BooleanArray(0)
+        ppgWaveRxChunks = emptyArray()
+    }
+
+    private fun runBpInferenceFromWaveform(window: IntArray) {
+        Thread {
+            val pred = bpRunner.predictFromWaveform(window) ?: return@Thread
+            BpPredictionStore.save(this, pred.sbp, pred.dbp)
+            runOnUiThread { updateBpUi(pred.sbp, pred.dbp) }
+        }.start()
+    }
+
+    private fun readInt32LE(buf: ByteArray, off: Int): Int {
+        if (off + 4 > buf.size) return 0
+        return (buf[off].toInt() and 0xFF) or
+            ((buf[off + 1].toInt() and 0xFF) shl 8) or
+            ((buf[off + 2].toInt() and 0xFF) shl 16) or
+            ((buf[off + 3].toInt() and 0xFF) shl 24)
     }
 
     private fun bindToolbar() {
@@ -268,43 +354,60 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         val since = System.currentTimeMillis() - hrWindow.ms
         val samples = VitalsHistoryStore.readSince(this, since)
             .filter { it.type == VitalsHistoryStore.Type.HR }
-        updateHeartRate(samples)
+        updateHeartRate(samples, windowStartMs = since, windowEndMs = System.currentTimeMillis())
     }
 
     private fun refreshSpo2() {
         val since = System.currentTimeMillis() - spo2Window.ms
         val samples = VitalsHistoryStore.readSince(this, since)
             .filter { it.type == VitalsHistoryStore.Type.SPO2 }
-        updateSpo2(samples)
+        updateSpo2(samples, windowStartMs = since, windowEndMs = System.currentTimeMillis())
     }
 
-    private fun updateHeartRate(samples: List<VitalsHistoryStore.Sample>) {
+    private fun updateHeartRate(
+        samples: List<VitalsHistoryStore.Sample>,
+        windowStartMs: Long,
+        windowEndMs: Long
+    ) {
         val latest = samples.lastOrNull()
         val bpm = latest?.value?.toInt()
 
         hrValue.text = if (bpm != null) formatValueWithUnit(bpm.toString(), "BPM") else "-- BPM"
-        hrStatus.text = if (bpm != null) heartRateState(bpm) else getString(R.string.dashboard_status_normal)
+        val status = if (bpm != null) heartRateState(bpm) else getString(R.string.dashboard_status_normal)
+        hrStatus.text = status
+        applyNeonStatus(hrStatus, status)
         hrUpdated.text = formatUpdatedAgo(latest?.epochMs)
 
-        val entries = samples.toEntries()
+        val windowSeconds = ((windowEndMs - windowStartMs) / 1_000.0).toFloat().coerceAtLeast(1f)
+        val entries = samples
+            .filterPlausibleVitals(VitalsHistoryStore.Type.HR)
+            .toSmoothedEntries(windowStartMs = windowStartMs, windowEndMs = windowEndMs, maxPoints = 120)
         if (entries.isEmpty()) {
             hrChart.clear()
         } else {
+            hrChart.xAxis.axisMinimum = 0f
+            hrChart.xAxis.axisMaximum = windowSeconds
             hrChart.data = LineData(LineDataSet(entries, "HR").apply {
                 color = Color.parseColor("#EC4D75")
                 setDrawCircles(false)
                 setDrawValues(false)
                 lineWidth = 2.5f
                 mode = LineDataSet.Mode.CUBIC_BEZIER
-                setDrawFilled(true)
-                fillColor = Color.parseColor("#33EC4D75")
+                cubicIntensity = 0.15f
+                // Filled path "closes" back to baseline and can look like the line goes backwards.
+                // Use line-only to keep the chart visually monotonic.
+                setDrawFilled(false)
                 highLightColor = Color.TRANSPARENT
             })
         }
         hrChart.invalidate()
     }
 
-    private fun updateSpo2(samples: List<VitalsHistoryStore.Sample>) {
+    private fun updateSpo2(
+        samples: List<VitalsHistoryStore.Sample>,
+        windowStartMs: Long,
+        windowEndMs: Long
+    ) {
         val latest = samples.lastOrNull()
         val v = latest?.value
 
@@ -317,34 +420,95 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         } else {
             "-- %"
         }
-        spo2Status.text = if (v != null) spo2State(v) else getString(R.string.dashboard_status_healthy)
+        val status = if (v != null) spo2State(v) else getString(R.string.dashboard_status_healthy)
+        spo2Status.text = status
+        applyNeonStatus(spo2Status, status)
         spo2Updated.text = formatUpdatedAgo(latest?.epochMs)
 
-        val entries = samples.toEntries()
+        val windowSeconds = ((windowEndMs - windowStartMs) / 1_000.0).toFloat().coerceAtLeast(1f)
+        val entries = samples
+            .filterPlausibleVitals(VitalsHistoryStore.Type.SPO2)
+            .toSmoothedEntries(windowStartMs = windowStartMs, windowEndMs = windowEndMs, maxPoints = 120)
         if (entries.isEmpty()) {
             spo2Chart.clear()
         } else {
+            spo2Chart.xAxis.axisMinimum = 0f
+            spo2Chart.xAxis.axisMaximum = windowSeconds
             spo2Chart.data = LineData(LineDataSet(entries, "SpO2").apply {
                 color = Color.parseColor("#2D7EEA")
                 setDrawCircles(false)
                 setDrawValues(false)
                 lineWidth = 2.5f
                 mode = LineDataSet.Mode.CUBIC_BEZIER
-                setDrawFilled(true)
-                fillColor = Color.parseColor("#332D7EEA")
+                cubicIntensity = 0.15f
+                // Filled path "closes" back to baseline and can look like the line goes backwards.
+                setDrawFilled(false)
                 highLightColor = Color.TRANSPARENT
             })
         }
         spo2Chart.invalidate()
     }
 
-    private fun List<VitalsHistoryStore.Sample>.toEntries(): List<Entry> {
-        if (isEmpty()) return emptyList()
-        val t0 = first().epochMs
-        return mapIndexed { _, s ->
-            val minutes = ((s.epochMs - t0) / 60_000.0).toFloat().coerceAtLeast(0f)
-            Entry(minutes, s.value.toFloat())
+    private fun List<VitalsHistoryStore.Sample>.filterPlausibleVitals(type: VitalsHistoryStore.Type): List<VitalsHistoryStore.Sample> {
+        return when (type) {
+            VitalsHistoryStore.Type.HR ->
+                filter { it.value.isFinite() && it.value >= 35.0 && it.value <= 220.0 }
+            VitalsHistoryStore.Type.SPO2 ->
+                filter { it.value.isFinite() && it.value >= 70.0 && it.value <= 100.5 }
         }
+    }
+
+    /**
+     * Make the chart look stable:
+     * - time-bucket to reduce jaggedness from rapid sampling
+     * - apply a small moving-average on the buckets
+     * - cap the number of plotted points to avoid over-dense zig-zag lines
+     */
+    private fun List<VitalsHistoryStore.Sample>.toSmoothedEntries(
+        windowStartMs: Long,
+        windowEndMs: Long,
+        maxPoints: Int
+    ): List<Entry> {
+        if (isEmpty()) return emptyList()
+        val sorted = this.sortedBy { it.epochMs }
+        val t0 = windowStartMs
+        val tN = windowEndMs
+        val windowMs = (tN - t0).coerceAtLeast(1L)
+
+        // Choose a bucket size so that we plot <= maxPoints points.
+        val bucketMs = ((windowMs / maxPoints.toLong()).coerceAtLeast(60_000L)) // at least 1 minute bins
+
+        // Average samples per bucket
+        val buckets = LinkedHashMap<Long, MutableList<Double>>()
+        for (s in sorted) {
+            val clamped = s.epochMs.coerceIn(t0, tN)
+            val b = ((clamped - t0) / bucketMs) * bucketMs
+            buckets.getOrPut(b) { mutableListOf() }.add(s.value)
+        }
+        val bucketAverages = buckets.entries.map { (bucketOffsetMs, values) ->
+            bucketOffsetMs to (values.sum() / values.size.toDouble())
+        }
+
+        // 3-point moving average to remove pointy spikes
+        val smoothed = bucketAverages.mapIndexed { i, (xMs, y) ->
+            val y0 = bucketAverages.getOrNull(i - 1)?.second ?: y
+            val y1 = y
+            val y2 = bucketAverages.getOrNull(i + 1)?.second ?: y
+            xMs to ((y0 + y1 + y2) / 3.0)
+        }
+
+        // Ensure strictly-increasing X (MPAndroidChart can render strangely if X goes backwards/equal)
+        val out = ArrayList<Entry>(smoothed.size)
+        var lastX = -1f
+        for ((offsetMs, y) in smoothed) {
+            var x = (offsetMs / 1_000.0).toFloat().coerceAtLeast(0f)
+            if (x <= lastX) {
+                x = lastX + 0.001f
+            }
+            out.add(Entry(x, y.toFloat()))
+            lastX = x
+        }
+        return out
     }
 
     private fun setupCharts() {
@@ -393,6 +557,22 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
             spo2 >= 85 -> "Low"
             else -> "Critical"
         }
+    }
+
+    private fun applyNeonStatus(view: TextView, status: String) {
+        val color = when (status.lowercase(Locale.US)) {
+            "normal", "healthy" -> Color.parseColor("#2D7EEA")
+            "resting", "watch" -> Color.parseColor("#FFC107")
+            "elevated", "low" -> Color.parseColor("#F58433")
+            "critical" -> Color.parseColor("#E53935")
+            else -> Color.parseColor("#6B7480")
+        }
+        view.setTextColor(color)
+        view.backgroundTintList = ColorStateList.valueOf(color.withAlpha(28))
+    }
+
+    private fun Int.withAlpha(alpha: Int): Int {
+        return (alpha.coerceIn(0, 255) shl 24) or (this and 0x00FFFFFF)
     }
 
     private fun formatValueWithUnit(value: String, unit: String): String {

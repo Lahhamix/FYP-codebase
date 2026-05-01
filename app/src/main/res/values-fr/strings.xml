@@ -32,14 +32,14 @@
     <string name="status_pending">En attente</string>
     <string name="status_no_backend">Aucun backend</string>
     <string name="need_assistance">Besoin d’aide?\nAstuces rapides et assistance à portée de main.</string>
-    <string name="left_shoe_active">CÔTÉ GAUCHE ACTIVE</string>
-    <string name="right_shoe_active">CÔTÉ DROITE ACTIVE</string>
+    <string name="left_shoe_active">SoleMate GAUCHE ACTIF</string>
+    <string name="right_shoe_active">SoleMate DROIT ACTIF</string>
 
     <string name="current_vitals">Signes Vitaux</string>
     <string name="see_more_detailed">Voir plus de details</string>
 
-    <string name="shoe_disconnected">Chaussette deconnectee</string>
-    <string name="shoe_disconnected_desc">Votre chaussette SoleMate est hors de portee. Assurez-vous qu elle est a proximite et chargee.</string>
+    <string name="shoe_disconnected">SoleMate deconnecte</string>
+    <string name="shoe_disconnected_desc">Votre SoleMate est hors de portee. Assurez-vous qu il est a proximite et charge.</string>
     <string name="reconnect_now">Reconnecter</string>
     <string name="scan_devices">Scanner</string>
 
@@ -75,7 +75,7 @@
     <string name="check_bluetooth_connection">Vérifiez la connexion Bluetooth</string>
     <string name="settings_app_tutorial_desc">Guide visuel rapide pour SoleMate</string>
     <string name="settings_device_manual">Manuel d\'utilisation de l\'appareil</string>
-    <string name="settings_device_manual_desc">Guide complet pour vos chaussettes intelligentes</string>
+    <string name="settings_device_manual_desc">Guide complet pour SoleMate</string>
     <string name="settings_datasheet">Télécharger la fiche technique</string>
     <string name="settings_notifications_desc">Contrôlez les messages des applications et les alertes de l\'appareil.</string>
     <string name="settings_device_alerts">Alertes de périphérique</string>
@@ -115,7 +115,7 @@
     <string name="toast_google_signin_failed">Échec de la connexion avec Google. Veuillez réessayer</string>
     <string name="toast_biometric_unavailable">L\'authentification biométrique n\'est pas disponible sur cet appareil.</string>
     <string name="settings_change_passcode">Changer le Mot de Passe</string>
-    <string name="settings_manage_paired_desc">Chaussettes : connectées (SN : SM-902)</string>
+    <string name="settings_manage_paired_desc">SoleMate : connecte (SN : SM-902)</string>
     <string name="settings_privacy_data">Confidentialité et données</string>
     <string name="settings_privacy_desc">Gérez le partage de vos données personnelles.</string>
     <string name="settings_auto_share">Partage automatique avec le clinicien</string>
@@ -316,7 +316,7 @@
     <string name="foot_overview_subtitle">Touchez une zone pour voir les mesures</string>
     <string name="foot_overview_image_desc">Carte de vue du pied SoleMate</string>
     <string name="foot_overview_tip_desc">Informations sur la vue du pied</string>
-    <string name="foot_overview_tip">Chaque zone représente un capteur intelligent de votre chaussure SoleMate. En touchant une zone de la carte, vous affichez vos données de santé.</string>
+    <string name="foot_overview_tip">Chaque zone represente un capteur intelligent de votre SoleMate. En touchant une zone de la carte, vous affichez vos donnees de sante.</string>
     <string name="zone_1_title">Zone 1 : Plante du pied</string>
     <string name="zone_1_desc">Surveille la pression plantaire lorsque vous êtes debout ou en marche.</string>
     <string name="zone_1_metric_title">Risque d\'ataxie</string>

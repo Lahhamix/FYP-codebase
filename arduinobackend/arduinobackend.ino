@@ -94,7 +94,7 @@ void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
 #endif
 #if SENSOR_FLEX_ENABLED
     EncryptedPayload edemaInit;
-    if (encryptFlex("calibrating,0,0,0", edemaInit))
+    if (encryptFlex("calibrating", edemaInit))
       writeEncryptedValue(edemaChar, edemaInit, "flex edema (init)");
 #endif
 #if SENSOR_PRESSURE_ENABLED
@@ -110,10 +110,10 @@ void onPhoneKeyWritten(BLEDevice central, BLECharacteristic characteristic) {
 // SETUP
 // -----------------------------------------------------------------------------
 void setup() {
-  Serial.begin(2000000);
+  Serial.begin(SERIAL_BAUD);
   // Don't block on Serial - Arduino must advertise even when not connected to USB
   delay(500);  // Brief delay for Serial to init (optional, for debug)
-  LOG_SYSTEM(Serial.println("🔬 Initializing wearable sensors..."));
+  LOG_SYSTEM(Serial.println("Initializing wearable sensors..."));
   analogReadResolution(12);
 
   // Seed RNG for ECDH key generation (use analog pin + time for entropy)
@@ -450,17 +450,13 @@ void loop() {
 #endif
 
 #if SENSOR_FLEX_ENABLED
-      // Flex read is relatively expensive (ADC + filtering). Gate it after calibration to keep
-      // loop time available for pressure + waveform streaming. During calibration, keep reading
-      // at the module's internal rate so it can converge.
-      static uint32_t s_lastFlexReadMs = 0;
+      // Flex is active only while BLE is connected, like the other live sensors.
+      // readFlex() returns immediately unless its configured sample interval elapsed.
       static FlexData s_lastFlex = {};
       FlexData flexData = {};
-      const uint32_t nowFlexMs = (uint32_t)millis();
-      const bool flexNeedsCal = !flex_isCalibrated();
-      if (flexNeedsCal || (uint32_t)(nowFlexMs - s_lastFlexReadMs) >= (uint32_t)SENSOR_FLEX_READ_MS) {
-        s_lastFlexReadMs = nowFlexMs;
-        s_lastFlex = readFlex();
+      FlexData newFlex = readFlex();
+      if (newFlex.dataAvailable) {
+        s_lastFlex = newFlex;
       }
       flexData = s_lastFlex;
 #else
@@ -579,10 +575,8 @@ void loop() {
         const uint32_t nowMs = millis();
         if (BLE_PUBLISH_FLEX_MS == 0u || (uint32_t)(nowMs - s_lastFlexTxMs) >= (uint32_t)BLE_PUBLISH_FLEX_MS) {
           s_lastFlexTxMs = nowMs;
-          String edemaData = String(flexData.edemaLabel) + "," +
-                             String(flexData.totalDeviation) + "," +
-                             String(flexData.deviation1) + "," +
-                             String(flexData.deviation2);
+          // Send ONLY the label to the app (requested).
+          String edemaData = String(flexData.edemaLabel);
           EncryptedPayload edemaEncrypted;
           if (encryptFlex(edemaData, edemaEncrypted)) {
             writeEncryptedValue(edemaChar, edemaEncrypted, "flex edema");
@@ -733,7 +727,7 @@ void loop() {
     // Ensure peripheral resumes advertising after central disconnects (stack-dependent).
     BLE.advertise();
   } else {
-    // No BLE: do not scan pressure or print pressure (same as other sensors — only active when connected).
+    // No BLE: do not scan sensors or advance flex calibration.
     delay(MAIN_LOOP_DELAY_MS);
   }
 }

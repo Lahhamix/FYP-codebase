@@ -39,10 +39,11 @@
                     android:padding="14dp">
 
                     <TextView
+                        android:id="@+id/ankle_info_banner_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/roboto_medium"
-                        android:text="Your ankle swelling is currently within the Normal Range. Measurements are taken every 5 minutes by your smart shoe."
+                        android:text="Your ankle swelling is currently within the Normal Range. Measurements are taken every 5 minutes by your SoleMate."
                         android:textColor="#0D3B66"
                         android:textAlignment="center"
                         android:textSize="13sp" />
@@ -71,23 +72,22 @@
                         android:textSize="15sp"
                         android:textStyle="bold"/>
 
-                    <!-- Gauge Placeholder -->
-                    <ImageView
+                    <com.example.ble_viewer.SwellingGaugeView
                         android:id="@+id/ankle_gauge"
                         android:layout_width="match_parent"
-                        android:layout_height="120dp"
-                        android:layout_marginTop="8dp"
-                        android:src="@drawable/ic_launcher_foreground"
-                        android:scaleType="fitCenter" />
+                        android:layout_height="160dp"
+                        android:layout_marginTop="20dp" />
 
                     <TextView
                         android:id="@+id/ankle_severity_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
+                        android:background="@drawable/swelling_severity_pill_bg"
                         android:gravity="center"
+                        android:paddingVertical="8dp"
                         android:text="SEVERE LEVEL DETECTED"
-                        android:textColor="#EC4D75"
+                        android:textColor="@android:color/white"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
@@ -98,14 +98,98 @@
                         android:layout_marginTop="8dp"
                         android:gravity="center"
                         android:orientation="horizontal">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No swelling risk" android:textSize="12sp" android:textColor="#0D3B66" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Subclinical  " android:textSize="12sp" android:textColor="#0D3B66" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Mild  " android:textSize="12sp" android:textColor="#0D3B66" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Moderate  " android:textSize="12sp" android:textColor="#0D3B66" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Severe  " android:textSize="12sp" android:textColor="#EC4D75" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <View
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:background="@drawable/swelling_dot_normal" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:gravity="center"
+                                android:text="Normal"
+                                android:textColor="#0D3B66"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <View
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:background="@drawable/swelling_dot_mild" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:gravity="center"
+                                android:text="Mild"
+                                android:textColor="#0D3B66"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <View
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:background="@drawable/swelling_dot_moderate" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:gravity="center"
+                                android:text="Moderate"
+                                android:textColor="#0D3B66"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <View
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:background="@drawable/swelling_dot_severe" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:gravity="center"
+                                android:text="Severe"
+                                android:textColor="#EC4D75"
+                                android:textSize="11sp" />
+                        </LinearLayout>
                     </LinearLayout>
 
                     <TextView
+                        android:id="@+id/ankle_severity_advice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
@@ -130,34 +214,61 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Swelling Trend (Last 24 hours)"
-                        android:textColor="#0D3B66"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                    <!-- Chart Placeholder -->
-                    <ImageView
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Swelling Trend"
+                                android:textColor="#0D3B66"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/ankle_trend_period"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:background="@drawable/foot_overview_zone_pill_bg"
+                                android:drawableEnd="@drawable/ic_arrow_drop_down"
+                                android:drawablePadding="4dp"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="3dp"
+                                android:text="Last 24 hours"
+                                android:textColor="#6B7480"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/ankle_trend_badge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/foot_overview_zone_pill_bg"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="5dp"
+                            android:text="Severe"
+                            android:textColor="#EC4D75"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.example.ble_viewer.SwellingTrendView
                         android:id="@+id/ankle_trend_chart"
                         android:layout_width="match_parent"
-                        android:layout_height="100dp"
-                        android:layout_marginTop="8dp"
-                        android:src="@drawable/ic_launcher_foreground"
-                        android:scaleType="fitCenter" />
+                        android:layout_height="105dp"
+                        android:layout_marginTop="8dp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Severe"
-                        android:textColor="#EC4D75"
-                        android:textSize="13sp"
-                        android:background="@drawable/foot_overview_zone_pill_bg"
-                        android:padding="4dp" />
-
-                    <TextView
+                        android:id="@+id/ankle_trend_updated"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
