@@ -15,11 +15,7 @@ exports.verifyEmail = wrap(async (req, res) => {
 });
 
 exports.resendVerification = wrap(async (req, res) => {
-  const userRes = await require('../models/user.model').findById(req.body.userId);
-  const user    = userRes.rows[0];
-  if (!user)              return res.status(404).json({ error: 'User not found.' });
-  if (user.email_verified) return res.status(400).json({ error: 'Email already verified.' });
-  await svc.sendVerificationCode(user.user_id, user.email, user.username);
+  await svc.sendVerificationCode(req.body.userId);
   res.json({ message: 'Verification code resent.' });
 });
 

@@ -30,6 +30,13 @@ exports.create = (username, email, passwordHash, provider) =>
     [username, email, passwordHash, provider]
   );
 
+exports.createVerified = (username, email, passwordHash) =>
+  db.query(
+    `INSERT INTO users (username, email, password_hash, auth_provider, email_verified, account_status)
+     VALUES ($1, $2, $3, 'local', TRUE, 'active') RETURNING user_id`,
+    [username, email, passwordHash]
+  );
+
 exports.createGoogleUser = (username, email) =>
   db.query(
     `INSERT INTO users (username, email, auth_provider, email_verified, account_status)
@@ -164,3 +171,53 @@ exports.revokeRefreshToken = (tokenHash) =>
 
 exports.revokeAllUserTokens = (userId) =>
   db.query('UPDATE refresh_tokens SET revoked = TRUE WHERE user_id = $1', [userId]);
+
+// ── Pending Registrations ─────────────────────────────────────
+exports.findPendingById = (id) =>
+  db.query('SELECT * FROM pending_registrations WHERE id = $1 LIMIT 1', [id]);
+
+exports.findActivePendingByEmail = (email) =>
+  db.query(
+    `SELECT * FROM pending_registrations
+     WHERE email = $1 AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
+    [email]
+  );
+
+exports.findActivePendingByUsername = (username) =>
+  db.query(
+    `SELECT * FROM pending_registrations
+     WHERE username = $1 AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
+    [username]
+  );
+
+exports.insertPending = (username, email, passwordHash, codeHash, codeExpiresAt) =>
+  db.query(
+    `INSERT INTO pending_registrations (username, email, password_hash, code_hash, code_expires_at)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [username, email, passwordHash, codeHash, codeExpiresAt]
+  );
+
+exports.deletePendingByEmail = (email) =>
+  db.query('DELETE FROM pending_registrations WHERE email = $1', [email]);
+
+exports.updatePendingCode = (id, codeHash, codeExpiresAt) =>
+  db.query(
+    `UPDATE pending_registrations
+     SET code_hash = $2, code_expires_at = $3, resend_count = resend_count + 1, attempts = 0
+     WHERE id = $1`,
+    [id, codeHash, codeExpiresAt]
+  );
+
+exports.updatePendingEmail = (id, email, codeHash, codeExpiresAt) =>
+  db.query(
+    `UPDATE pending_registrations
+     SET email = $2, code_hash = $3, code_expires_at = $4, resend_count = resend_count + 1, attempts = 0
+     WHERE id = $1`,
+    [id, email, codeHash, codeExpiresAt]
+  );
+
+exports.incrementPendingAttempt = (id) =>
+  db.query('UPDATE pending_registrations SET attempts = attempts + 1 WHERE id = $1', [id]);
+
+exports.deletePending = (id) =>
+  db.query('DELETE FROM pending_registrations WHERE id = $1', [id]);

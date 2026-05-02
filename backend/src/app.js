@@ -5,6 +5,9 @@ const path    = require('path');
 
 const app = express();
 
+// Trust Railway's reverse proxy so express-rate-limit can read X-Forwarded-For
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({ origin: false }));
 app.use(express.json({ limit: '1mb' }));

@@ -49,58 +49,80 @@ async function generateUniqueUsername(base) {
 
 // ── Register ──────────────────────────────────────────────────
 async function register({ username, email, password }) {
-  const emailCheck = await userModel.findByEmail(email);
-  if (emailCheck.rows.length) throw appError('Email already registered.', 409, 'EMAIL_TAKEN');
+  // Block if email is already a verified user
+  const emailInUsers = await userModel.findByEmail(email);
+  if (emailInUsers.rows.length) throw appError('Email already registered.', 409, 'EMAIL_TAKEN');
 
-  const usernameCheck = await userModel.findByUsername(username);
-  if (usernameCheck.rows.length) throw appError('Username already taken.', 409, 'USERNAME_TAKEN');
+  // Block if username is already a verified user
+  const usernameInUsers = await userModel.findByUsername(username);
+  if (usernameInUsers.rows.length) throw appError('Username already taken.', 409, 'USERNAME_TAKEN');
 
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  const { rows } = await userModel.create(username, email, passwordHash, 'local');
-  const userId = rows[0].user_id;
+  // Block if there is an active (< 24h) pending registration for this email
+  const activePendingEmail = await userModel.findActivePendingByEmail(email);
+  if (activePendingEmail.rows.length) {
+    throw appError('A verification code was already sent to this email. Check your inbox or wait 24 hours.', 409, 'EMAIL_TAKEN');
+  }
 
-  await userModel.createProfile(userId, null);
-  await settingsModel.create(userId);
-  await sendVerificationCode(userId, email, username);
+  // Block if there is an active pending registration for this username
+  const activePendingUsername = await userModel.findActivePendingByUsername(username);
+  if (activePendingUsername.rows.length) {
+    throw appError('Username already taken.', 409, 'USERNAME_TAKEN');
+  }
 
-  return userId;
+  // Clean up any expired pending records for this email
+  await userModel.deletePendingByEmail(email);
+
+  const passwordHash  = await bcrypt.hash(password, SALT_ROUNDS);
+  const code          = crypto.randomInt(100000, 999999).toString();
+  const codeHash      = await bcrypt.hash(code, 10);
+  const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  const { rows } = await userModel.insertPending(username, email, passwordHash, codeHash, codeExpiresAt);
+  const pendingId = rows[0].id;
+
+  await emailService.sendVerificationCode(email, username, code);
+
+  return pendingId;
 }
 
 // ── Email Verification ────────────────────────────────────────
-async function sendVerificationCode(userId, email, username) {
-  const existing = await userModel.getLatestVerification(userId);
-  if (existing.rows.length) {
-    const rec = existing.rows[0];
-    if (rec.resend_count >= 5) throw appError('Too many resend attempts.', 429);
-  }
+async function sendVerificationCode(pendingId) {
+  const { rows } = await userModel.findPendingById(pendingId);
+  if (!rows.length) throw appError('No pending registration found.', 404);
 
-  const code      = crypto.randomInt(100000, 999999).toString();
-  const codeHash  = await bcrypt.hash(code, 10);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  const pending = rows[0];
+  if (pending.resend_count >= 5) throw appError('Too many resend attempts.', 429);
 
-  await userModel.insertVerificationCode(userId, email, codeHash, expiresAt);
+  const code          = crypto.randomInt(100000, 999999).toString();
+  const codeHash      = await bcrypt.hash(code, 10);
+  const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-  const userRes = await userModel.findById(userId);
-  const uname   = username || userRes.rows[0]?.username || 'SoleMate user';
-  await emailService.sendVerificationCode(email, uname, code);
+  await userModel.updatePendingCode(pendingId, codeHash, codeExpiresAt);
+  await emailService.sendVerificationCode(pending.email, pending.username, code);
 }
 
-async function verifyEmail(userId, code) {
-  const { rows } = await userModel.getLatestVerification(userId);
-  if (!rows.length) throw appError('No pending verification. Please register first.', 400);
+async function verifyEmail(pendingId, code) {
+  const { rows } = await userModel.findPendingById(pendingId);
+  if (!rows.length) throw appError('No pending registration. Please register first.', 400);
 
-  const rec = rows[0];
-  if (new Date() > rec.expires_at) throw appError('Code expired. Please request a new one.', 400, 'CODE_EXPIRED');
-  if (rec.attempts >= 5)           throw appError('Too many failed attempts. Request a new code.', 429);
+  const pending = rows[0];
+  if (new Date() > pending.code_expires_at) throw appError('Code expired. Please request a new one.', 400, 'CODE_EXPIRED');
+  if (pending.attempts >= 5)                throw appError('Too many failed attempts. Request a new code.', 429);
 
-  const valid = await bcrypt.compare(code, rec.code_hash);
+  const valid = await bcrypt.compare(code, pending.code_hash);
   if (!valid) {
-    await userModel.incrementVerifyAttempt(rec.id);
+    await userModel.incrementPendingAttempt(pendingId);
     throw appError('Invalid verification code.', 400, 'INVALID_CODE');
   }
 
-  await userModel.markVerified(rec.id);
-  await userModel.setEmailVerified(userId);
+  // Code is valid — promote to verified user
+  const { rows: userRows } = await userModel.createVerified(pending.username, pending.email, pending.password_hash);
+  const userId = userRows[0].user_id;
+
+  await userModel.createProfile(userId, null);
+  await settingsModel.create(userId);
+  await userModel.deletePending(pendingId);
+
   return issueTokensWithUser(userId);
 }
 
@@ -156,16 +178,26 @@ async function googleSignIn(idToken) {
 }
 
 // ── Change Pending Email (before verification) ────────────────
-async function changePendingEmail(userId, newEmail) {
-  const userRes = await userModel.findById(userId);
-  const user    = userRes.rows[0];
-  if (!user || user.email_verified) throw appError('Cannot change email.', 400);
+async function changePendingEmail(pendingId, newEmail) {
+  const { rows } = await userModel.findPendingById(pendingId);
+  if (!rows.length) throw appError('No pending registration found.', 400);
 
-  const emailCheck = await userModel.findByEmail(newEmail);
-  if (emailCheck.rows.length) throw appError('Email already registered.', 409, 'EMAIL_TAKEN');
+  const pending = rows[0];
 
-  await db.query('UPDATE users SET email = $1 WHERE user_id = $2', [newEmail, userId]);
-  await sendVerificationCode(userId, newEmail, user.username);
+  const emailInUsers = await userModel.findByEmail(newEmail);
+  if (emailInUsers.rows.length) throw appError('Email already registered.', 409, 'EMAIL_TAKEN');
+
+  const activePending = await userModel.findActivePendingByEmail(newEmail);
+  if (activePending.rows.length && activePending.rows[0].id !== pendingId) {
+    throw appError('Email already registered.', 409, 'EMAIL_TAKEN');
+  }
+
+  const code          = crypto.randomInt(100000, 999999).toString();
+  const codeHash      = await bcrypt.hash(code, 10);
+  const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await userModel.updatePendingEmail(pendingId, newEmail, codeHash, codeExpiresAt);
+  await emailService.sendVerificationCode(newEmail, pending.username, code);
 }
 
 // ── Forgot / Reset Password ───────────────────────────────────
