@@ -110,31 +110,16 @@ exports.createGoogleAuth = (userId, googleId, googleEmail) =>
     [userId, googleId, googleEmail]
   );
 
-// ── Verification ──────────────────────────────────────────────
-exports.getLatestVerification = (userId) =>
+// ── User + Profile (used for auth responses) ──────────────────
+exports.findByIdWithProfile = (userId) =>
   db.query(
-    `SELECT id, code_hash, expires_at, attempts, resend_count
-     FROM email_verification_codes
-     WHERE user_id = $1 AND verified = FALSE
-     ORDER BY created_at DESC LIMIT 1`,
+    `SELECT u.user_id, u.username, u.email,
+            p.display_name, p.profile_picture_url, p.date_of_birth, p.gender
+     FROM users u
+     LEFT JOIN user_profiles p ON p.user_id = u.user_id
+     WHERE u.user_id = $1`,
     [userId]
   );
-
-exports.insertVerificationCode = (userId, email, codeHash, expiresAt) =>
-  db.query(
-    `INSERT INTO email_verification_codes (user_id, email, code_hash, expires_at)
-     VALUES ($1, $2, $3, $4)`,
-    [userId, email, codeHash, expiresAt]
-  );
-
-exports.incrementVerifyAttempt = (id) =>
-  db.query(
-    'UPDATE email_verification_codes SET attempts = attempts + 1 WHERE id = $1',
-    [id]
-  );
-
-exports.markVerified = (id) =>
-  db.query('UPDATE email_verification_codes SET verified = TRUE WHERE id = $1', [id]);
 
 // ── Password Reset ────────────────────────────────────────────
 exports.insertResetToken = (userId, tokenHash, expiresAt) =>

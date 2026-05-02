@@ -30,10 +30,21 @@ async function issueTokens(userId) {
 }
 
 async function issueTokensWithUser(userId) {
-  const tokens      = await issueTokens(userId);
-  const { rows }    = await userModel.findById(userId);
-  const u           = rows[0];
-  return { ...tokens, user: { id: userId, username: u.username, email: u.email } };
+  const tokens   = await issueTokens(userId);
+  const { rows } = await userModel.findByIdWithProfile(userId);
+  const u        = rows[0];
+  return {
+    ...tokens,
+    user: {
+      id:                userId,
+      username:          u.username,
+      email:             u.email,
+      displayName:       u.display_name       || null,
+      profilePictureUrl: u.profile_picture_url || null,
+      dateOfBirth:       u.date_of_birth       || null,
+      gender:            u.gender              || null,
+    },
+  };
 }
 
 async function generateUniqueUsername(base) {
