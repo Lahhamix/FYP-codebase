@@ -175,11 +175,11 @@ exports.findActivePendingByUsername = (username) =>
     [username]
   );
 
-exports.insertPending = (username, email, passwordHash, codeHash, codeExpiresAt) =>
+exports.insertPending = (id, username, email, passwordHash, codeHash, codeExpiresAt) =>
   db.query(
-    `INSERT INTO pending_registrations (username, email, password_hash, code_hash, code_expires_at)
-     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-    [username, email, passwordHash, codeHash, codeExpiresAt]
+    `INSERT INTO pending_registrations (id, username, email, password_hash, code_hash, code_expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [id, username, email, passwordHash, codeHash, codeExpiresAt]
   );
 
 exports.deletePendingByEmail = (email) =>

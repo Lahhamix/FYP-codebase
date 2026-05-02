@@ -66,25 +66,21 @@ async function register({ username, email, password }) {
   const usernameInUsers = await userModel.findByUsername(username);
   if (usernameInUsers.rows.length) throw appError('Username already taken.', 409, 'USERNAME_TAKEN');
 
-  const activePendingEmail = await userModel.findActivePendingByEmail(email);
-  if (activePendingEmail.rows.length) {
-    throw appError('A verification code was already sent to this email. Check your inbox or wait 24 hours.', 409, 'EMAIL_TAKEN');
-  }
+  // Delete any stale pending for this email so expired codes never block re-registration
+  await userModel.deletePendingByEmail(email);
 
   const activePendingUsername = await userModel.findActivePendingByUsername(username);
   if (activePendingUsername.rows.length) {
     throw appError('Username already taken.', 409, 'USERNAME_TAKEN');
   }
 
-  await userModel.deletePendingByEmail(email);
-
+  const pendingId     = crypto.randomUUID();
   const passwordHash  = await bcrypt.hash(password, SALT_ROUNDS);
   const code          = crypto.randomInt(100000, 999999).toString();
   const codeHash      = await bcrypt.hash(code, 10);
   const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-  const { rows } = await userModel.insertPending(username, email, passwordHash, codeHash, codeExpiresAt);
-  const pendingId = rows[0].id;
+  await userModel.insertPending(pendingId, username, email, passwordHash, codeHash, codeExpiresAt);
 
   await emailService.sendVerificationCode(email, username, code);
 
