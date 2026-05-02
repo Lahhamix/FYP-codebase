@@ -206,3 +206,4 @@ exports.incrementPendingAttempt = (id) =>
 
 exports.deletePending = (id) =>
   db.query('DELETE FROM pending_registrations WHERE id = $1', [id]);
+

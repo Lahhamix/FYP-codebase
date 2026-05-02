@@ -1,8 +1,9 @@
 package com.example.ble_viewer
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.InputType
 import android.util.Log
 import android.view.MotionEvent
@@ -21,6 +22,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
+import org.json.JSONObject
 
 class LoginActivity : AppCompatActivity() {
 
@@ -28,14 +30,10 @@ class LoginActivity : AppCompatActivity() {
     private var rememberMeSelected = false
 
     companion object {
-        private const val PREFS = "SolematePrefs"
-        private const val KEY_AUTH_PROVIDER = "auth_provider"
-        private const val KEY_GOOGLE_EMAIL = "google_email"
-        private const val KEY_GOOGLE_ID = "google_id"
-        private const val KEY_IS_LOGGED_IN = "is_logged_in"
+        private const val PREFS        = "SolematePrefs"
         private const val KEY_REMEMBER_ME = "remember_me"
-        private const val PROVIDER_LOCAL = "local"
-        private const val PROVIDER_GOOGLE = "google"
+        private const val WEB_CLIENT_ID =
+            "161106121356-3naf6jcooh0ipbgo985d1skv3qpv42ss.apps.googleusercontent.com"
     }
 
     private val googleSignInLauncher = registerForActivityResult(
@@ -55,23 +53,20 @@ class LoginActivity : AppCompatActivity() {
             content.animate().alpha(1f).setDuration(280L).start()
         }
 
-        val sharedPref = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val savedUsername = sharedPref.getString("username", "")
-        val savedPassword = sharedPref.getString("password", "")
-        val authProvider = sharedPref.getString(KEY_AUTH_PROVIDER, PROVIDER_LOCAL)
-
-        val loginButton: Button = findViewById(R.id.login_button)
-        val usernameEdit: EditText = findViewById(R.id.login_email_edittext)
-        val passwordEdit: EditText = findViewById(R.id.login_password_edittext)
-        val forgotPasswordLink: TextView = findViewById(R.id.forgot_password_link)
-        val rememberMeCheck: CheckBox = findViewById(R.id.remember_me_checkbox)
-        val googleLoginButton: Button = findViewById(R.id.google_login_button)
-        val signUpLink: TextView = findViewById(R.id.signup_link)
-        val languageButton: ImageButton = findViewById(R.id.language_button)
+        val sharedPref    = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val loginButton   = findViewById<Button>(R.id.login_button)
+        val identifierEdit = findViewById<EditText>(R.id.login_email_edittext)
+        val passwordEdit  = findViewById<EditText>(R.id.login_password_edittext)
+        val forgotPasswordLink = findViewById<TextView>(R.id.forgot_password_link)
+        val rememberMeCheck   = findViewById<CheckBox>(R.id.remember_me_checkbox)
+        val googleLoginButton = findViewById<Button>(R.id.google_login_button)
+        val signUpLink        = findViewById<TextView>(R.id.signup_link)
+        val languageButton    = findViewById<ImageButton>(R.id.language_button)
 
         setupPasswordToggle(passwordEdit)
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(WEB_CLIENT_ID)
             .requestEmail()
             .requestProfile()
             .build()
@@ -85,19 +80,61 @@ class LoginActivity : AppCompatActivity() {
         }
 
         loginButton.setOnClickListener {
-            if (authProvider == PROVIDER_GOOGLE) {
-                Toast.makeText(this, getString(R.string.toast_google_linked_signin), Toast.LENGTH_LONG).show()
+            val identifier = identifierEdit.text.toString().trim()
+            val password   = passwordEdit.text.toString()
+
+            if (identifier.isBlank() || password.isBlank()) {
+                Toast.makeText(this, getString(R.string.login_fields_required), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val enteredUsername = usernameEdit.text.toString().trim()
-            val enteredPassword = passwordEdit.text.toString()
-            if (enteredUsername == savedUsername && enteredPassword == savedPassword) {
-                updateLoginState(rememberMeCheck.isChecked)
-                proceedToMainApp()
-            } else {
-                Toast.makeText(this, getString(R.string.toast_incorrect_credentials), Toast.LENGTH_SHORT).show()
-            }
+            loginButton.isEnabled = false
+            Thread {
+                val resp = ApiClient.post(
+                    this, "/auth/login",
+                    JSONObject().apply {
+                        put("identifier", identifier)
+                        put("password",   password)
+                    }
+                )
+                Handler(Looper.getMainLooper()).post {
+                    loginButton.isEnabled = true
+                    when {
+                        resp.code in 200..299 -> {
+                            val body = resp.body ?: JSONObject()
+                            val user = body.optJSONObject("user") ?: JSONObject()
+                            SessionManager.saveSession(
+                                this,
+                                accessToken       = body.optString("accessToken"),
+                                refreshToken      = body.optString("refreshToken"),
+                                userId            = user.optString("id"),
+                                username          = user.optString("username"),
+                                email             = user.optString("email"),
+                                displayName       = user.optString("displayName").ifBlank { null },
+                                profilePictureUrl = user.optString("profilePictureUrl").ifBlank { null }
+                            )
+                            sharedPref.edit().putBoolean(KEY_REMEMBER_ME, rememberMeSelected).apply()
+                            proceedToMainApp()
+                        }
+                        resp.code == -1 -> {
+                            Toast.makeText(this, getString(R.string.error_no_internet), Toast.LENGTH_LONG).show()
+                        }
+                        resp.code == 401 -> {
+                            Toast.makeText(this, getString(R.string.toast_incorrect_credentials), Toast.LENGTH_SHORT).show()
+                        }
+                        resp.code == 403 -> {
+                            val msg = resp.body?.optString("error") ?: getString(R.string.toast_incorrect_credentials)
+                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                        }
+                        resp.code == 429 -> {
+                            Toast.makeText(this, getString(R.string.error_too_many_requests), Toast.LENGTH_LONG).show()
+                        }
+                        else -> {
+                            Toast.makeText(this, getString(R.string.error_server_generic), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }.start()
         }
 
         forgotPasswordLink.setOnClickListener {
@@ -106,8 +143,7 @@ class LoginActivity : AppCompatActivity() {
 
         googleLoginButton.setOnClickListener {
             googleSignInClient.signOut().addOnCompleteListener {
-                val signInIntent = googleSignInClient.signInIntent
-                googleSignInLauncher.launch(signInIntent)
+                googleSignInLauncher.launch(googleSignInClient.signInIntent)
             }
         }
 
@@ -124,39 +160,47 @@ class LoginActivity : AppCompatActivity() {
     private fun handleGoogleSignInResult(completedTask: Task<GoogleSignInAccount>) {
         try {
             val account = completedTask.getResult(ApiException::class.java)
-            val username = account?.displayName ?: "Google User"
-            
-            val sharedPref = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            with(sharedPref.edit()) {
-                putString("username", username)
-                putBoolean("is_registered", true)
-                putString(KEY_AUTH_PROVIDER, PROVIDER_GOOGLE)
-                putString(KEY_GOOGLE_EMAIL, account?.email)
-                putString(KEY_GOOGLE_ID, account?.id)
-                putBoolean(KEY_IS_LOGGED_IN, true)
-                putBoolean(KEY_REMEMBER_ME, true)
-                apply()
+            val idToken = account?.idToken
+            if (idToken == null) {
+                Toast.makeText(this, getString(R.string.toast_google_signin_failed), Toast.LENGTH_LONG).show()
+                return
             }
-            proceedToMainApp()
+            Thread {
+                val resp = ApiClient.post(
+                    this, "/auth/google",
+                    JSONObject().apply { put("idToken", idToken) }
+                )
+                Handler(Looper.getMainLooper()).post {
+                    if (resp.code in 200..299) {
+                        val body = resp.body ?: JSONObject()
+                        val user = body.optJSONObject("user") ?: JSONObject()
+                        SessionManager.saveSession(
+                            this,
+                            accessToken       = body.optString("accessToken"),
+                            refreshToken      = body.optString("refreshToken"),
+                            userId            = user.optString("id"),
+                            username          = user.optString("username"),
+                            email             = user.optString("email"),
+                            displayName       = user.optString("displayName").ifBlank { null },
+                            profilePictureUrl = user.optString("profilePictureUrl").ifBlank { null }
+                        )
+                        proceedToMainApp()
+                    } else {
+                        val msg = resp.body?.optString("error") ?: getString(R.string.toast_google_signin_failed)
+                        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }.start()
         } catch (e: ApiException) {
             Log.e("LoginActivity", "Google Sign-In failed: ${e.statusCode}", e)
             Toast.makeText(this, getString(R.string.toast_google_signin_failed), Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun updateLoginState(rememberMe: Boolean) {
-        val sharedPref = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        with(sharedPref.edit()) {
-            putBoolean(KEY_IS_LOGGED_IN, true)
-            putBoolean(KEY_REMEMBER_ME, rememberMe)
-            apply()
-        }
-    }
-
     private fun proceedToMainApp() {
-        val intent = Intent(this, ScanActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
+        startActivity(Intent(this, ScanActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
         finish()
     }
 
@@ -164,8 +208,7 @@ class LoginActivity : AppCompatActivity() {
         var isVisible = false
         editText.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                val drawableEnd = 2
-                val endDrawable = editText.compoundDrawablesRelative[drawableEnd] ?: return@setOnTouchListener false
+                val endDrawable = editText.compoundDrawablesRelative[2] ?: return@setOnTouchListener false
                 val iconWidth = endDrawable.bounds.width()
                 val isRtl = editText.layoutDirection == View.LAYOUT_DIRECTION_RTL
                 val touchedIcon = if (isRtl) {

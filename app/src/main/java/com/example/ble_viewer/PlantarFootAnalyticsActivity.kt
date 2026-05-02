@@ -118,7 +118,7 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
             toolbarProfileImage.setImageResource(R.drawable.profile)
         }
 
-        findViewById<View>(R.id.profile_card).setOnClickListener {
+        findViewById<View>(R.id.profile_card)?.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }

@@ -38,6 +38,10 @@
             android:name=".RegistrationActivity"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
+            android:name=".EmailVerificationActivity"
+            android:theme="@style/Theme.Test.NoActionBar"
+            android:exported="false" />
+        <activity
             android:name=".ScanActivity"
             android:theme="@style/Theme.Test.NoActionBar" />
         <activity
@@ -76,6 +80,7 @@
         <activity
             android:name=".AppLockActivity"
             android:theme="@style/Theme.Test.NoActionBar"
+            android:launchMode="singleTop"
             android:exported="false" />
 
         <activity

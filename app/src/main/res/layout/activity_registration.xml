@@ -95,6 +95,43 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
             android:fontFamily="@font/rubik_medium"
+            android:text="@string/email"
+            android:textColor="@color/blue"
+            android:textSize="17sp" />
+
+        <EditText
+            android:id="@+id/email_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="4dp"
+            android:background="@drawable/auth_input_outline"
+            android:fontFamily="@font/rubik_medium"
+            android:hint="@string/settings_auto_share_dialog_email_hint"
+            android:inputType="textEmailAddress"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:singleLine="true"
+            android:textColor="@color/dark_blue"
+            android:textColorHint="@color/text_hint"
+            android:textCursorDrawable="@drawable/text_cursor"
+            android:textSize="15sp"
+            android:autofillHints="emailAddress" />
+
+        <TextView
+            android:id="@+id/email_error_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:fontFamily="@font/rubik_light"
+            android:textColor="#F44336"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:fontFamily="@font/rubik_medium"
             android:text="@string/username"
             android:textColor="@color/blue"
             android:textSize="17sp" />
@@ -103,7 +140,7 @@
             android:id="@+id/username_edittext"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginBottom="10dp"
+            android:layout_marginBottom="4dp"
             android:background="@drawable/auth_input_outline"
             android:fontFamily="@font/rubik_medium"
             android:hint="@string/username"
@@ -114,6 +151,16 @@
             android:singleLine="true"
             android:textColor="@color/dark_blue"
             android:textColorHint="@color/text_hint" />
+
+        <TextView
+            android:id="@+id/username_error_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:fontFamily="@font/rubik_light"
+            android:textColor="#F44336"
+            android:textSize="12sp"
+            android:visibility="gone" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -128,7 +175,7 @@
             android:id="@+id/password_edittext"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginBottom="10dp"
+            android:layout_marginBottom="4dp"
             android:background="@drawable/auth_input_outline"
             android:drawableEnd="@drawable/ic_eye_closed"
             android:drawablePadding="8dp"
@@ -147,6 +194,16 @@
             android:textSize="15sp" />
 
         <TextView
+            android:id="@+id/password_error_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:fontFamily="@font/rubik_light"
+            android:textColor="#F44336"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
@@ -159,6 +216,7 @@
             android:id="@+id/confirm_password_edittext"
             android:layout_width="match_parent"
             android:layout_height="48dp"
+            android:layout_marginBottom="4dp"
             android:background="@drawable/auth_input_outline"
             android:drawableEnd="@drawable/ic_eye_closed"
             android:drawablePadding="8dp"
@@ -175,6 +233,16 @@
             android:textCursorDrawable="@drawable/text_cursor"
             android:textDirection="locale"
             android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/confirm_password_error_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/rubik_light"
+            android:textColor="#F44336"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
@@ -200,6 +268,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/form_container" />
 
+    <TextView
+        android:id="@+id/register_status_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="28dp"
+        android:fontFamily="@font/rubik_light"
+        android:gravity="center"
+        android:textColor="#F44336"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/register_button" />
+
     <LinearLayout
         android:id="@+id/signin_text_container"
         android:layout_width="wrap_content"
@@ -208,7 +292,7 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/register_button">
+        app:layout_constraintTop_toBottomOf="@id/register_status_text">
 
         <TextView
             android:layout_width="wrap_content"

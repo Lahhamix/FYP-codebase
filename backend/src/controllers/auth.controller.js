@@ -6,7 +6,7 @@ const wrap = fn => async (req, res, next) => {
 
 exports.register = wrap(async (req, res) => {
   const userId = await svc.register(req.body);
-  res.status(201).json({ message: 'Account created. Verification code sent to your email.', userId });
+  res.status(201).json({ userId });
 });
 
 exports.verifyEmail = wrap(async (req, res) => {

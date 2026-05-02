@@ -137,7 +137,7 @@ object LanguagePickerHelper {
     private fun flagEmojiFor(languageTag: String): String {
         return when (languageTag) {
             "en" -> "\uD83C\uDDEC\uD83C\uDDE7"
-            "ar" -> "\uD83C\uDDF8\uD83C\uDDE6"
+            "ar" -> "\uD83C\uDDF1\uD83C\uDDE7"
             "fr" -> "\uD83C\uDDEB\uD83C\uDDF7"
             else -> "\uD83C\uDF10"
         }

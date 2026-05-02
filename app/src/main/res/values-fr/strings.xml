@@ -258,7 +258,7 @@
     <string name="or">ou</string>
     <string name="oxygen_saturation">Saturation en oxygène</string>
     <string name="toast_fill_all_fields">Veuillez remplir tous les champs</string>
-    <string name="toast_password_min_length">Le mot de passe doit contenir au moins 6 caractères</string>
+    <string name="toast_password_min_length">Le mot de passe doit contenir au moins 8 caractères</string>
     <string name="toast_ble_permissions_required">Des autorisations sont requises pour scanner les appareils BLE</string>
     <string name="unknown_error">Inconnu</string>
     <string name="username">Nom d\'utilisateur</string>

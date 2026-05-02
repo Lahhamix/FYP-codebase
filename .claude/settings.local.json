@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(node --check src/app.js)",
+      "Bash(node --check src/services/auth.service.js)",
+      "Bash(node --check src/services/user.service.js)",
+      "Bash(node --check src/models/user.model.js)",
+      "PowerShell([System.Convert]::ToBase64String\\([System.Security.Cryptography.RandomNumberGenerator]::GetBytes\\(32\\)\\))",
+      "PowerShell($rng = [System.Security.Cryptography.RandomNumberGenerator]::Create\\(\\); $bytes = New-Object byte[] 32; $rng.GetBytes\\($bytes\\); [System.Convert]::ToBase64String\\($bytes\\))",
+      "Bash(node migrations/run.js)"
+    ]
+  }
+}

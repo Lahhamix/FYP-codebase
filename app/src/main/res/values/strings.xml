@@ -99,6 +99,7 @@
     <string name="app_lock_unavailable">App Lock is unavailable. Set up biometrics or a device screen lock first.</string>
     <string name="app_lock_prompt_title">Unlock SoleMate</string>
     <string name="app_lock_prompt_subtitle">Authenticate to access the app</string>
+    <string name="app_lock_use_pin">Use PIN</string>
 
     <string name="settings_privacy_data">Privacy &amp; Data</string>
     <string name="settings_privacy_desc">Manage your personal data sharing.</string>
@@ -322,11 +323,38 @@
     <string name="sign_in_title">Sign In</string>
     <string name="sign_up_title">Sign Up</string>
     <string name="to_solemate">To SoleMate</string>
+    <string name="email">Email</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="sign_in">Sign in</string>
     <string name="sign_up">Sign up</string>
+    <string name="error_no_internet">No internet connection. Please check your WiFi.</string>
+    <string name="error_server_generic">Something went wrong. Please try again later.</string>
+    <string name="error_too_many_requests">Too many attempts. Please wait before trying again.</string>
+    <string name="login_fields_required">Please enter your username/email and password.</string>
+
+    <string name="email_is_required">Email is required.</string>
+    <string name="invalid_email">Please enter a valid email address.</string>
+    <string name="username_is_required">Username is required.</string>
+    <string name="password_is_required">Password is required.</string>
+    <string name="password_too_weak">Password must be at least 8 characters.</string>
+    <string name="password_needs_complexity">Password must include an uppercase letter, a lowercase letter, a number, and a special character.</string>
+    <string name="password_needs_uppercase">Password must contain at least one uppercase letter.</string>
+    <string name="password_needs_lowercase">Password must contain at least one lowercase letter.</string>
+    <string name="password_needs_number">Password must contain at least one number.</string>
+    <string name="password_needs_special">Password must contain at least one special character.</string>
+    <string name="confirm_password_required">Please confirm your password.</string>
+    <string name="username_too_short">Username must be at least 3 characters.</string>
+    <string name="username_invalid_format">Username can only contain letters and numbers (no spaces or symbols).</string>
+    <string name="passwords_do_not_match">Passwords do not match.</string>
+    <string name="email_already_registered">This email is already registered.</string>
+    <string name="verification_code_empty">Please enter the verification code.</string>
+    <string name="verify_email_sending">Sending code...</string>
+    <string name="verify_email_verifying">Verifying...</string>
+    <string name="verify_email_code_sent">Verification code sent.</string>
+    <string name="verify_email_countdown">Resend available in %1$ds</string>
+    <string name="save">Save</string>
     <string name="forgot_password">Forgot your password ?</string>
     <string name="forgot_password_title">Reset Password</string>
     <string name="forgot_password_subtitle">Enter your username or email, then choose a new password.</string>
@@ -391,7 +419,7 @@
     <string name="toast_google_signin_failed">Google sign in failed. Please try again.</string>
     <string name="toast_biometric_unavailable">Biometric authentication is not available on this device.</string>
     <string name="toast_fill_all_fields">Please fill all fields</string>
-    <string name="toast_password_min_length">Password must be at least 6 characters.</string>
+    <string name="toast_password_min_length">Password must be at least 8 characters.</string>
     <string name="toast_passwords_no_match">Passwords do not match.</string>
     <string name="google_user">Google User</string>
     <string name="toast_google_signup_failed">Google sign up failed. Please try again.</string>

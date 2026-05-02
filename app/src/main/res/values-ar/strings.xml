@@ -235,7 +235,7 @@
     <string name="or">أو</string>
     <string name="oxygen_saturation">تشبع الأكسجين</string>
     <string name="toast_fill_all_fields">يُرجى ملء جميع الحقول</string>
-    <string name="toast_password_min_length">يجب أن تتكون كلمة المرور من 6 أحرف على الأقل</string>
+    <string name="toast_password_min_length">يجب أن تتكون كلمة المرور من 8 أحرف على الأقل</string>
     <string name="toast_ble_permissions_required">الأذونات مطلوبة للبحث عن أجهزة BLE</string>
     <string name="permissions_not_granted">لم يتم منح الأذونات. لا يمكن للتطبيق العمل بدونها</string>
     <string name="settings_privacy_policy">سياسة الخصوصية</string>

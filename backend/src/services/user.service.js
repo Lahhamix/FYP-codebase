@@ -1,6 +1,5 @@
-const bcrypt      = require('bcrypt');
-const userModel   = require('../models/user.model');
-const authService = require('./auth.service');
+const bcrypt    = require('bcrypt');
+const userModel = require('../models/user.model');
 
 function appError(msg, status) {
   return Object.assign(new Error(msg), { status });
@@ -34,9 +33,7 @@ exports.changeEmail = async (userId, newEmail) => {
   if (check.rows.length && check.rows[0].user_id !== userId) {
     throw appError('Email already registered.', 409);
   }
-  const userRes = await userModel.findById(userId);
   await userModel.updateEmail(userId, newEmail);
-  await authService.sendVerificationCode(userId, newEmail, userRes.rows[0]?.username);
 };
 
 exports.updateProfilePicture = async (userId, url) => {

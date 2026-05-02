@@ -11,6 +11,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.util.Patterns
@@ -433,20 +435,30 @@ class SettingsActivity : AppCompatActivity() {
             val updatedName = nameField.text?.toString()?.trim().orEmpty()
                 .ifBlank { getString(R.string.settings_default_name) }
 
-            val saved = prefs.edit()
-                .putString("username", updatedName)
-                .putString(KEY_PROFILE_IMAGE_PATH, pendingProfileImagePath)
-                .commit()
-
-            if (!saved) {
-                Toast.makeText(this, getString(R.string.toast_profile_update_failed), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            updateUsername()
-            updateProfileImage()
-            Toast.makeText(this, getString(R.string.toast_profile_updated), Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
+            applyButton.isEnabled = false
+            Thread {
+                val resp = ApiClient.authedPatch(
+                    this, "/users/me/username",
+                    JSONObject().put("username", updatedName)
+                )
+                Handler(Looper.getMainLooper()).post {
+                    applyButton.isEnabled = true
+                    if (resp.code == 409) {
+                        val err = resp.body?.optString("error") ?: "Username already taken."
+                        Toast.makeText(this, err, Toast.LENGTH_LONG).show()
+                        return@post
+                    }
+                    prefs.edit()
+                        .putString("username", updatedName)
+                        .putString(KEY_PROFILE_IMAGE_PATH, pendingProfileImagePath)
+                        .apply()
+                    SessionManager.updateUsername(this, updatedName)
+                    updateUsername()
+                    updateProfileImage()
+                    Toast.makeText(this, getString(R.string.toast_profile_updated), Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            }.start()
         }
 
         dialog.setOnDismissListener {
@@ -697,15 +709,9 @@ class SettingsActivity : AppCompatActivity() {
     private fun handleAppLockToggleChanged(isChecked: Boolean) {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
-        if (!BiometricAuthHelper.isAppLockAvailable(this)) {
-            Toast.makeText(this, getString(R.string.app_lock_unavailable), Toast.LENGTH_SHORT).show()
-            setAppLockSwitchChecked(prefs.getBoolean(KEY_APP_LOCK_ENABLED, false))
-            return
-        }
-
         if (!isChecked) {
             // Require authentication to turn OFF app lock
-            BiometricAuthHelper.authenticateForAppLock(
+            AppLockManager.authenticateForUnlock(
                 activity = this,
                 onSuccess = {
                     prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, false).apply()
@@ -762,13 +768,22 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun startAppLockEnrollment() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        BiometricAuthHelper.authenticateForAppLock(
+        AppLockManager.ensurePinExists(
             activity = this,
             onSuccess = {
-                prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, true).apply()
-                setAppLockSwitchChecked(true)
-                SolemateApplication.markSessionUnlocked()
-                Toast.makeText(this, getString(R.string.app_lock_enabled), Toast.LENGTH_SHORT).show()
+                AppLockManager.authenticateForUnlock(
+                    activity = this,
+                    onSuccess = {
+                        prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, true).apply()
+                        setAppLockSwitchChecked(true)
+                        AppLockManager.markSessionUnlocked()
+                        Toast.makeText(this, getString(R.string.app_lock_enabled), Toast.LENGTH_SHORT).show()
+                    },
+                    onFailure = {
+                        setAppLockSwitchChecked(false)
+                        Toast.makeText(this, getString(R.string.app_lock_auth_cancelled), Toast.LENGTH_SHORT).show()
+                    }
+                )
             },
             onFailure = {
                 setAppLockSwitchChecked(false)
@@ -2271,7 +2286,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun flagEmojiFor(languageTag: String): String {
         return when (languageTag) {
             "en" -> "\uD83C\uDDEC\uD83C\uDDE7"
-            "ar" -> "\uD83C\uDDF8\uD83C\uDDE6"
+            "ar" -> "\uD83C\uDDF1\uD83C\uDDE7"
             "fr" -> "\uD83C\uDDEB\uD83C\uDDF7"
             else -> "\uD83C\uDF10"
         }

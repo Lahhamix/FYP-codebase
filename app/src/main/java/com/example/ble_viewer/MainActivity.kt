@@ -222,6 +222,13 @@ class MainActivity : AppCompatActivity() {
                             heartStatus.text = heartRateState(bpm)
                             applyNeonChip(heartStatus, "#EC4D75")
                             VitalsHistoryStore.appendHeartRate(this@MainActivity, bpm)
+                            // Upload to backend
+                            ReadingsUploadService.uploadReading(this@MainActivity, 
+                                ReadingsUploadService.HealthReading(
+                                    heartRate = bpm,
+                                    recordedAt = ReadingsUploadService.getCurrentTimestamp()
+                                )
+                            )
                         }
                         spo2CharUuid.toString() -> {
                             val spo2 = AESCrypto.decryptSpO2(encryptedBytes).trim().toDoubleOrNull() ?: return@runOnUiThread
@@ -230,6 +237,13 @@ class MainActivity : AppCompatActivity() {
                             spo2Status.text = spo2State(spo2)
                             applyNeonChip(spo2Status, "#2D7EEA")
                             VitalsHistoryStore.appendSpo2(this@MainActivity, spo2)
+                            // Upload to backend
+                            ReadingsUploadService.uploadReading(this@MainActivity,
+                                ReadingsUploadService.HealthReading(
+                                    spo2 = spo2,
+                                    recordedAt = ReadingsUploadService.getCurrentTimestamp()
+                                )
+                            )
                         }
                         edemaCharUuid.toString() -> {
                             val edemaPayload = AESCrypto.decryptFlex(encryptedBytes).trim()
@@ -242,18 +256,41 @@ class MainActivity : AppCompatActivity() {
                             swellingStatus.text = state
                             swellingValueText.text = state
                             applyNeonChip(swellingStatus, "#2FAA96")
+                            // Upload to backend
+                            ReadingsUploadService.uploadReading(this@MainActivity,
+                                ReadingsUploadService.HealthReading(
+                                    swellingValue = edema,
+                                    recordedAt = ReadingsUploadService.getCurrentTimestamp()
+                                )
+                            )
                         }
                         stepsCharUuid.toString() -> {
                             val steps = AESCrypto.decryptSteps(encryptedBytes).trim()
                             if (steps.isEmpty() || steps.startsWith("DECRYPT_ERROR")) return@runOnUiThread
                             stepsText.text = steps
-                            steps.toIntOrNull()?.let { persistDailySteps(it) }
+                            steps.toIntOrNull()?.let { stepCount ->
+                                persistDailySteps(stepCount)
+                                // Upload to backend
+                                ReadingsUploadService.uploadReading(this@MainActivity,
+                                    ReadingsUploadService.HealthReading(
+                                        stepCount = stepCount,
+                                        recordedAt = ReadingsUploadService.getCurrentTimestamp()
+                                    )
+                                )
+                            }
                         }
                         motionCharUuid.toString() -> {
                             val raw = AESCrypto.decryptMotion(encryptedBytes).trim()
                             if (raw.isEmpty() || raw.startsWith("DECRYPT_ERROR")) return@runOnUiThread
                             stepsMotionStatus.text = motionStatusLabel(raw)
                             applyNeonChip(stepsMotionStatus, "#7E3EEA")
+                            // Upload to backend
+                            ReadingsUploadService.uploadReading(this@MainActivity,
+                                ReadingsUploadService.HealthReading(
+                                    motionStatus = raw,
+                                    recordedAt = ReadingsUploadService.getCurrentTimestamp()
+                                )
+                            )
                         }
                         ppgWaveCharUuid.toString() -> {
                             // Reassemble 625 int32 waveform window (2500 bytes) sent in encrypted chunks.

@@ -56,14 +56,29 @@ class ForgotPasswordActivity : AppCompatActivity() {
             val newPassword = passwordEdit.text.toString()
             val confirmPassword = confirmPasswordEdit.text.toString()
 
+            val complexityError = when {
+                newPassword.length >= 8 && !newPassword.any { it.isUpperCase() }      -> getString(R.string.password_needs_uppercase)
+                newPassword.length >= 8 && !newPassword.any { it.isLowerCase() }      -> getString(R.string.password_needs_lowercase)
+                newPassword.length >= 8 && !newPassword.any { it.isDigit() }          -> getString(R.string.password_needs_number)
+                newPassword.length >= 8 && !newPassword.any { !it.isLetterOrDigit() } -> getString(R.string.password_needs_special)
+                else -> null
+            }
             when {
                 identifier.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty() -> {
                     messageView.visibility = View.VISIBLE
                     messageView.setText(R.string.toast_fill_all_fields)
                 }
-                newPassword.length < 6 -> {
+                newPassword.length < 8 -> {
                     messageView.visibility = View.VISIBLE
                     messageView.setText(R.string.toast_password_min_length)
+                }
+                complexityError != null -> {
+                    messageView.visibility = View.VISIBLE
+                    messageView.text = complexityError
+                }
+                confirmPassword.isBlank() -> {
+                    messageView.visibility = View.VISIBLE
+                    messageView.setText(R.string.confirm_password_required)
                 }
                 newPassword != confirmPassword -> {
                     messageView.visibility = View.VISIBLE
@@ -74,9 +89,11 @@ class ForgotPasswordActivity : AppCompatActivity() {
                     messageView.text = getString(R.string.toast_forgot_password_account_not_found)
                 }
                 else -> {
+                    val storedPassword = PasswordSecurity.createStoredPassword(newPassword)
                     getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                         .edit()
-                        .putString("password", newPassword)
+                        .putString("password", storedPassword.hash)
+                        .putString("password_salt", storedPassword.salt)
                         .apply()
 
                     Toast.makeText(this, getString(R.string.toast_forgot_password_updated), Toast.LENGTH_SHORT).show()
