@@ -10,6 +10,10 @@ async function run() {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // Drop everything and start clean
+    await client.query('DROP SCHEMA public CASCADE');
+    await client.query('CREATE SCHEMA public');
+    await client.query('GRANT ALL ON SCHEMA public TO PUBLIC');
     await client.query(sql);
     await client.query('COMMIT');
     console.log('Migration complete.');

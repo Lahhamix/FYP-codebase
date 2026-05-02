@@ -1,0 +1,8 @@
+
+================================================================================
+[2026-05-02T06:21:50.593Z]
+To: test1777702909865@example.com
+Subject: Verify Your SoleMate Account
+
+Body:
+Your SoleMate verification code is: 906930. It expires in 10 minutes.
