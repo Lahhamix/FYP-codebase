@@ -1,6 +1,10 @@
 const env = require('../config/env');
 
 async function send({ to, subject, text, html }) {
+  if (env.USE_LOCAL_EMAIL) {
+    console.log(`[EMAIL] To: ${to} | Subject: ${subject}\n${text}`);
+    return;
+  }
   const res = await fetch(`${env.SENDGRID_API_BASE}/v3/mail/send`, {
     method:  'POST',
     headers: {

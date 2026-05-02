@@ -5,10 +5,13 @@ const required = [
   'DATABASE_URL',
   'JWT_SECRET',
   'REFRESH_SECRET',
-  'SENDGRID_API_KEY',
-  'SENDGRID_FROM_EMAIL',
   'GOOGLE_CLIENT_ID',
 ];
+
+// SendGrid is only required when not using local email logging
+if (process.env.USE_LOCAL_EMAIL !== 'true') {
+  required.push('SENDGRID_API_KEY', 'SENDGRID_FROM_EMAIL');
+}
 
 for (const key of required) {
   if (!process.env[key]) throw new Error(`Missing required env var: ${key}`);
@@ -27,4 +30,5 @@ module.exports = {
   SENDGRID_API_BASE:   (process.env.SENDGRID_API_BASE_URL || 'https://api.sendgrid.com').replace(/\/$/, ''),
   GOOGLE_CLIENT_ID:    process.env.GOOGLE_CLIENT_ID,
   UPLOAD_DIR:          process.env.UPLOAD_DIR || 'uploads',
+  USE_LOCAL_EMAIL:     process.env.USE_LOCAL_EMAIL === 'true',
 };
