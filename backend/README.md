@@ -24,7 +24,20 @@ Backend health check:
 
 - `GET http://localhost:3000/health` should return `{ "ok": true }`
 
-## 3) Make app use one shared backend URL
+## 3) Email verification API
+
+The backend now exposes two endpoints for the Android app:
+
+- `POST /auth/request-email-verification`
+	- Body: `{ "email": "name@example.com", "username": "Jane" }`
+	- Sends a verification email and starts the resend cooldown.
+- `POST /auth/verify-email-code`
+	- Body: `{ "email": "name@example.com", "code": "123456" }`
+	- Verifies the code, marks the email as verified, and invalidates the pending code.
+
+The verification email uses the SoleMate HTML template bundled in `server.js`.
+
+## 4) Make app use one shared backend URL
 
 Set one public backend URL in project `gradle.properties` (checked into git):
 
