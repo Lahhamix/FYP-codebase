@@ -1,12 +1,12 @@
 const http = require('http');
 
 const data = JSON.stringify({
-  email: 'test@example.com',
-  username: 'testuser123',
-  password: 'TestPass@123'
-});
   email: 'test' + Date.now() + '@example.com',
   username: 'testuser' + Date.now(),
+  password: 'TestPass@123'
+});
+
+const options = {
   hostname: 'localhost',
   port: 3000,
   path: '/auth/register',

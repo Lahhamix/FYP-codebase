@@ -34,24 +34,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        app:boxBackgroundColor="#F4F7FA"
+        app:boxBackgroundMode="none"
         app:boxCornerRadiusBottomEnd="12dp"
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusTopStart="12dp"
-        app:boxStrokeColor="#DEE5EC"
-        app:boxStrokeWidth="1dp"
-        app:hintTextColor="#0D3B66"
-        app:helperTextTextColor="#E74C3C">
+        app:boxCornerRadiusTopStart="12dp">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/dialog_email_input"
             android:layout_width="match_parent"
             android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:singleLine="true"
             android:fontFamily="@font/roboto_medium"
-            android:hint="@string/verify_email_edit_hint"
+            android:background="@drawable/auth_input_outline"
             android:inputType="textEmailAddress"
-            android:maxLines="1"
             android:paddingHorizontal="12dp"
             android:textColor="#1A1A1A"
             android:textSize="14sp" />

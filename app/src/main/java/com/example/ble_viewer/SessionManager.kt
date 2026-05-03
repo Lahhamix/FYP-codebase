@@ -22,7 +22,8 @@ object SessionManager {
         username: String,
         email: String,
         displayName: String? = null,
-        profilePictureUrl: String? = null
+        profilePictureUrl: String? = null,
+        authProvider: String = "local"
     ) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
             putString(KEY_ACCESS_TOKEN,    accessToken)
@@ -32,6 +33,7 @@ object SessionManager {
             putString(KEY_EMAIL,           email)
             putString(KEY_DISPLAY_NAME,    displayName)
             putString(KEY_PROFILE_PIC_URL, profilePictureUrl)
+            putString("auth_provider",     authProvider)
         }
         // Keep legacy prefs in sync so existing screens continue to work
         context.getSharedPreferences("SolematePrefs", Context.MODE_PRIVATE).edit {
@@ -39,7 +41,7 @@ object SessionManager {
             putString("email",          email)
             putBoolean("is_registered", true)
             putBoolean("is_logged_in",  true)
-            putString("auth_provider",  "local")
+            putString("auth_provider",  authProvider)
             if (displayName != null)       putString("display_name",         displayName)
             if (profilePictureUrl != null) putString("server_profile_picture", profilePictureUrl)
         }
@@ -61,6 +63,15 @@ object SessionManager {
         }
     }
 
+    fun updateDisplayName(context: Context, displayName: String?) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putString(KEY_DISPLAY_NAME, displayName)
+        }
+        context.getSharedPreferences("SolematePrefs", Context.MODE_PRIVATE).edit {
+            putString("display_name", displayName)
+        }
+    }
+
     fun getAccessToken(context: Context): String? =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_ACCESS_TOKEN, null)
 
@@ -72,6 +83,9 @@ object SessionManager {
 
     fun getUsername(context: Context): String? =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_USERNAME, null)
+
+    fun getAuthProvider(context: Context): String =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("auth_provider", "local") ?: "local"
 
     fun getEmail(context: Context): String? =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_EMAIL, null)

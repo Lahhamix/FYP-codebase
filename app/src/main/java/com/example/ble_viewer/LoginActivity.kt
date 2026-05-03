@@ -110,8 +110,9 @@ class LoginActivity : AppCompatActivity() {
                                 userId            = user.optString("id"),
                                 username          = user.optString("username"),
                                 email             = user.optString("email"),
-                                displayName       = user.optString("displayName").ifBlank { null },
-                                profilePictureUrl = user.optString("profilePictureUrl").ifBlank { null }
+                                displayName       = user.optString("displayName").takeIf { it.isNotBlank() && it != "null" },
+                                profilePictureUrl = user.optString("profilePictureUrl").takeIf { it.isNotBlank() && it != "null" },
+                                authProvider      = "local"
                             )
                             sharedPref.edit().putBoolean(KEY_REMEMBER_ME, rememberMeSelected).apply()
                             proceedToMainApp()
@@ -181,8 +182,9 @@ class LoginActivity : AppCompatActivity() {
                             userId            = user.optString("id"),
                             username          = user.optString("username"),
                             email             = user.optString("email"),
-                            displayName       = user.optString("displayName").ifBlank { null },
-                            profilePictureUrl = user.optString("profilePictureUrl").ifBlank { null }
+                            displayName       = user.optString("displayName").takeIf { it.isNotBlank() && it != "null" },
+                            profilePictureUrl = user.optString("profilePictureUrl").takeIf { it.isNotBlank() && it != "null" },
+                            authProvider      = "google"
                         )
                         proceedToMainApp()
                     } else {

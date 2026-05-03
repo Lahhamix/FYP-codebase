@@ -27,7 +27,7 @@
             android:id="@+id/logo_card"
             android:layout_width="110dp"
             android:layout_height="110dp"
-            android:layout_marginTop="190dp"
+            android:layout_marginTop="150dp"
             app:cardBackgroundColor="@android:color/white"
             app:cardCornerRadius="22dp"
             app:cardElevation="6dp"
@@ -109,15 +109,14 @@
                 android:layout_height="48dp"
                 android:layout_marginBottom="4dp"
                 android:background="@drawable/auth_input_outline"
+                android:ellipsize="end"
                 android:fontFamily="@font/rubik_medium"
                 android:gravity="center_vertical"
-                android:maxLength="6"
+                android:maxLines="2"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:singleLine="true"
                 android:textColor="@color/dark_blue"
                 android:textColorHint="@color/text_hint"
-                android:textCursorDrawable="@drawable/text_cursor"
                 android:textSize="15sp" />
 
         </LinearLayout>

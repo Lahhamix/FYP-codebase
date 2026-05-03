@@ -29,12 +29,12 @@ object ReadingsUploadService {
     fun uploadReading(context: Context, reading: HealthReading) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val token = AuthManager.getAccessToken(context) ?: run {
+                val token = SessionManager.getAccessToken(context) ?: run {
                     android.util.Log.w(TAG, "No access token available")
                     return@launch
                 }
-                
-                val url = URL("${ApiConfig.BASE_URL}/readings")
+
+                val url = URL("${ApiClient.baseUrl(context)}/readings")
                 val connection = url.openConnection() as HttpURLConnection
                 
                 connection.requestMethod = "POST"

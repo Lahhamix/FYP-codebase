@@ -28,6 +28,7 @@
     <string name="edit_profile_name_hint">Your name</string>
     <string name="edit_profile_change_photo">Change profile photo</string>
     <string name="edit_profile_change_username">Change username</string>
+    <string name="edit_profile_change_display_name">Display name</string>
     <string name="edit_profile_choose_gallery">Upload from gallery</string>
     <string name="edit_profile_take_photo">Take photo</string>
     <string name="edit_profile_remove_photo">Remove photo</string>
@@ -350,6 +351,16 @@
     <string name="passwords_do_not_match">Passwords do not match.</string>
     <string name="email_already_registered">This email is already registered.</string>
     <string name="verification_code_empty">Please enter the verification code.</string>
+    <string name="verify_email_title">Verify Email</string>
+    <string name="verify_email_message">We sent a verification code to your email.</string>
+    <string name="verify_email_current_label">Currently verifying</string>
+    <string name="verify_email_edit">Edit Email</string>
+    <string name="verify_email_code_label">Verification code</string>
+    <string name="verify_email_button">Verify</string>
+    <string name="verify_email_resend">Resend Code</string>
+    <string name="verify_email_edit_title">Edit Email</string>
+    <string name="verify_email_edit_message">Enter the new email address you want to verify.</string>
+    <string name="verify_email_edit_hint">name@example.com</string>
     <string name="verify_email_sending">Sending code...</string>
     <string name="verify_email_verifying">Verifying...</string>
     <string name="verify_email_code_sent">Verification code sent.</string>

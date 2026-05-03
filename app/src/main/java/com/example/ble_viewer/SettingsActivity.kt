@@ -121,9 +121,11 @@ class SettingsActivity : AppCompatActivity() {
         if (isGranted) {
             setDeviceAlertsSwitchChecked(true)
             prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, true).apply()
+            patchSettings("notifications_enabled" to true)
         } else {
             setDeviceAlertsSwitchChecked(false)
             prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, false).apply()
+            patchSettings("notifications_enabled" to false)
             Toast.makeText(this, getString(R.string.toast_notifications_permission_denied), Toast.LENGTH_SHORT).show()
         }
     }
@@ -226,6 +228,8 @@ class SettingsActivity : AppCompatActivity() {
         appLockSwitch = findViewById(R.id.settings_app_lock_switch)
         voiceReadHintsRow = findViewById(R.id.settings_voice_read_hints_row)
         updateUsername()
+        syncProfileFromServer()
+        syncSettingsFromServer()
         updateProfileImage()
         updateLanguageChip()
         updateAutoShareSummary()
@@ -369,16 +373,18 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateUsername() {
-        val username = getSharedPreferences("SolematePrefs", MODE_PRIVATE)
-            .getString("username", "Jane Salam")
-            ?: "Jane Salam"
-        settingsUsername.text = username
+        val isGoogle    = SessionManager.getAuthProvider(this) == "google"
+        val displayName = SessionManager.getDisplayName(this)
+        val username    = SessionManager.getUsername(this)
+            ?: getSharedPreferences("SolematePrefs", MODE_PRIVATE).getString("username", "").orEmpty()
 
-        val email = getSharedPreferences("SolematePrefs", MODE_PRIVATE)
-            .getString("google_email", null)
-            ?.trim()
-            .orEmpty()
+        settingsUsername.text = if (isGoogle) {
+            displayName?.substringBefore(' ')?.takeIf { it.isNotBlank() }.orEmpty()
+        } else {
+            displayName?.takeIf { it.isNotBlank() } ?: username
+        }
 
+        val email = SessionManager.getEmail(this)?.trim().orEmpty()
         if (email.isNotEmpty()) {
             settingsEmail.text = email
             settingsEmail.visibility = VISIBLE
@@ -386,6 +392,105 @@ class SettingsActivity : AppCompatActivity() {
             settingsEmail.text = ""
             settingsEmail.visibility = GONE
         }
+    }
+
+    private fun syncProfileFromServer() {
+        Thread {
+            val resp = ApiClient.authedGet(this, "/users/me")
+            if (resp.code !in 200..299) return@Thread
+            val body = resp.body ?: return@Thread
+            val username = body.optString("username").takeIf { it.isNotBlank() && it != "null" }
+            val displayName = body.optJSONObject("profile")
+                ?.optString("display_name")
+                ?.takeIf { it.isNotBlank() && it != "null" }
+            if (username != null) SessionManager.updateUsername(this, username)
+            SessionManager.updateDisplayName(this, displayName)
+            Handler(Looper.getMainLooper()).post { updateUsername() }
+        }.start()
+    }
+
+    private fun patchSettings(vararg pairs: Pair<String, Any>) {
+        if (pairs.isEmpty()) return
+        Thread {
+            val body = JSONObject()
+            pairs.forEach { (key, value) -> body.put(key, value) }
+            ApiClient.authedPatch(this, "/settings", body)
+        }.start()
+    }
+
+    private fun syncSettingsFromServer() {
+        // Snapshot local values before the network call so we can detect user changes
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val snapNotif      = prefs.getBoolean(KEY_DEVICE_ALERTS_ENABLED, true)
+        val snapVoice      = prefs.getBoolean(KEY_VOICE_READ_HINTS_ENABLED, false)
+        val snapAutoShare  = prefs.getBoolean(KEY_AUTO_SHARE_ENABLED, false)
+        val snapAppLock    = prefs.getBoolean(KEY_APP_LOCK_ENABLED, false)
+        val snapTextSize   = TextSizeScaleManager.getMode(this)
+        val snapLanguage   = currentLanguageTag()
+
+        Thread {
+            val resp = ApiClient.authedGet(this, "/settings")
+            if (resp.code !in 200..299) return@Thread
+            val body = resp.body ?: return@Thread
+
+            val serverNotif     = if (!body.isNull("notifications_enabled")) body.optBoolean("notifications_enabled") else null
+            val serverVoice     = if (!body.isNull("voice_hints_enabled"))    body.optBoolean("voice_hints_enabled")    else null
+            val serverAutoShare = if (!body.isNull("auto_share_enabled"))     body.optBoolean("auto_share_enabled")     else null
+            val serverAppLock   = if (!body.isNull("app_lock_enabled"))       body.optBoolean("app_lock_enabled")       else null
+            val serverLanguage  = body.optString("language",  "").takeIf { it.isNotBlank() && it != "null" }
+            val serverTextSize  = body.optString("text_size", "").takeIf { it.isNotBlank() && it != "null" }
+
+            val serverTextSizeMode = when (serverTextSize) {
+                "large"       -> TextSizeScaleManager.MODE_LARGE
+                "extra_large" -> TextSizeScaleManager.MODE_EXTRA_LARGE
+                "standard"    -> TextSizeScaleManager.MODE_STANDARD
+                else          -> null
+            }
+            val serverAppLockEffective = serverAppLock?.let { it && BiometricAuthHelper.isBiometricAvailable(this) }
+
+            // Read current prefs again to check for user changes since snapshot
+            val cur  = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val edit = cur.edit()
+
+            val applyNotif     = serverNotif     != null && cur.getBoolean(KEY_DEVICE_ALERTS_ENABLED, true)  == snapNotif
+            val applyVoice     = serverVoice     != null && cur.getBoolean(KEY_VOICE_READ_HINTS_ENABLED, false) == snapVoice
+            val applyAutoShare = serverAutoShare != null && cur.getBoolean(KEY_AUTO_SHARE_ENABLED, false)  == snapAutoShare
+            val applyAppLock   = serverAppLockEffective != null && cur.getBoolean(KEY_APP_LOCK_ENABLED, false) == snapAppLock
+            val applyTextSize  = serverTextSizeMode != null && TextSizeScaleManager.getMode(this) == snapTextSize
+            val applyLanguage  = serverLanguage != null && currentLanguageTag() == snapLanguage
+
+            if (applyNotif)     edit.putBoolean(KEY_DEVICE_ALERTS_ENABLED, serverNotif!!)
+            if (applyVoice)     edit.putBoolean(KEY_VOICE_READ_HINTS_ENABLED, serverVoice!!)
+            if (applyAutoShare) edit.putBoolean(KEY_AUTO_SHARE_ENABLED, serverAutoShare!!)
+            if (applyAppLock)   edit.putBoolean(KEY_APP_LOCK_ENABLED, serverAppLockEffective!!)
+            if (applyTextSize)  edit.putInt(TextSizeScaleManager.KEY_TEXT_SIZE_MODE, serverTextSizeMode!!)
+            edit.apply()
+
+            Handler(Looper.getMainLooper()).post {
+                if (applyNotif) {
+                    suppressDeviceAlertsToggleCallback = true
+                    deviceAlertsSwitch.setOn(serverNotif!!)
+                    suppressDeviceAlertsToggleCallback = false
+                }
+                if (applyVoice) {
+                    suppressVoiceReadToggleCallback = true
+                    voiceReadHintsSwitch.setOn(serverVoice!!)
+                    suppressVoiceReadToggleCallback = false
+                }
+                if (applyAppLock)   setAppLockSwitchChecked(serverAppLockEffective!!)
+                if (applyAutoShare) {
+                    setAutoShareSwitchChecked(serverAutoShare!!)
+                    updateAutoShareSummary()
+                }
+                if (applyTextSize) {
+                    textSizeSlider.progress = serverTextSizeMode!!
+                    applyTextSizeMode(serverTextSizeMode)
+                }
+                if (applyLanguage && serverLanguage != currentLanguageTag()) {
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(serverLanguage!!))
+                }
+            }
+        }.start()
     }
 
     private fun updateProfileImage() {
@@ -405,8 +510,8 @@ class SettingsActivity : AppCompatActivity() {
         val cancelButton = dialogView.findViewById<MaterialButton>(R.id.edit_profile_dialog_cancel_button)
         val applyButton = dialogView.findViewById<MaterialButton>(R.id.edit_profile_dialog_apply_button)
 
-        val currentName = prefs.getString("username", getString(R.string.settings_default_name))
-            ?: getString(R.string.settings_default_name)
+        val username = SessionManager.getUsername(this).orEmpty()
+        val currentName = SessionManager.getDisplayName(this)?.takeIf { it.isNotBlank() } ?: username
         val currentImagePath = prefs.getString(KEY_PROFILE_IMAGE_PATH, null)
 
         nameField.setText(currentName)
@@ -421,11 +526,7 @@ class SettingsActivity : AppCompatActivity() {
 
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        val openImagePicker = {
-            showProfileImageSourceOptions()
-        }
-
-        cameraButton.setOnClickListener { openImagePicker() }
+        cameraButton.setOnClickListener { showProfileImageSourceOptions() }
 
         cancelButton.setOnClickListener {
             dialog.dismiss()
@@ -433,26 +534,26 @@ class SettingsActivity : AppCompatActivity() {
 
         applyButton.setOnClickListener {
             val updatedName = nameField.text?.toString()?.trim().orEmpty()
-                .ifBlank { getString(R.string.settings_default_name) }
+            if (updatedName.isBlank()) {
+                nameField.error = getString(R.string.edit_profile_name_hint)
+                return@setOnClickListener
+            }
 
             applyButton.isEnabled = false
             Thread {
                 val resp = ApiClient.authedPatch(
-                    this, "/users/me/username",
-                    JSONObject().put("username", updatedName)
+                    this, "/users/me",
+                    JSONObject().put("display_name", updatedName)
                 )
                 Handler(Looper.getMainLooper()).post {
                     applyButton.isEnabled = true
-                    if (resp.code == 409) {
-                        val err = resp.body?.optString("error") ?: "Username already taken."
+                    if (resp.code !in 200..299) {
+                        val err = resp.body?.optString("error") ?: getString(R.string.toast_profile_update_failed)
                         Toast.makeText(this, err, Toast.LENGTH_LONG).show()
                         return@post
                     }
-                    prefs.edit()
-                        .putString("username", updatedName)
-                        .putString(KEY_PROFILE_IMAGE_PATH, pendingProfileImagePath)
-                        .apply()
-                    SessionManager.updateUsername(this, updatedName)
+                    SessionManager.updateDisplayName(this, updatedName)
+                    prefs.edit().putString(KEY_PROFILE_IMAGE_PATH, pendingProfileImagePath).apply()
                     updateUsername()
                     updateProfileImage()
                     Toast.makeText(this, getString(R.string.toast_profile_updated), Toast.LENGTH_SHORT).show()
@@ -611,6 +712,7 @@ class SettingsActivity : AppCompatActivity() {
             }
 
             prefs.edit().putBoolean(KEY_DEVICE_ALERTS_ENABLED, isChecked).apply()
+            patchSettings("notifications_enabled" to isChecked)
         }
         findViewById<LinearLayout>(R.id.settings_device_alerts_row).setOnClickListener {
             deviceAlertsSwitch.performClick()
@@ -634,6 +736,7 @@ class SettingsActivity : AppCompatActivity() {
 
             if (!isChecked) {
                 prefs.edit().putBoolean(KEY_VOICE_READ_HINTS_ENABLED, false).apply()
+                patchSettings("voice_hints_enabled" to false)
                 stopDialogSpeech()
                 return@setOnToggledListener
             }
@@ -641,6 +744,7 @@ class SettingsActivity : AppCompatActivity() {
             val skipDialog = prefs.getBoolean(KEY_VOICE_READ_HINTS_DIALOG_SEEN, false)
             if (skipDialog) {
                 prefs.edit().putBoolean(KEY_VOICE_READ_HINTS_ENABLED, true).apply()
+                patchSettings("voice_hints_enabled" to true)
             } else {
                 showVoiceReadHintsDialog()
             }
@@ -691,6 +795,7 @@ class SettingsActivity : AppCompatActivity() {
                 .putBoolean(KEY_VOICE_READ_HINTS_ENABLED, true)
                 .putBoolean(KEY_VOICE_READ_HINTS_DIALOG_SEEN, doNotShowAgain.isChecked)
                 .apply()
+            patchSettings("voice_hints_enabled" to true)
             stopDialogSpeech()
             dialog.dismiss()
         }
@@ -715,6 +820,7 @@ class SettingsActivity : AppCompatActivity() {
                 activity = this,
                 onSuccess = {
                     prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, false).apply()
+                    patchSettings("app_lock_enabled" to false)
                     setAppLockSwitchChecked(false)
                     Toast.makeText(this, getString(R.string.app_lock_disabled), Toast.LENGTH_SHORT).show()
                 },
@@ -767,23 +873,21 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun startAppLockEnrollment() {
+        if (!BiometricAuthHelper.isBiometricAvailable(this)) {
+            setAppLockSwitchChecked(false)
+            Toast.makeText(this, getString(R.string.app_lock_unavailable), Toast.LENGTH_LONG).show()
+            return
+        }
+
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        AppLockManager.ensurePinExists(
-            activity = this,
+        AppLockManager.authenticateForUnlock(
+            activity  = this,
             onSuccess = {
-                AppLockManager.authenticateForUnlock(
-                    activity = this,
-                    onSuccess = {
-                        prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, true).apply()
-                        setAppLockSwitchChecked(true)
-                        AppLockManager.markSessionUnlocked()
-                        Toast.makeText(this, getString(R.string.app_lock_enabled), Toast.LENGTH_SHORT).show()
-                    },
-                    onFailure = {
-                        setAppLockSwitchChecked(false)
-                        Toast.makeText(this, getString(R.string.app_lock_auth_cancelled), Toast.LENGTH_SHORT).show()
-                    }
-                )
+                prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, true).apply()
+                patchSettings("app_lock_enabled" to true)
+                setAppLockSwitchChecked(true)
+                AppLockManager.markSessionUnlocked()
+                Toast.makeText(this, getString(R.string.app_lock_enabled), Toast.LENGTH_SHORT).show()
             },
             onFailure = {
                 setAppLockSwitchChecked(false)
@@ -1473,6 +1577,7 @@ class SettingsActivity : AppCompatActivity() {
                     return@setOnToggledListener
                 }
                 prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, true).apply()
+                patchSettings("auto_share_enabled" to true)
                 AutoShareScheduler.reschedule(this)
                 updateAutoShareSummary()
             } else {
@@ -1490,6 +1595,7 @@ class SettingsActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val recipients = getVerifiedAutoShareEmails(prefs).toList()
         prefs.edit().putBoolean(KEY_AUTO_SHARE_ENABLED, false).apply()
+        patchSettings("auto_share_enabled" to false)
         AutoShareScheduler.cancel(this)
         setAutoShareSwitchChecked(false)
         updateAutoShareSummary()
@@ -1778,7 +1884,7 @@ class SettingsActivity : AppCompatActivity() {
             $patientName has added you to receive health data via SoleMate.
             Verification code: $code
 
-            This code expires in 24 hours.
+            This code expires in 10 minutes.
         """.trimIndent()
 
         return sendEmailViaBackend(recipientEmail, "SoleMate Email Verification", plainText, html)
@@ -2015,7 +2121,7 @@ class SettingsActivity : AppCompatActivity() {
                     <p>Once the patient enters the code in the app, you will gain access to the shared data.</p>
                     <p>If you did not request access or if this message was sent in error, please disregard this email.</p>
                     <p>Thank you for your cooperation!</p>
-                    <p style="font-size: 14px; color: #555; font-style: italic;">Note: This verification code will expire in 24 hours.</p>
+                    <p style="font-size: 14px; color: #555; font-style: italic;">Note: This verification code will expire in 10 minutes.</p>
                 </div>
             </body>
             </html>
@@ -2211,7 +2317,15 @@ class SettingsActivity : AppCompatActivity() {
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                val mode = seekBar?.progress?.coerceIn(TextSizeScaleManager.MODE_STANDARD, TextSizeScaleManager.MODE_EXTRA_LARGE) ?: return
+                val textSizeStr = when (mode) {
+                    TextSizeScaleManager.MODE_LARGE       -> "large"
+                    TextSizeScaleManager.MODE_EXTRA_LARGE -> "extra_large"
+                    else                                  -> "standard"
+                }
+                patchSettings("text_size" to textSizeStr)
+            }
         })
     }
 
@@ -2293,6 +2407,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun applyLanguage(languageTag: String) {
+        patchSettings("language" to languageTag)
         if (languageTag == currentLanguageTag()) return
 
         val content = findViewById<View>(android.R.id.content)

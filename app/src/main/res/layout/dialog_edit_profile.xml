@@ -65,7 +65,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
         android:fontFamily="@font/roboto_medium"
-        android:text="@string/edit_profile_change_username"
+        android:text="@string/edit_profile_change_display_name"
 
         android:textColor="#2F3D4A"
         android:textSize="14sp" />

@@ -2,6 +2,7 @@ const rateLimit = require('express-rate-limit');
 
 const make = (windowMin, max, message) =>
   rateLimit({
+    skip:            () => process.env.NODE_ENV === 'test',
     windowMs:       windowMin * 60 * 1000,
     max,
     message:        { error: message },

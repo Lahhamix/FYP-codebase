@@ -42,8 +42,10 @@ object ApiClient {
             conn.disconnect()
             Response(code, body)
         } catch (e: Exception) {
-            Log.e("ApiClient", "$method $path: ${e.message}")
-            Response(-1, null)
+            Log.e("ApiClient", "$method $path: ${e.javaClass.simpleName} - ${e.message}")
+            // Return error with more detail
+            val errorBody = JSONObject().put("_error", e.message ?: e.toString())
+            Response(-1, errorBody)
         }
     }
 
@@ -76,5 +78,13 @@ object ApiClient {
         if (resp.code != 401) return resp
         val newToken = refreshAccessToken(context) ?: return Response(401, null)
         return patch(context, path, payload, newToken)
+    }
+
+    fun authedGet(context: Context, path: String): Response {
+        val token = SessionManager.getAccessToken(context) ?: return Response(401, null)
+        val resp  = get(context, path, token)
+        if (resp.code != 401) return resp
+        val newToken = refreshAccessToken(context) ?: return Response(401, null)
+        return get(context, path, newToken)
     }
 }

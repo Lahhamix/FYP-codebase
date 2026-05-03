@@ -112,6 +112,7 @@ object EmailVerificationManager {
 
         runOnBackground {
             val existingUserId = prefs(context).getString(KEY_PENDING_USER_ID, null)
+                ?.takeIf { it.isNotBlank() }
 
             if (existingUserId != null) {
                 val resp = ApiClient.post(
@@ -121,23 +122,39 @@ object EmailVerificationManager {
                         put("email",  registration.email)
                     }
                 )
-                handleSendCodeResponse(context, resp, registration.email, onResult)
-            } else {
-                val resp = ApiClient.post(
-                    context, "/auth/register",
-                    JSONObject().apply {
-                        put("username", registration.username)
-                        put("email",    registration.email)
-                        put("password", registration.password)
-                    }
-                )
-                if (resp.code == 201) {
-                    val userId = resp.body?.optString("userId").orEmpty()
-                    prefs(context).edit { putString(KEY_PENDING_USER_ID, userId) }
+                if (resp.code == 400 || resp.code == 404) {
+                    // Stale userId — pending record no longer exists; start fresh
+                    prefs(context).edit { remove(KEY_PENDING_USER_ID) }
+                    doFreshRegister(context, registration, onResult)
+                } else {
+                    handleSendCodeResponse(context, resp, registration.email, onResult)
                 }
-                handleSendCodeResponse(context, resp, registration.email, onResult)
+            } else {
+                doFreshRegister(context, registration, onResult)
             }
         }
+    }
+
+    private fun doFreshRegister(
+        context: Context,
+        registration: PendingRegistration,
+        onResult: (RequestCodeResult) -> Unit
+    ) {
+        val resp = ApiClient.post(
+            context, "/auth/register",
+            JSONObject().apply {
+                put("username", registration.username)
+                put("email",    registration.email)
+                put("password", registration.password)
+            }
+        )
+        if (resp.code == 201) {
+            val userId = resp.body?.optString("userId")?.takeIf { it.isNotBlank() }
+            if (userId != null) {
+                prefs(context).edit { putString(KEY_PENDING_USER_ID, userId) }
+            }
+        }
+        handleSendCodeResponse(context, resp, registration.email, onResult)
     }
 
     fun resendVerificationCode(
@@ -198,7 +215,9 @@ object EmailVerificationManager {
                     postResult(onResult, VerifyCodeResult.Success)
                 }
                 resp.code == -1 -> {
-                    postResult(onResult, VerifyCodeResult.NetworkError(context.getString(R.string.error_no_internet)))
+                    val errorDetail = resp.body?.optString("_error")
+                    val errorMsg = errorDetail ?: context.getString(R.string.error_no_internet)
+                    postResult(onResult, VerifyCodeResult.NetworkError(errorMsg))
                 }
                 resp.code == 400 -> {
                     val errCode = resp.body?.optString("code").orEmpty()
@@ -234,7 +253,10 @@ object EmailVerificationManager {
     ) {
         when {
             resp.code == -1 -> {
-                postResult(onResult, RequestCodeResult.NetworkError(context.getString(R.string.error_no_internet)))
+                // Extract actual error from response body if available
+                val errorDetail = resp.body?.optString("_error")
+                val errorMsg = errorDetail ?: context.getString(R.string.error_no_internet)
+                postResult(onResult, RequestCodeResult.NetworkError(errorMsg))
             }
             resp.code in 200..299 || resp.code == 201 -> {
                 val now               = System.currentTimeMillis()

@@ -8,17 +8,17 @@ import androidx.fragment.app.FragmentActivity
 
 object BiometricAuthHelper {
 
-    private val BIOMETRIC_AUTHENTICATORS = BiometricManager.Authenticators.BIOMETRIC_WEAK
+    private val AUTHENTICATORS =
+        BiometricManager.Authenticators.BIOMETRIC_WEAK or
+        BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
-    fun isBiometricAvailable(activity: Activity): Boolean {
-        return BiometricManager.from(activity).canAuthenticate(BIOMETRIC_AUTHENTICATORS) ==
+    fun isBiometricAvailable(activity: Activity): Boolean =
+        BiometricManager.from(activity).canAuthenticate(AUTHENTICATORS) ==
             BiometricManager.BIOMETRIC_SUCCESS
-    }
 
     fun authenticateWithBiometric(
         activity: FragmentActivity,
         onSuccess: () -> Unit,
-        onFallbackToPin: () -> Unit,
         onFailure: () -> Unit = {}
     ) {
         val prompt = BiometricPrompt(
@@ -30,14 +30,11 @@ object BiometricAuthHelper {
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
-                        errorCode == BiometricPrompt.ERROR_NO_BIOMETRICS ||
-                        errorCode == BiometricPrompt.ERROR_HW_UNAVAILABLE
-                    ) {
-                        onFallbackToPin()
-                    } else {
-                        onFailure()
-                    }
+                    onFailure()
+                }
+
+                override fun onAuthenticationFailed() {
+                    // individual attempt failed; BiometricPrompt handles retries internally
                 }
             }
         )
@@ -45,28 +42,9 @@ object BiometricAuthHelper {
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(activity.getString(R.string.app_lock_prompt_title))
             .setSubtitle(activity.getString(R.string.app_lock_prompt_subtitle))
-            .setAllowedAuthenticators(BIOMETRIC_AUTHENTICATORS)
-            .setNegativeButtonText(activity.getString(R.string.app_lock_use_pin))
+            .setAllowedAuthenticators(AUTHENTICATORS)
             .build()
 
         prompt.authenticate(promptInfo)
-    }
-
-    // Backward-compatible wrappers used by existing settings flow.
-    fun isAppLockAvailable(activity: FragmentActivity): Boolean {
-        return isBiometricAvailable(activity)
-    }
-
-    fun authenticateForAppLock(
-        activity: FragmentActivity,
-        onSuccess: () -> Unit,
-        onFailure: () -> Unit = {}
-    ) {
-        authenticateWithBiometric(
-            activity = activity,
-            onSuccess = onSuccess,
-            onFallbackToPin = onFailure,
-            onFailure = onFailure
-        )
     }
 }
