@@ -26,7 +26,16 @@ app.use('/gait',            require('./routes/gait.routes'));
 app.use('/alerts',          require('./routes/alert.routes'));
 app.use('/auto-share',      require('./routes/autoShare.routes'));
 app.use('/feedback',        require('./routes/feedback.routes'));
-app.use('/',                require('./routes/email.routes'));
+
+const emailSvc = require('./services/email.service');
+app.post('/send-email', async (req, res, next) => {
+  try {
+    const { to, subject, text, html } = req.body;
+    if (!to || !subject) return res.status(400).json({ error: 'Missing required fields: to, subject' });
+    await emailSvc.send({ to, subject, text, html });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
 
 app.get('/health', (_, res) => res.json({ ok: true, version: '2.0.0' }));
 
