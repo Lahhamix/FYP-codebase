@@ -1986,11 +1986,13 @@ class SettingsActivity : AppCompatActivity() {
                 put("html", html)
             }
 
+            val accessToken = SessionManager.getAccessToken(this)
             val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
+                if (accessToken != null) setRequestProperty("Authorization", "Bearer $accessToken")
                 connectTimeout = 15000
                 readTimeout = 15000
             }
