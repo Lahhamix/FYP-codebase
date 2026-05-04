@@ -22,6 +22,7 @@ exports.create = (userId, bleName, bleMac, firmwareVersion) =>
 
 exports.update = (deviceId, userId, fields) => {
   const keys   = Object.keys(fields);
+  if (!keys.length) return exports.findByIdAndUser(deviceId, userId);
   const values = Object.values(fields);
   const sets   = keys.map((k, i) => `${k} = $${i + 3}`).join(', ');
   return db.query(

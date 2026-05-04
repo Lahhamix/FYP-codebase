@@ -3,6 +3,8 @@
 -- Run via: node backend/migrations/reset.js
 -- ============================================================
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ── Core Users ───────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS users (
@@ -114,7 +116,8 @@ CREATE TABLE IF NOT EXISTS health_readings (
     spo2           NUMERIC(5,1),
     bp_systolic    NUMERIC(5,1),
     bp_diastolic   NUMERIC(5,1),
-    swelling_value NUMERIC(8,3),
+    -- Swelling can be a numeric score ("0.5") or an edema label from firmware ("none", "mild", ...).
+    swelling_value TEXT,
     step_count     INTEGER,
     motion_status  VARCHAR(50),
     recorded_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

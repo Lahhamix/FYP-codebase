@@ -9,10 +9,10 @@
 #include "key_exchange.h"
 #include "serial_log.h"
 
-// Pressure: ALWAYS encrypted (8 header + 16 ciphertext)
+// Pressure: PHBLE-compatible plain BLE packet (8 header + 12 packed 12-bit samples)
 #define PRESSURE_HEADER_SIZE 8
 #define PRESSURE_PAYLOAD_SIZE 12
-static const int kPressurePacketSize = PRESSURE_HEADER_SIZE + 16;  // 24
+static const int kPressurePacketSize = PRESSURE_HEADER_SIZE + PRESSURE_PAYLOAD_SIZE;  // 20
 
 // -----------------------------------------------------------------------------
 // BLE Services and Characteristics
@@ -58,7 +58,7 @@ BLECharacteristic edemaChar(
   kCharacteristicSize
 );
 
-// Pressure: 20-byte plain or 24-byte encrypted (kPressurePacketSize set above)
+// Pressure: 20-byte PHBLE-compatible plain BLE packets
 BLECharacteristic pressureChar(
   "9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00",
   BLERead | BLENotify,
@@ -210,6 +210,23 @@ void writeEncryptedValue(BLECharacteristic& characteristic, const EncryptedPaylo
   characteristic.writeValue(framedPayload, payload.length + 1);
 }
 
+static void writePressurePacket(uint16_t frameCounter, uint16_t startIndex, const uint16_t* samples, uint8_t sampleCount, uint8_t flags) {
+  uint8_t payload[PRESSURE_PAYLOAD_SIZE];
+  packSamples12(samples, sampleCount, payload);
+
+  uint8_t packet[kPressurePacketSize];
+  packet[0] = 0xA5;
+  packet[1] = 0x5A;
+  packet[2] = (uint8_t)(frameCounter & 0xFF);
+  packet[3] = (uint8_t)((frameCounter >> 8) & 0xFF);
+  packet[4] = (uint8_t)(startIndex & 0xFF);
+  packet[5] = (uint8_t)((startIndex >> 8) & 0xFF);
+  packet[6] = sampleCount;
+  packet[7] = flags;
+  memcpy(&packet[PRESSURE_HEADER_SIZE], payload, PRESSURE_PAYLOAD_SIZE);
+  pressureChar.writeValue(packet, kPressurePacketSize);
+}
+
 /** Called every few columns during pressure matrix scan — must BLE.poll() or GATT/service discovery can stall. */
 static void bleAndImuYield() {
   BLE.poll();
@@ -221,10 +238,33 @@ static void bleAndImuYield() {
 static bool g_plotMode = false;
 static uint32_t g_nextModeSwitchMs = 0;
 
+#if SENSOR_PPG_ENABLED
+// PPG waveform BLE chunk transmitter state (file-scope so we can reset on central disconnect).
+static bool s_ppgWaveBleTxActive = false;
+static int32_t s_ppgWaveTxBuf[PPG_WAVEFORM_COLLECT_SAMPLES];
+static uint16_t s_ppgWaveTxByteOffset = 0;
+static uint8_t s_ppgWaveTxTotalChunks = 0;
+static uint8_t s_ppgWaveTxChunkId = 0;
+static uint8_t s_ppgWaveTxCyclesLeft = 0;
+static uint32_t s_ppgWaveLastPacketMs = 0;
+
+static void reset_ppg_wave_ble_tx_state() {
+  s_ppgWaveBleTxActive = false;
+  s_ppgWaveTxByteOffset = 0;
+  s_ppgWaveTxTotalChunks = 0;
+  s_ppgWaveTxChunkId = 0;
+  s_ppgWaveTxCyclesLeft = 0;
+  s_ppgWaveLastPacketMs = 0;
+  memset(s_ppgWaveTxBuf, 0, sizeof(s_ppgWaveTxBuf));
+}
+#endif
+
 static void setPlotMode(bool enable) {
   if (g_plotMode == enable) return;
   g_plotMode = enable;
   if (g_plotMode) {
+    // Start every plot-mode window fresh so BLE later sends the first 625 samples from this activation.
+    ppg_waveform_collect_reset();
     ppg_set_metrics_enabled(false);
     ppg_set_plot_mode(true);
     g_nextModeSwitchMs = (uint32_t)millis() + (uint32_t)PLOT_MODE_DURATION_MS;
@@ -248,6 +288,18 @@ static void tickAutoPlotSchedule() {
   }
 }
 
+static void resetPlotScheduleForConnection() {
+#if SENSOR_PPG_ENABLED && PPG_WAVEFORM_STREAM_ENABLED
+  if (g_plotMode) {
+    ppg_set_plot_mode(false);
+  }
+  ppg_set_metrics_enabled(true);
+  ppg_waveform_collect_reset();
+#endif
+  g_plotMode = false;
+  g_nextModeSwitchMs = (uint32_t)millis() + (uint32_t)PLOT_MODE_FIRST_DELAY_MS;
+}
+
 void loop() {
   BLE.poll();  // Process BLE events (connection, writes, etc.)
   BLEDevice central = BLE.central();
@@ -258,14 +310,12 @@ void loop() {
 
     static bool pressureStreamingStarted = false;  // reset when disconnected (see below)
     static uint8_t ppgWaveFrameId = 0;
+    resetPlotScheduleForConnection();
 
     while (central.connected()) {
       tickAutoPlotSchedule();
-      // In plot mode, behave like ppg_waveform.ino: do not continuously service BLE.
-      // (Key exchange may still complete while in normal mode; plot mode is for waveform fidelity.)
-      if (!g_plotMode) {
-        BLE.poll();  // Must poll to receive Android's key exchange write
-      }
+      // Keep key exchange, CCCD writes, MTU negotiation, and notifications alive in both modes.
+      BLE.poll();
 
 #if SENSOR_PPG_ENABLED && PPG_WAVEFORM_STREAM_ENABLED
       // Stable 125 Hz serial waveform stream, processed like `ppg_waveform/ppg_waveform.ino`:
@@ -291,33 +341,34 @@ void loop() {
         while ((uint32_t)(nowUs - s_waveLastUs) >= periodUs && catchup < 8u) {
           s_waveLastUs += periodUs;
           catchup++;
-        uint32_t irLatest = 0;
-        // Fast non-blocking sample acquisition (no delay loops).
-        if (ppg_waveform_acquire_latest(&irLatest) || ppg_waveform_take_latest(&irLatest)) {
-          s_waveLastIr = irLatest;
-        } else {
-          irLatest = s_waveLastIr;
-        }
-        const float x = (float)irLatest;
-        if (!s_waveEmaInit) {
-          s_waveEma = x;
-          s_waveEmaInit = true;
-        } else {
-          s_waveEma = PPG_WAVEFORM_EMA_ALPHA * x + (1.0f - PPG_WAVEFORM_EMA_ALPHA) * s_waveEma;
-        }
-        long y = (long)s_waveEma;
+
+          uint32_t irLatest = 0;
+          // Fast non-blocking sample acquisition (no delay loops).
+          if (ppg_waveform_acquire_latest(&irLatest) || ppg_waveform_take_latest(&irLatest)) {
+            s_waveLastIr = irLatest;
+          } else {
+            irLatest = s_waveLastIr;
+          }
+          const float x = (float)irLatest;
+          if (!s_waveEmaInit) {
+            s_waveEma = x;
+            s_waveEmaInit = true;
+          } else {
+            s_waveEma = PPG_WAVEFORM_EMA_ALPHA * x + (1.0f - PPG_WAVEFORM_EMA_ALPHA) * s_waveEma;
+          }
+          long y = (long)s_waveEma;
 #if PPG_WAVEFORM_INVERT
-        y = -y;
+          y = -y;
 #endif
 #if PPG_WAVEFORM_TEST_MODE
-        s_waveOutputCount++;
+          s_waveOutputCount++;
 #else
-        Serial.println(y);
+          Serial.println(y);
 #endif
 
-        // Collect a full 625-sample window during plot mode for later BLE TX in normal mode.
-        // (Window is the exact processed signal you see in plot mode: EMA + optional invert.)
-        (void)ppg_waveform_collect_push((int32_t)y);
+          // Collect a full 625-sample window during plot mode for later BLE TX in normal mode.
+          // (Window is the exact processed signal you see in plot mode: EMA + optional invert.)
+          (void)ppg_waveform_collect_push((int32_t)y);
         }
       }
 
@@ -361,65 +412,69 @@ void loop() {
       // PPG waveform window BLE TX (time-sliced):
       // - captured during plot mode (625 int32 samples)
       // - sent in normal mode in small encrypted chunks so it doesn't disturb loop timing
-      static bool ppgWaveTxActive = false;
-      static int32_t ppgWaveTxBuf[PPG_WAVEFORM_COLLECT_SAMPLES];
-      static uint16_t ppgWaveTxByteOffset = 0;  // 0..(625*4)
-      static uint8_t ppgWaveTxTotalChunks = 0;
-      static uint8_t ppgWaveTxChunkId = 0;
-      static uint8_t ppgWaveTxCyclesLeft = 0;
-
-      if (!ppgWaveTxActive && ppg_waveform_collect_has_window()) {
-        if (ppg_waveform_collect_take(ppgWaveTxBuf)) {
-          ppgWaveTxActive = true;
-          ppgWaveTxByteOffset = 0;
-          ppgWaveTxChunkId = 0;
-          ppgWaveTxCyclesLeft = (uint8_t)PPG_WAVE_REPEAT_CYCLES;
+      if (!s_ppgWaveBleTxActive && ppg_waveform_collect_has_window()) {
+        if (ppg_waveform_collect_take(s_ppgWaveTxBuf)) {
+          s_ppgWaveBleTxActive = true;
+          s_ppgWaveTxByteOffset = 0;
+          s_ppgWaveTxChunkId = 0;
+          s_ppgWaveTxCyclesLeft = (uint8_t)PPG_WAVE_REPEAT_CYCLES;
+          s_ppgWaveLastPacketMs = 0;
           // Plaintext format (max 64 bytes):
           // [0]='P' [1]='W' [2]=frameId [3]=chunkId [4]=totalChunks [5]=dataLen [6]=0 [7]=0 [8..]=data
           const uint16_t totalBytes = (uint16_t)(PPG_WAVEFORM_COLLECT_SAMPLES * 4u); // 2500
-          const uint8_t dataMax = (uint8_t)((uint16_t)PPG_WAVE_SAMPLES_PER_CHUNK * 4u); // e.g. 5 samples -> 20 bytes
-          ppgWaveTxTotalChunks = (uint8_t)((totalBytes + (dataMax - 1u)) / dataMax);
+          const uint8_t dataMax = (uint8_t)((uint16_t)PPG_WAVE_SAMPLES_PER_CHUNK * 4u);
+          s_ppgWaveTxTotalChunks = (uint8_t)((totalBytes + (dataMax - 1u)) / dataMax);
           ppgWaveFrameId++;
         }
       }
 
-      if (ppgWaveTxActive) {
+      if (s_ppgWaveBleTxActive) {
         uint8_t sent = 0;
         const uint16_t totalBytes = (uint16_t)(PPG_WAVEFORM_COLLECT_SAMPLES * 4u);
         const uint8_t dataMax = (uint8_t)((uint16_t)PPG_WAVE_SAMPLES_PER_CHUNK * 4u);
-        const uint8_t* bytes = (const uint8_t*)ppgWaveTxBuf;
+        const uint8_t* bytes = (const uint8_t*)s_ppgWaveTxBuf;
 
-        while (ppgWaveTxByteOffset < totalBytes && sent < (uint8_t)PPG_WAVE_BLE_PACKETS_PER_STEP) {
-          const uint16_t remaining = (uint16_t)(totalBytes - ppgWaveTxByteOffset);
+        while (s_ppgWaveTxByteOffset < totalBytes && sent < (uint8_t)PPG_WAVE_BLE_PACKETS_PER_STEP) {
+          const uint32_t nowTxMs = (uint32_t)millis();
+          if (PPG_WAVE_PACKET_SPACING_MS > 0u && s_ppgWaveLastPacketMs != 0u &&
+              (uint32_t)(nowTxMs - s_ppgWaveLastPacketMs) < (uint32_t)PPG_WAVE_PACKET_SPACING_MS) {
+            break;
+          }
+
+          const uint16_t remaining = (uint16_t)(totalBytes - s_ppgWaveTxByteOffset);
           const uint8_t dataLen = (remaining >= dataMax) ? dataMax : (uint8_t)remaining;
 
           uint8_t plain[64] = {0};
           plain[0] = (uint8_t)'P';
           plain[1] = (uint8_t)'W';
           plain[2] = ppgWaveFrameId;
-          plain[3] = ppgWaveTxChunkId;
-          plain[4] = ppgWaveTxTotalChunks;
+          plain[3] = s_ppgWaveTxChunkId;
+          plain[4] = s_ppgWaveTxTotalChunks;
           plain[5] = dataLen;
-          memcpy(&plain[8], &bytes[ppgWaveTxByteOffset], dataLen);
+          memcpy(&plain[8], &bytes[s_ppgWaveTxByteOffset], dataLen);
 
           EncryptedPayload enc = {};
           if (encryptPpgWaveChunk(plain, (size_t)(8u + dataLen), enc)) {
             writeEncryptedValue(ppgWaveChar, enc, "ppg_wave");
+            s_ppgWaveLastPacketMs = (uint32_t)millis();
+            BLE.poll();  // Keep ATT/notify pipeline serviced during bursty waveform TX
           }
 
-          ppgWaveTxByteOffset = (uint16_t)(ppgWaveTxByteOffset + (uint16_t)dataLen);
-          ppgWaveTxChunkId++;
+          s_ppgWaveTxByteOffset = (uint16_t)(s_ppgWaveTxByteOffset + (uint16_t)dataLen);
+          s_ppgWaveTxChunkId++;
           sent++;
         }
 
-        if (ppgWaveTxByteOffset >= totalBytes) {
+        if (s_ppgWaveTxByteOffset >= totalBytes) {
           // One full cycle finished. Repeat the SAME frame again to fill in any missed chunks on Android.
-          if (ppgWaveTxCyclesLeft > 1u) {
-            ppgWaveTxCyclesLeft--;
-            ppgWaveTxByteOffset = 0;
-            ppgWaveTxChunkId = 0;
+          if (s_ppgWaveTxCyclesLeft > 1u) {
+            s_ppgWaveTxCyclesLeft--;
+            s_ppgWaveTxByteOffset = 0;
+            s_ppgWaveTxChunkId = 0;
+            s_ppgWaveLastPacketMs = 0;
           } else {
-            ppgWaveTxActive = false;
+            reset_ppg_wave_ble_tx_state();
+            ppg_waveform_collect_reset();
           }
         }
       }
@@ -469,21 +524,8 @@ void loop() {
       IMUData imuData = {};
 #endif
 
-#if SENSOR_PRESSURE_ENABLED
-      // Non-blocking pressure scan: do a few columns per loop.
-      static bool pressureScanStarted = false;
-      if (!pressureScanStarted) {
-        pressure_scan_begin();
-        pressureScanStarted = true;
-      }
-      pressure_scan_step(PRESSURE_SCAN_COLS_PER_STEP, bleAndImuYield);
-
-      PressureFrame pressureFrame = {};
-      pressureFrame.available = pressure_take_frame(&pressureFrame);
-#else
       PressureFrame pressureFrame = {};
       pressureFrame.available = false;
-#endif
 
 #if SENSOR_IMU_ENABLED
       // Steps + motion: stream every loop tick (do NOT gate on imuData.available).
@@ -588,83 +630,66 @@ void loop() {
 #endif
 
 #if SENSOR_PRESSURE_ENABLED
-      // Pressure matrix (Python-style packets, rolling buffer on phone)
+      // Pressure matrix rolling stream: scan each PHBLE row and send it immediately.
       static uint16_t frameCounter = 0;
-      // TX state: send a few packets per loop iteration (non-blocking).
-      static bool txActive = false;
-      static PressureFrame txFrame;
-      static uint16_t txStartIndex = 0;
-
-      if (!txActive && pressureFrame.available) {
-        txFrame = pressureFrame;
-        txStartIndex = 0;
-        txActive = true;
+      static bool pressureScanStarted = false;
+      if (!pressureScanStarted) {
+        pressure_scan_begin();
+        pressureScanStarted = true;
       }
 
-      if (txActive) {
-        if (!pressureStreamingStarted) {
-          LOG_PRESSURE(Serial.println(F("[PRESSURE] Streaming started (encrypted packets, Python-style headers).")));
-          pressureStreamingStarted = true;
-        }
-        // Min/max of raw frame (same style as Android Logcat stats)
-        uint16_t pMin = 0x0FFF, pMax = 0;
-        for (int i = 0; i < NUM_VALUES; i++) {
-          uint16_t v = txFrame.data[i] & 0x0FFF;
-          if (v < pMin) pMin = v;
-          if (v > pMax) pMax = v;
-        }
-        {
-          static uint32_t lastPressureLogMs = 0;
-          const uint32_t nowPlog = millis();
-          if ((uint32_t)(nowPlog - lastPressureLogMs) >= PRESSURE_LOG_PERIOD_MS) {
-            lastPressureLogMs = nowPlog;
-            LOG_PRESSURE(Serial.print(F("[PRESSURE] frame raw min=")));
-            LOG_PRESSURE(Serial.print(pMin));
-            LOG_PRESSURE(Serial.print(F(" max=")));
-            LOG_PRESSURE(Serial.println(pMax));
-          }
+      if (!pressureStreamingStarted) {
+        LOG_PRESSURE(Serial.println(F("[PRESSURE] Streaming started (rolling PHBLE row packets).")));
+        pressureStreamingStarted = true;
+      }
+
+      const uint8_t packetsPerRow = (uint8_t)((NUM_COLS + SAMPLES_PER_PACKET - 1) / SAMPLES_PER_PACKET);
+      uint8_t maxPacketsThisLoop = (uint8_t)PRESSURE_TX_PACKETS_PER_STEP;
+      if (maxPacketsThisLoop < packetsPerRow) {
+        maxPacketsThisLoop = packetsPerRow;
+      }
+#if SENSOR_PPG_ENABLED
+      if (s_ppgWaveBleTxActive && maxPacketsThisLoop > packetsPerRow) {
+        maxPacketsThisLoop = packetsPerRow;
+      }
+#endif
+
+      uint8_t rowsScanned = 0;
+      uint8_t packetsSent = 0;
+      while (rowsScanned < (uint8_t)PRESSURE_SCAN_COLS_PER_STEP &&
+             (uint8_t)(packetsSent + packetsPerRow) <= maxPacketsThisLoop) {
+        PressureRow row = {};
+        if (!pressure_scan_next_row(&row, bleAndImuYield) || !row.available) {
+          break;
         }
 
-        uint8_t packetsSent = 0;
-        while (txStartIndex < NUM_VALUES && packetsSent < (uint8_t)PRESSURE_TX_PACKETS_PER_STEP) {
+        for (uint8_t offset = 0; offset < NUM_COLS; offset = (uint8_t)(offset + SAMPLES_PER_PACKET)) {
           BLE.poll();
-          int remaining = NUM_VALUES - txStartIndex;
-          uint8_t sampleCount = (remaining >= SAMPLES_PER_PACKET) ? SAMPLES_PER_PACKET : remaining;
-
-          uint8_t payload[12];
-          packSamples12(&txFrame.data[txStartIndex], sampleCount, payload);
-
-          // 8-byte header (always plain)
-          uint8_t header[PRESSURE_HEADER_SIZE];
-          header[0] = 0xA5;
-          header[1] = 0x5A;
-          header[2] = (uint8_t)(frameCounter & 0xFF);
-          header[3] = (uint8_t)((frameCounter >> 8) & 0xFF);
-          header[4] = (uint8_t)(txStartIndex & 0xFF);
-          header[5] = (uint8_t)((txStartIndex >> 8) & 0xFF);
-          header[6] = sampleCount;
-          header[7] = (txStartIndex == 0) ? 0x01 : ((txStartIndex + sampleCount >= NUM_VALUES) ? 0x02 : 0x00);
-
-          uint8_t encryptedPayload[16];
-          size_t encryptedLen = 0;
-          if (encryptPressurePayload(payload, 12, encryptedPayload, &encryptedLen) && encryptedLen == 16) {
-            uint8_t packet[kPressurePacketSize];
-            memcpy(packet, header, PRESSURE_HEADER_SIZE);
-            memcpy(&packet[PRESSURE_HEADER_SIZE], encryptedPayload, 16);
-            pressureChar.writeValue(packet, kPressurePacketSize);
+          const uint8_t remaining = (uint8_t)(NUM_COLS - offset);
+          const uint8_t sampleCount = (remaining >= SAMPLES_PER_PACKET) ? SAMPLES_PER_PACKET : remaining;
+          const uint16_t startIndex = (uint16_t)(row.rowIndex * NUM_COLS + offset);
+          uint8_t flags = 0;
+          if (row.frameStart && offset == 0) {
+            flags |= 0x01;
           }
+          if (row.frameEnd && (uint8_t)(offset + sampleCount) >= NUM_COLS) {
+            flags |= 0x02;
+          }
+
+          writePressurePacket(frameCounter, startIndex, &row.data[offset], sampleCount, flags);
           if (PRESSURE_PACKET_DELAY_MS > 0) {
             delay(PRESSURE_PACKET_DELAY_MS);
           }
-          txStartIndex += SAMPLES_PER_PACKET;
           packetsSent++;
         }
 
-        if (txStartIndex >= NUM_VALUES) {
-          txActive = false;
+        if (row.frameEnd) {
           frameCounter++;
         }
+        rowsScanned++;
       }
+
+      pressureFrame.available = pressure_take_frame(&pressureFrame);
 #endif
 
 #if SENSOR_PPG_ENABLED
@@ -723,6 +748,12 @@ void loop() {
     }
 
     pressureStreamingStarted = false;  // so next connection prints "Streaming started" again
+#if SENSOR_PPG_ENABLED
+    reset_ppg_wave_ble_tx_state();
+#endif
+#if SENSOR_PPG_ENABLED && PPG_WAVEFORM_STREAM_ENABLED
+    ppg_waveform_collect_reset();
+#endif
     LOG_SYSTEM(Serial.println("🔌 Disconnected."));
     // Ensure peripheral resumes advertising after central disconnects (stack-dependent).
     BLE.advertise();
@@ -731,4 +762,3 @@ void loop() {
     delay(MAIN_LOOP_DELAY_MS);
   }
 }
-

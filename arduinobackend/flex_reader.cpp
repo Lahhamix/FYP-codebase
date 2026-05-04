@@ -24,14 +24,15 @@ static const uint32_t FLEX_SAMPLE_INTERVAL_MS = 10UL;
 static const uint32_t AUTO_BASELINE_DURATION_MS = 60000UL;
 static const uint8_t MAX_BASELINE_READINGS = 25;
 
-// Calibration equations from flex_correct.cpp / Excel, now using 12-bit ADC.
-static const float M_UL = -0.1426f;
+// Calibration equations from flex_correct.cpp / Excel, using flex-only 10-bit ADC values.
+// The board stays at 12-bit globally for the pressure matrix; flex readings are downscaled.
+static const float M_UL = -0.1426f * 4.0f;
 static const float B_UL = 79.17f;
-static const float M_UR = -0.3484f;
+static const float M_UR = -0.3484f * 4.0f;
 static const float B_UR = 175.59f;
-static const float M_LL = -0.1941f;
+static const float M_LL = -0.1941f * 4.0f;
 static const float B_LL = 107.17f;
-static const float M_LR = -0.1483f;
+static const float M_LR = -0.1483f * 4.0f;
 static const float B_LR = 83.73f;
 
 struct VolumeDetails {
@@ -106,6 +107,10 @@ static void resetStableSampling() {
   s_lastRawSampleMs = 0;
 }
 
+static int readFlex10(uint8_t pin) {
+  return analogRead(pin) >> 2;  // 12-bit 0..4095 -> 10-bit 0..1023
+}
+
 static float finishStableVolume() {
   float sum = 0.0f;
   float minV = 100000.0f;
@@ -156,10 +161,10 @@ static bool collectStableVolume(uint32_t now) {
     }
 
     RepeatAccumulator& acc = s_repeatAccumulators[repeatIndex];
-    acc.sumUL += (float)analogRead(PIN_UL);
-    acc.sumUR += (float)analogRead(PIN_UR);
-    acc.sumLL += (float)analogRead(PIN_LL);
-    acc.sumLR += (float)analogRead(PIN_LR);
+    acc.sumUL += (float)readFlex10(PIN_UL);
+    acc.sumUR += (float)readFlex10(PIN_UR);
+    acc.sumLL += (float)readFlex10(PIN_LL);
+    acc.sumLR += (float)readFlex10(PIN_LR);
     acc.count++;
   }
 

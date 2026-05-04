@@ -10,9 +10,14 @@ This app loads it from assets at:
 
 ## How to generate `bp_model.pte`
 
-Use the export script in:
+From the repo root (after placing `best_model.pt` under `testing/`):
 
-- `arduinobackend/ppg_waveform/export_executorch_bp.py`
+```bash
+cd testing
+python export_bp_to_pte.py --checkpoint best_model.pt --out ../app/src/main/assets/models/bp_model.pte --cpu
+```
 
-Then copy the generated `bp_model.pte` into this folder (overwrite existing).
+Training calls `model(ppg, ppg1, ppg2)` with internal `torch.stft`. The `.pte` is the ExecuTorch-friendly twin with **six** float32 inputs: three waveforms `(1,1,625)` plus three spectrograms `(1,20,65)` — same weights; see `testing/model_architecture.py` (`BPEstimationModel` vs `BPEstimationModelForExecuTorch`).
+
+Requires Python packages compatible with app Gradle `executorch-android` (for example ExecuTorch **1.2.x**). Reinstall the app (or bump `versionCode`) so `BpModelRunner` refreshes its extracted copy under internal storage.
 

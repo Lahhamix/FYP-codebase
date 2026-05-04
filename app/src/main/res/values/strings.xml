@@ -249,6 +249,8 @@
     <string name="plantar_pressure">Plantar Pressure</string>
     <string name="open_heatmap_calibrate">Open heatmap and calibrate</string>
     <string name="calibrate">Calibrate</string>
+    <string name="pressure_calibrating_progress_fmt">Calibrating… %1$d/%2$d.\nDo not step!</string>
+    <string name="pressure_calibration_complete">Calibration complete</string>
     <string name="foot_overview_title">Foot Overview</string>
     <string name="foot_overview_subtitle">Tap a zone to view readings</string>
     <string name="foot_overview_image_desc">SoleMate foot overview map</string>
@@ -270,6 +272,8 @@
     <string name="foot_overview_coming_soon">Action will be wired in the next step.</string>
     <string name="analytics_zone_description">Your plantar pressure distribution is currently within the Normal Status. Measurements are taken every 10 minutes by your SoleMate.</string>
     <string name="analytics_heatmap_desc">Captured plantar pressure heatmap</string>
+    <string name="plantar_live_label_ataxia_classification">Ataxia classification</string>
+    <string name="plantar_live_label_motion_status">Motion status</string>
     <string name="analytics_updated_icon_desc">Last update time</string>
     <string name="analytics_updated_waiting">Updated waiting for first capture</string>
     <string name="analytics_updated_just_now">Updated just now</string>

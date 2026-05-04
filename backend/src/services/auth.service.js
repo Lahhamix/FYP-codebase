@@ -174,7 +174,8 @@ async function googleSignIn(idToken) {
     audience: env.GOOGLE_CLIENT_ID,
   }).catch(() => { throw appError('Invalid Google token.', 401); });
 
-  const { sub: googleId, email: googleEmail, name } = ticket.getPayload();
+  const { sub: googleId, email, name } = ticket.getPayload();
+  const googleEmail = String(email || '').trim().toLowerCase();
 
   const existing = await userModel.findGoogleAccount(googleId);
   if (existing.rows.length) {

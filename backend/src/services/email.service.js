@@ -1,8 +1,20 @@
 const env = require('../config/env');
+const fs = require('fs');
+const path = require('path');
 
 async function send({ to, subject, text, html }) {
   if (env.USE_LOCAL_EMAIL) {
-    console.log(`[EMAIL] To: ${to} | Subject: ${subject}\n${text}`);
+    const entry = [
+      '---',
+      new Date().toISOString(),
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      text,
+      '',
+    ].join('\n');
+    const logPath = path.resolve(__dirname, '../../email_log.txt');
+    fs.appendFileSync(logPath, entry, 'utf8');
+    console.log(`[EMAIL:local] To: ${to} | Subject: ${subject} | logged to ${logPath}`);
     return;
   }
   const res = await fetch(`${env.SENDGRID_API_BASE}/v3/mail/send`, {

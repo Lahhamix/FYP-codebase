@@ -33,6 +33,7 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         private const val HR_CHAR_UUID = "9a8b0004-6d5e-4c10-b6d9-1f25c09d9e00"
         private const val SPO2_CHAR_UUID = "9a8b0005-6d5e-4c10-b6d9-1f25c09d9e00"
         private const val PPG_WAVE_CHAR_UUID = "9a8b0008-6d5e-4c10-b6d9-1f25c09d9e00"
+        private const val PPG_WAVE_WINDOW_BYTES = 625 * 4
         private const val TAG = "BIG_TOE_ANALYTICS"
     }
 
@@ -109,6 +110,7 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
     private var ppgWaveRxTotalChunks: Int = 0
     private var ppgWaveRxReceived: BooleanArray = BooleanArray(0)
     private var ppgWaveRxChunks: Array<ByteArray> = emptyArray()
+    private var ppgWaveLastCompletedFrameId: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -201,12 +203,14 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         if (totalChunks <= 0 || totalChunks > 200) return
         if (dataLen > 56) return
         if (plain.size < 8 + dataLen) return
+        if (frameId == ppgWaveLastCompletedFrameId) return
 
         if (ppgWaveRxFrameId != frameId || ppgWaveRxTotalChunks != totalChunks) {
             ppgWaveRxFrameId = frameId
             ppgWaveRxTotalChunks = totalChunks
             ppgWaveRxReceived = BooleanArray(totalChunks)
             ppgWaveRxChunks = Array(totalChunks) { ByteArray(0) }
+            Log.i(TAG, "PPG_WAVE frame start frame=$frameId chunks=$totalChunks chunk=$chunkId dataLen=$dataLen")
         }
         if (chunkId >= totalChunks) return
         if (!ppgWaveRxReceived[chunkId]) {
@@ -224,15 +228,23 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
             writeOffset += chunk.size
         }
 
-        if (assembled.size >= 12) {
-            Log.i(
-                TAG,
-                "PPG_WAVE window ok frame=$frameId bytes=${assembled.size} " +
-                    "s0=${readInt32LE(assembled, 0)} s1=${readInt32LE(assembled, 4)} s2=${readInt32LE(assembled, 8)}"
-            )
+        val expectedBytes = PPG_WAVE_WINDOW_BYTES
+        if (assembled.size != expectedBytes) {
+            Log.w(TAG, "PPG_WAVE assembled ${assembled.size} bytes (expected $expectedBytes); dropping frame $frameId")
+            ppgWaveRxFrameId = -1
+            ppgWaveRxTotalChunks = 0
+            ppgWaveRxReceived = BooleanArray(0)
+            ppgWaveRxChunks = emptyArray()
+            return
         }
 
-        val window = IntArray(assembled.size / 4)
+        Log.i(
+            TAG,
+            "PPG_WAVE window ok frame=$frameId bytes=${assembled.size} " +
+                "s0=${readInt32LE(assembled, 0)} s1=${readInt32LE(assembled, 4)} s2=${readInt32LE(assembled, 8)}",
+        )
+
+        val window = IntArray(expectedBytes / 4)
         var j = 0
         var off = 0
         while (off + 4 <= assembled.size && j < window.size) {
@@ -241,6 +253,7 @@ class BigToeAnalyticsActivity : AppCompatActivity() {
         }
         runBpInferenceFromWaveform(window)
 
+        ppgWaveLastCompletedFrameId = frameId
         ppgWaveRxFrameId = -1
         ppgWaveRxTotalChunks = 0
         ppgWaveRxReceived = BooleanArray(0)

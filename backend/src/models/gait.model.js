@@ -9,14 +9,14 @@ exports.create = (userId, data) =>
      RETURNING *`,
     [
       userId,
-      data.device_id || null,
-      data.deviation_score || null,
+      data.device_id ?? null,
+      data.deviation_score ?? null,
       data.big_toe_pressure ? JSON.stringify(data.big_toe_pressure) : null,
       data.plantar_pressure ? JSON.stringify(data.plantar_pressure) : null,
       data.ankle_cuff_metrics ? JSON.stringify(data.ankle_cuff_metrics) : null,
-      data.step_symmetry || null,
-      data.risk_flag || false,
-      data.recorded_at || null,
+      data.step_symmetry ?? null,
+      data.risk_flag ?? false,
+      data.recorded_at ?? null,
     ]
   );
 

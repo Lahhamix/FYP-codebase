@@ -9,16 +9,22 @@ exports.create = (userId, data) =>
      RETURNING *`,
     [
       userId,
-      data.device_id || null,
-      data.heart_rate || null,
-      data.spo2 || null,
-      data.bp_systolic || null,
-      data.bp_diastolic || null,
-      data.swelling_value || null,
-      data.step_count || null,
-      data.motion_status || null,
-      data.recorded_at || null,
+      data.device_id ?? null,
+      data.heart_rate ?? null,
+      data.spo2 ?? null,
+      data.bp_systolic ?? null,
+      data.bp_diastolic ?? null,
+      data.swelling_value == null ? null : String(data.swelling_value),
+      data.step_count ?? null,
+      data.motion_status ?? null,
+      data.recorded_at ?? null,
     ]
+  );
+
+exports.findByIdAndUser = (readingId, userId) =>
+  db.query(
+    'SELECT * FROM health_readings WHERE reading_id = $1 AND user_id = $2 LIMIT 1',
+    [readingId, userId]
   );
 
 exports.latest = (userId) =>

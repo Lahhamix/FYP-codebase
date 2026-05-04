@@ -12,4 +12,4 @@ exports.updateDeviceSchema = Joi.object({
   firmware_version: Joi.string().max(50).allow('', null),
   device_status:    Joi.string().valid('active', 'inactive', 'removed'),
   last_connected_at:Joi.string().isoDate().allow(null),
-});
+}).min(1);

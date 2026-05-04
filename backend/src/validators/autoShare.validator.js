@@ -8,5 +8,6 @@ exports.createRecipientSchema = Joi.object({
 
 exports.updateRecipientSchema = Joi.object({
   recipient_name:  Joi.string().max(80),
+  recipient_email: Joi.string().email(),
   alerts_enabled:  Joi.boolean(),
-});
+}).min(1);

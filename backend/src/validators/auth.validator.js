@@ -14,7 +14,7 @@ const password = Joi.string()
 
 exports.registerSchema = Joi.object({
   username: Joi.string().alphanum().min(3).max(30).required(),
-  email:    Joi.string().email().required(),
+  email:    Joi.string().email().lowercase().required(),
   password,
 });
 
@@ -34,7 +34,7 @@ exports.resendSchema = Joi.object({
 
 exports.changePendingEmailSchema = Joi.object({
   userId: Joi.string().uuid().required(),
-  email:  Joi.string().email().required(),
+  email:  Joi.string().email().lowercase().required(),
 });
 
 exports.forgotPasswordSchema = Joi.object({

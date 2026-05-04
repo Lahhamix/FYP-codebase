@@ -8,11 +8,16 @@ exports.create = (userId) =>
 
 exports.update = (userId, fields) => {
   const keys   = Object.keys(fields);
+  if (!keys.length) return exports.get(userId);
   const values = Object.values(fields);
-  const sets   = keys.map((k, i) => `${k} = $${i + 2}`).join(', ');
+  const cols = keys.join(', ');
+  const valuePlaceholders = keys.map((_, i) => `$${i + 2}`).join(', ');
+  const sets = keys.map((k) => `${k} = EXCLUDED.${k}`).join(', ');
   return db.query(
-    `UPDATE user_settings SET ${sets}, updated_at = NOW()
-     WHERE user_id = $1 RETURNING *`,
+    `INSERT INTO user_settings (user_id, ${cols}, updated_at)
+     VALUES ($1, ${valuePlaceholders}, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET ${sets}, updated_at = NOW()
+     RETURNING *`,
     [userId, ...values]
   );
 };

@@ -1,0 +1,120 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction}
+\label{chapter:introduction}
+%In this chapter, you should briefly discuss the main features of your final prototype by focusing on what you have achieved. The following sections must be included:
+
+
+\section{Project Needs and Motivation}
+%- What are the exact needs that your project will satisfy?\\
+%- Include a clear description about the main motivation behind the proposed FYP project.
+
+%This is the same intro we used for the conference paper
+Over the past decade, neurodegenerative diseases have emerged as a major global health concern \cite{who2024neurological}. Ataxia, a progressive symptom of these diseases, develops gradually and may remain undetected between clinical visits. Progressive motor instability may manifest as subtle, measurable deviations in gait and coordination. Like neurological diseases, cardiovascular diseases require continuous monitoring to detect measurable variations in heart rate (HR) and oxygen saturation (SpO$_2$), which indicate instability. According to recent research, a bidirectional relationship exists between neurodegenerative and cardiovascular diseases \cite{frontiers2024neurocardio}, with multiple sclerosis (MS)-related mortality often linked with cardiovascular complications \cite{mincu2015cardiovascular}. These progressive and cross-domain physiological deviations highlight the importance of objective, long-term monitoring approaches.\\ 
+
+Clinical assessments of motor and cardiovascular function are limited to episodic visits \cite{droracle2025msfollowup, ayoola2025primarycare}, relying on a set of visual tests, such as Timed Up and Go Test \cite{droracle2025msfollowup}, which fail to capture subtle physiological deviations over time. Subtle physiological deviations are difficult to identify through these scattered visits without any long-term measurable data. These limitations highlight the lack of continuous quantitative monitoring frameworks capable of capturing subtle gait deviations and cardiovascular variations outside clinical settings.\\
+
+Existing plantar pressure systems are typically lab-based and are not designed for continuous daily monitoring. Similarly, consumer-grade wearables focus on HR, SpO$_2$, and basic physiological data, but do not provide multi-domain physiological assessment. These limitations highlight the need for an integrated, wearable system that combines plantar pressure sensing with AI-based analysis for continuous, remote monitoring of gait and cardiovascular health. This work proposes \textit{SoleMate}, a wearable plantar-pressure sensing system with real-time embedded data acquisition. The platform integrates multimodal physiological sensing with AI-based gait analysis for ataxia detection and a machine-learning–driven hypertension risk classification module. By enabling continuous monitoring, it provides real-time insights into the patient’s neurological and cardiovascular health. This allows for early detection of subtle gait deviations and cardiovascular risks, enabling healthcare providers to intervene earlier and adjust treatments more effectively, even between scheduled clinical visits.\\
+
+Although established data acquisition systems exist for measuring HR and SpO$_2$, they are typically implemented as standalone devices, such as smart watches. SoleMate combines HR, SpO$_2$, and plantar pressure into a single wearable platform to reduce user burden and improve compliance, particularly for patients with neurodegenerative diseases who may face challenges in managing multiple devices. By combining plantar pressure and cardiovascular monitoring into one system, SoleMate eliminates the need for device synchronization and simplifies long-term use. This design choice is especially important given the average age (over 65 \cite{cleveland2026neurodegenerative}) and potential cognitive or motor limitations associated with neurodegenerative disorders, where ease of use directly impacts adherence to continuous monitoring.\\
+
+
+%\noindent The remainder of this paper is organized as follows. Section~II reviews related work on plantar-pressure sensing for gait analysis, PPG-based physiological monitoring, and wearable swelling detection. Section~III presents the proposed system architecture, including the sensing subsystems, mobile application pipeline, and the machine-learning framework. Section~IV reports the current experimental results from the developed subsystems. Section~V discusses the main observations, current limitations, and integration considerations. Finally, Section~VI concludes the paper and outlines future work toward full system integration, dataset collection, and model validation.
+
+\section{Desired Needs}
+%What are the exact needs that your project will satisfy?\\~\\
+%Example: The visually impaired need an efficient and effective way to enter data on the computer. This is a more specific listing of the needs and should be related to the motivation.
+The clinical and social implications of the ataxia and HTN diagnosis need to be transformed into practical, quantifiable targets. At the neurological level, there is a need for continuous measurement of static plantar pressure to enable early detection of ataxia, along with meaningful visual feedback and early warning indicators when deviation occurs. From a cardiovascular perspective, there is a need for continuous monitoring for blood pressure (BP). However, cuff-based approaches are impractical. Thus, the system must support practical blood pressure estimation (BPE) and provide indicators of physiological changes in HR, SpO$_2$, and swelling detection. The system must satisfy other needs such as secure data handling, robust design, and user-comfort. The detailed requirements corresponding to these needs are outlined below.\\
+
+    \subsection{Clinical \& Detection Needs (Neurological)}
+    \begin{enumerate}
+        \item Continuous monitoring of gait and plantar pressure to catch early ataxia
+        \item Useful visual data from relevant biomarkers
+        \item Early warning notifications when gait patterns deviate from personal baseline
+    \end{enumerate}
+
+    \subsection{Cardiovascular \& Physiological Needs}
+    \begin{enumerate}
+        \item Practical blood pressure estimation (BPE) or screening
+        \item Edema detection support (foot/ankle swelling)
+        \item Early warning notifications when blood pressure (BP) patterns deviate from personal baseline
+    \end{enumerate}
+
+    \subsection{Data, App, \& AI Needs}
+    \begin{enumerate}
+        \item A clear and user-friendly medical application that enables data sharing with a clinician portal
+        \item Secure data transmission
+        \item Simple, explainable analytics easy for both the clinicians and patients to understand at a glance
+    \end{enumerate}
+
+    \subsection{Accessibility \& Local Adaptation Needs}
+    \begin{enumerate}
+        \item Low-cost: affordable for patients and clinics
+        \item Telemedicine readiness: clinicians can check on patients remotely to decide if a visit is needed
+    \end{enumerate}
+
+    \subsection{Power, Comfort, \& Reliability Needs}
+    \begin{enumerate}
+        \item Easy to put on and comfortable  wearable
+        \item Robust to daily life wear and tear
+        \item Skin-safe and clinically acceptable wearable
+    \end{enumerate}
+
+\section{Requirements Specifications} 
+%This section should include a discussion about the various requirements specifications of your final product. 
+
+%\begin{itemize}
+%    \item The system should detect 90 \% of all human faces in an image.
+%    \item The system will be operational from 4AM to 10PM, 365 days a year.
+%    \item The system should be able to operate in the temperature range of \ang{0}C to \ang{75}C.
+%\end{itemize}
+
+This section defines the main requirement specifications of the proposed SoleMate system. The requirements translate the clinical, technical, and user needs into design specifications. The requirements refer to sensor accuracy, wireless data transfer, energy consumption, safety, ease of use, and data processing capability.\\
+\begin{itemize}
+    \item The wearable must weigh below 500g. 
+    \item The system must operate for at least 12 hours on a single charge. 
+    \item The system must operate for at least 3 hours of continuous operation.
+    \item The system should maintain BLE communication within a range of at least 5 meters.
+
+\end{itemize}
+
+\section{Deliverables}
+%This section should include the main deliverables and contributions in a clear itemized list. As an example:
+%\begin{itemize}
+ %   \item  An RF energy harvesting system that can be installed on the rooftop of a building in Beirut.
+  %  \item A constructed robot that navigates a room with obstacles.
+   % \item A dedicated mobile application for elderly people.
+%\end{itemize}
+
+The proposed system results in a wearable prototype accompanied by software, documentation, and evaluation materials. The following deliverables summarize the current implementation of the project and its alignment with the assigned objectives:\\
+
+\textbf{Wearable Prototype:}\\
+A compact shoe-based foot-wearable device that combines a Velostat-based plantar pressure sensing matrix, a photoplethysmography (PPG) sensing module for HR and SpO$_2$ monitoring, and flex-sensor-based swelling detection. A microcontroller collects real-time sensor readings and transfers them wirelessly to the mobile application through Bluetooth Low Energy (BLE). The current prototype validates subsystem-level sensing and visualization and forms the basis for full system integration and future real-world testing.\\
+
+\textbf{Data Acquisition and Processing Module:}\\
+Embedded firmware collects sensor readings, performs the required acquisition steps for the sensing modules, and sends the data securely over BLE to an external device for further analysis. On the processing side, the sensor streams are filtered, normalized, and organized before being passed to the mobile application and machine learning pipelines. In the current implementation, BLE payloads are encrypted using AES-128 in CBC mode and then reassembled and decrypted on the mobile client before visualization and logging.\\
+
+\textbf{Machine Learning Models:}\\
+The first model uses plantar pressure and gait data to detect signs of ataxia, while the second estimates blood pressure from PPG signals. The ataxia pipeline is based on a Capsule Network (CapsNet) architecture operating on plantar-pressure heatmaps, while the blood pressure pipeline is based on a spectro-temporal deep learning model that processes PPG signals and their derivatives. Both models were trained on available public datasets and evaluated using common performance metrics such as accuracy, sensitivity, specificity, precision, and mean absolute error (MAE). The current results support the feasibility of AI-based gait deviation detection and PPG-based cardiovascular assessment within the proposed system.\\
+
+\textbf{Mobile Application:}\\ 
+A simple, user-friendly Android application receives sensor data from the wearable via BLE, displays real-time readings, and stores the data for follow-up and offline analysis. The dashboard provides vital-sign monitoring by displaying heart rate and oxygen saturation measurements, as well as a gait-monitoring view that visualizes plantar-pressure frames as 2D heatmaps. It also uses swelling-related outputs to notify the user about the estimated severity level. In addition, the application supports CSV export with timestamps for later analysis. The application prototype was developed in Android Studio using Kotlin and the Gradle build system, and it serves as the main interface between the wearable system and the user.\\
+
+\textbf{Testing and Evaluation Document:}\\ 
+A detailed document was prepared to justify sensor choices, describe calibration methods against reference measurements, report subsystem-level testing results, and evaluate the performance of the implemented machine learning models. It includes signal plots, confusion matrices, pressure heatmaps, and a discussion of current system limitations such as motion artifacts, cross-talk in the pressure matrix, and the need for further validation under realistic use conditions.\\
+
+\textbf{Final Report and Presentation:}\\ 
+A complete technical report summarizes the system motivation, design methodology, hardware schematics and connections, embedded communication framework, mobile application pipeline, signal-processing stages, and machine learning workflow. It also documents the current prototype status, subsystem results, and future work toward full integration and includes a poster that summarizes key aspects, functionalities, methodology, and results of the project. In addition, the project is accompanied by a final presentation and demonstration of the developed prototype and its main functionalities.\\
+
+\section{Related Work}
+%In this section, you include a discussion about the literature review 
+%performed in EECE 501. Focus on the work available in the literature that was beneficial in implementing your FYP project. You should end this section by emphasizing on what is available in the literature and how did you benefit from the literature to have your project fully functional. 
+%\newline
+%\textbf{Do not forget to include the appropriate citations to all the papers or other relevant resources}. 
+%\newline
+%The citation should be as follows: In this paper \cite{5Gpaper}, the authors ... 
+
+
+Slapnicar et al. \cite{Slapnicar2019} explored the application of deep neural networks to estimate BP from PPG waveforms. Their ResNet-based model, trained using a Leave-One-Subject-Out (LOSO) evaluation scheme, achieved a MAE of 15.41~mmHg for SBP and 12.38~mmHg for DBP when using raw PPG with its first and second derivatives as input, without subject-specific personalization. When personalization was applied, performance improved significantly, reaching a MAE of 9.43~mmHg for SBP and 6.88~mmHg for DBP. This model highlights the importance of using advanced features such as spectral and temporal analysis of PPG signals, strengthening the model's accuracy, especially in noisy environments.\\

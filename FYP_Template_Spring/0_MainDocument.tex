@@ -1,0 +1,101 @@
+\documentclass[12pt, twoside, a4paper]{report}
+\textheight23cm \textwidth16cm
+
+%------- DEFINE PACKAGES -------%
+
+\usepackage{graphicx} % fixed (removed dvips)
+\usepackage{latexsym}
+\usepackage{epsf}
+\usepackage{epsfig}
+\usepackage{color}
+\usepackage{a4}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsxtra}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[nottoc]{tocbibind}
+\usepackage{algorithmic}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{subfigure}
+\usepackage{cite}
+\usepackage{fancybox}
+\usepackage{pdfpages}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage[utf8]{inputenc}
+\usepackage{siunitx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{setspace}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{adjustbox}
+\usepackage{comment}
+
+%------- SPACING FIXES -------%
+
+\singlespacing
+\setlength{\parskip}{0.3em}
+\setlength{\parindent}{0pt}
+
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+
+\bibliographystyle{ieeetr}
+
+
+
+\begin{document}
+\pagestyle{empty}
+%First page in the report
+
+\include{1_cover}
+\pagenumbering{roman} \setcounter{page}{2}
+%Second page in the report
+
+\include{2_Acknowledgements}
+% Third page in the report 
+
+\include{3_ExecutiveSummary}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Table of contents
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagestyle{empty}
+\tableofcontents 
+\listoffigures 
+\listoftables 
+\newpage
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Include files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagestyle{plain} \pagenumbering{arabic} \setcounter{page}{1}
+
+% Include here all the chapters of the report 
+\include{4_Introduction}
+\include{5_DesignProcess}
+\include{6_Implementation}
+\include{7_Experiment+Testing}
+\include{8_BroadImpact}
+\include{9_ListofResources}
+
+
+\appendix
+\include{10_Minutes}
+\include{11_Poster}
+\include{13_needs}
+
+
+% The file that contains all the references in the report
+\bibliography{12_ref}
+\end{document}

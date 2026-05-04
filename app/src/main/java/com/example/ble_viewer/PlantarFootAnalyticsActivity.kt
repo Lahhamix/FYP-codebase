@@ -4,14 +4,13 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.components.XAxis
@@ -34,20 +33,13 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
     private lateinit var toolbarUsername: TextView
     private lateinit var toolbarProfileImage: ImageView
     private lateinit var heatmapImage: ImageView
-    private lateinit var heatmapUpdatedAtText: TextView
-    private lateinit var heatmapStatusText: TextView
     private lateinit var stepsChart: BarChart
     private lateinit var analyticsScroll: ScrollView
     private lateinit var shareHealthReportButton: com.google.android.material.button.MaterialButton
     private lateinit var toolbarBack: ImageView
 
-    private val uiHandler = Handler(Looper.getMainLooper())
-    private val refreshRunnable = object : Runnable {
-        override fun run() {
-            refreshHeatmapSection()
-            uiHandler.postDelayed(this, 60_000L)
-        }
-    }
+    private var pressureLive: PlantarPressureLiveController? = null
+    private var disconnectDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,21 +48,40 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
         toolbarUsername = findViewById(R.id.toolbar_username)
         toolbarProfileImage = findViewById(R.id.toolbar_profile_image)
         heatmapImage = findViewById(R.id.analytics_heatmap_image)
-        heatmapUpdatedAtText = findViewById(R.id.analytics_heatmap_updated_at)
-        heatmapStatusText = findViewById(R.id.analytics_heatmap_status)
         stepsChart = findViewById(R.id.stepsConsistencyChart)
         analyticsScroll = findViewById(R.id.analytics_scroll)
         shareHealthReportButton = findViewById(R.id.share_health_report_button)
         toolbarBack = findViewById(R.id.toolbar_back)
 
-        // Only show back button if started from foot overview
         toolbarBack.visibility = View.VISIBLE
+
+        loadHeatmapPlaceholderFromSnapshot()
+
+        pressureLive = PlantarPressureLiveController(
+            activity = this,
+            heatmapImageView = heatmapImage,
+            calibrateButton = findViewById(R.id.plantar_live_calibrate_button),
+            calibrationProgress = findViewById(R.id.plantar_live_calibration_progress),
+            zoneAtaxiaStatus = findViewById(R.id.plantar_live_ataxia_status),
+            zoneMotionStatus = findViewById(R.id.plantar_live_motion_status),
+            zoneStepDonut = findViewById(R.id.plantar_live_step_donut),
+            trackStepsMotion = true,
+            onDeviceDisconnected = { showDisconnectDialog() },
+            rotateHeatmapClockwise90ForDisplay = false,
+        ).also {
+            it.initialize(startCalibrationImmediately = false)
+        }
 
         bindToolbar()
         bindBottomNavigation()
         bindActions()
         setupStepsConsistencyChart()
-        refreshHeatmapSection()
+    }
+
+    private fun loadHeatmapPlaceholderFromSnapshot() {
+        val snapshotFile = File(filesDir, PressureMatrixActivity.HEATMAP_SNAPSHOT_FILE)
+        if (!snapshotFile.exists()) return
+        BitmapFactory.decodeFile(snapshotFile.absolutePath)?.let { heatmapImage.setImageBitmap(it) }
     }
 
     private fun bindActions() {
@@ -89,13 +100,36 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        refreshHeatmapSection()
-        uiHandler.postDelayed(refreshRunnable, 60_000L)
+        pressureLive?.onResume()
     }
 
     override fun onPause() {
+        pressureLive?.onPause()
         super.onPause()
-        uiHandler.removeCallbacks(refreshRunnable)
+    }
+
+    override fun onDestroy() {
+        pressureLive?.onDestroy()
+        pressureLive = null
+        super.onDestroy()
+    }
+
+    private fun showDisconnectDialog() {
+        runOnUiThread {
+            if (isFinishing || isDestroyed) return@runOnUiThread
+            if (disconnectDialog?.isShowing == true) return@runOnUiThread
+
+            disconnectDialog = AlertDialog.Builder(this)
+                .setTitle(getString(R.string.dialog_connection_lost))
+                .setMessage(getString(R.string.dialog_wearable_disconnected))
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    finish()
+                }
+                .create()
+
+            disconnectDialog?.show()
+        }
     }
 
     private fun bindToolbar() {
@@ -147,38 +181,6 @@ class PlantarFootAnalyticsActivity : AppCompatActivity() {
             })
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
-        }
-    }
-
-    private fun refreshHeatmapSection() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val snapshotFile = File(filesDir, PressureMatrixActivity.HEATMAP_SNAPSHOT_FILE)
-        val updatedAt = prefs.getLong(PressureMatrixActivity.KEY_HEATMAP_LAST_UPDATED_MS, 0L)
-
-        if (snapshotFile.exists()) {
-            BitmapFactory.decodeFile(snapshotFile.absolutePath)?.let { bitmap ->
-                heatmapImage.setImageBitmap(bitmap)
-            }
-        } else {
-            heatmapImage.setImageBitmap(null)
-        }
-
-        heatmapUpdatedAtText.text = if (updatedAt <= 0L) {
-            getString(R.string.analytics_updated_waiting)
-        } else {
-            formatUpdatedAgo(updatedAt)
-        }
-
-        heatmapStatusText.text = getString(R.string.analytics_pressure_status_placeholder)
-    }
-
-    private fun formatUpdatedAgo(updatedAt: Long): String {
-        val minutes = ((System.currentTimeMillis() - updatedAt) / 60_000L).coerceAtLeast(0L)
-        return when {
-            minutes < 1L -> getString(R.string.analytics_updated_just_now)
-            minutes < 60L -> getString(R.string.analytics_updated_minutes_ago, minutes)
-            minutes < 1440L -> getString(R.string.analytics_updated_hours_ago, minutes / 60L)
-            else -> getString(R.string.analytics_updated_days_ago, minutes / 1440L)
         }
     }
 

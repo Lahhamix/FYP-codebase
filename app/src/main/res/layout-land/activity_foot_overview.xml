@@ -220,7 +220,8 @@
                     <FrameLayout
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:background="@drawable/foot_overview_analytics_icon_bg">
+                        android:background="@drawable/icon_circle_bg"
+                        android:backgroundTint="#1EF58433">
 
                         <ImageView
                             android:layout_width="24dp"
@@ -228,7 +229,7 @@
                             android:layout_gravity="center"
                             android:contentDescription="@string/zone_1_metric_title"
                             android:src="@drawable/ic_ataxia"
-                            app:tint="@color/white" />
+                            app:tint="#F58433" />
                     </FrameLayout>
 
                     <LinearLayout
@@ -342,7 +343,8 @@
                     <FrameLayout
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:background="@drawable/foot_overview_analytics_icon_bg">
+                        android:background="@drawable/icon_circle_bg"
+                        android:backgroundTint="#1EEC4D75">
 
                         <ImageView
                             android:layout_width="24dp"
@@ -350,7 +352,7 @@
                             android:layout_gravity="center"
                             android:contentDescription="@string/zone_2_metric_title"
                             android:src="@drawable/ic_heart_rate"
-                            app:tint="@color/white" />
+                            app:tint="#EC4D75" />
                     </FrameLayout>
 
                     <LinearLayout
@@ -465,7 +467,8 @@
                     <FrameLayout
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:background="@drawable/foot_overview_analytics_icon_bg">
+                        android:background="@drawable/icon_circle_bg"
+                        android:backgroundTint="#1E2FAA96">
 
                         <ImageView
                             android:layout_width="24dp"
@@ -473,7 +476,7 @@
                             android:layout_gravity="center"
                             android:contentDescription="@string/zone_3_metric_title"
                             android:src="@drawable/ic_swelling"
-                            app:tint="@color/white" />
+                            app:tint="#2FAA96" />
                     </FrameLayout>
 
                     <LinearLayout

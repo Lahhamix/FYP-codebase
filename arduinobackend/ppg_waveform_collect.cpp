@@ -34,8 +34,6 @@ bool ppg_waveform_collect_push(int32_t sample) {
 bool ppg_waveform_collect_take(int32_t* out625) {
   if (out625 == nullptr || !s_ready) return false;
   memcpy(out625, s_buf, sizeof(s_buf));
-  s_ready = false;
-  s_n = 0;
   return true;
 }
 

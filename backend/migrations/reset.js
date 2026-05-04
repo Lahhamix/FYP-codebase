@@ -1,46 +1,36 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const env = require('../src/config/env');
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
 async function run() {
   const client = await pool.connect();
   try {
-    console.log('🗑️  Dropping all tables...');
+    console.log('Dropping database schema...');
     await client.query('BEGIN');
-    
-    // Drop all tables
-    await client.query(`
-      DROP TABLE IF EXISTS refresh_tokens CASCADE;
-      DROP TABLE IF EXISTS password_reset_tokens CASCADE;
-      DROP TABLE IF EXISTS email_verification_codes CASCADE;
-      DROP TABLE IF EXISTS google_auth CASCADE;
-      DROP TABLE IF EXISTS user_settings CASCADE;
-      DROP TABLE IF EXISTS user_profiles CASCADE;
-      DROP TABLE IF EXISTS auto_share_recipients CASCADE;
-      DROP TABLE IF EXISTS alerts CASCADE;
-      DROP TABLE IF EXISTS gait_analytics CASCADE;
-      DROP TABLE IF EXISTS pressure_matrix_readings CASCADE;
-      DROP TABLE IF EXISTS health_readings CASCADE;
-      DROP TABLE IF EXISTS devices CASCADE;
-      DROP TABLE IF EXISTS feedback CASCADE;
-      DROP TABLE IF EXISTS users CASCADE;
-      DROP TABLE IF EXISTS pending_registrations CASCADE;
-    `);
-    
-    console.log('✓ All tables dropped');
-    
-    // Now run the new schema
-    const sql = fs.readFileSync(path.join(__dirname, '001_initial_schema.sql'), 'utf8');
-    await client.query(sql);
-    
-    console.log('✓ New schema created successfully');
+    await client.query('DROP SCHEMA IF EXISTS public CASCADE');
+    await client.query('CREATE SCHEMA public');
+    await client.query('GRANT ALL ON SCHEMA public TO PUBLIC');
+
+    const files = fs.readdirSync(__dirname)
+      .filter((file) => /^\d+_.+\.sql$/.test(file))
+      .sort();
+
+    for (const file of files) {
+      const sql = fs.readFileSync(path.join(__dirname, file), 'utf8');
+      await client.query(sql);
+      console.log(`[migration] ${file} OK`);
+    }
+
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Error:', err.message);
+    console.error('Reset failed:', err.message);
     process.exit(1);
   } finally {
     client.release();
@@ -49,6 +39,6 @@ async function run() {
 }
 
 run().then(() => {
-  console.log('\n✅ Database reset complete!');
+  console.log('\nDatabase reset complete.');
   process.exit(0);
 });

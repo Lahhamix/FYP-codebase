@@ -25,7 +25,7 @@
 #define SENSOR_IMU_ENABLED       1  // steps + motion + readIMU + IMU logs
 #define SENSOR_FLEX_ENABLED        1   // flex read + edema characteristic
 #define SENSOR_PPG_ENABLED         1  // MAX30102 + HR/SpO2 + ppg_print_serial
-#define SENSOR_PRESSURE_ENABLED    0  // matrix scan + pressure packets
+#define SENSOR_PRESSURE_ENABLED    1  // PHBLE 43x14 matrix scan + pressure BLE packets
 
 // Subsystem switches
 #define LOG_SYSTEM_ENABLED   1   // boot, BLE connect/disconnect, init messages
@@ -57,11 +57,11 @@
 // We scan a few columns per loop iteration so we never stall PPG waveform timing.
 // -----------------------------------------------------------------------------
 #ifndef PRESSURE_SCAN_COLS_PER_STEP
-#define PRESSURE_SCAN_COLS_PER_STEP 2
+#define PRESSURE_SCAN_COLS_PER_STEP 3
 #endif
 // BLE TX batching: send only a few pressure packets per loop iteration.
 #ifndef PRESSURE_TX_PACKETS_PER_STEP
-#define PRESSURE_TX_PACKETS_PER_STEP 4
+#define PRESSURE_TX_PACKETS_PER_STEP 6
 #endif
 
 // One combined line at end of each loop iteration (flex summary + pressure min/max). Set 0 to disable.
@@ -130,19 +130,23 @@
 // Transmitted in normal mode in small bursts to avoid disturbing loop timing.
 // -----------------------------------------------------------------------------
 #ifndef PPG_WAVE_BLE_PACKETS_PER_STEP
-#define PPG_WAVE_BLE_PACKETS_PER_STEP 2u
+#define PPG_WAVE_BLE_PACKETS_PER_STEP 1u
+#endif
+
+#ifndef PPG_WAVE_PACKET_SPACING_MS
+#define PPG_WAVE_PACKET_SPACING_MS 8u
 #endif
 
 // Samples per PPG waveform BLE chunk (each sample is int32).
-// Requested behavior: split into 5-sample chunks and send one chunk each loop.
+// 14 samples -> 56 data bytes; with the 8-byte P/W header this encrypts to 80 bytes,
+// which fits the existing 81-byte BLE characteristic as [len][ciphertext].
 #ifndef PPG_WAVE_SAMPLES_PER_CHUNK
-#define PPG_WAVE_SAMPLES_PER_CHUNK 5u
+#define PPG_WAVE_SAMPLES_PER_CHUNK 14u
 #endif
 
-// Repeat the same captured waveform window this many full cycles in normal mode.
-// This makes delivery robust against BLE notification drops (Android will fill missing chunks across cycles).
+// Repeat the same captured waveform window so Android can fill any chunks missed while pressure streams.
 #ifndef PPG_WAVE_REPEAT_CYCLES
-#define PPG_WAVE_REPEAT_CYCLES 1u
+#define PPG_WAVE_REPEAT_CYCLES 2u
 #endif
 
 // -----------------------------------------------------------------------------
@@ -150,8 +154,11 @@
 // Starts in normal mode, every PLOT_MODE_EVERY_MS enters plot mode for PLOT_MODE_DURATION_MS,
 // then returns to normal. Repeats forever.
 // -----------------------------------------------------------------------------
+#ifndef PLOT_MODE_FIRST_DELAY_MS
+#define PLOT_MODE_FIRST_DELAY_MS 8000u
+#endif
 #ifndef PLOT_MODE_EVERY_MS
-#define PLOT_MODE_EVERY_MS 30000u
+#define PLOT_MODE_EVERY_MS 60000u
 #endif
 #ifndef PLOT_MODE_DURATION_MS
 #define PLOT_MODE_DURATION_MS 6000u
@@ -211,4 +218,3 @@
 #endif
 
 #endif
-

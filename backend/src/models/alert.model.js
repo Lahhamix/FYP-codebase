@@ -4,7 +4,7 @@ exports.create = (userId, data) =>
   db.query(
     `INSERT INTO alerts (user_id, alert_type, severity, message, reading_id)
      VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-    [userId, data.alert_type, data.severity || 'info', data.message, data.reading_id || null]
+    [userId, data.alert_type, data.severity ?? 'info', data.message, data.reading_id ?? null]
   );
 
 exports.list = (userId, limit = 50) =>

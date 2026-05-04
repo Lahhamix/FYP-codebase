@@ -94,7 +94,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var ataxiaCard: View
     private lateinit var ataxiaValueText: TextView
     private lateinit var sharingExportCard: View
-    private lateinit var pressureMatrixCard: View
     private lateinit var vitalSignsCard: View
     private lateinit var gaitAnalysisCard: View
     private lateinit var fadeTargets: List<View>
@@ -158,6 +157,9 @@ class MainActivity : AppCompatActivity() {
         val pressureCharUuid = UUID.fromString("9a8b0007-6d5e-4c10-b6d9-1f25c09d9e00")
         val ppgWaveCharUuid = UUID.fromString("9a8b0008-6d5e-4c10-b6d9-1f25c09d9e00")
         const val PRESSURE_MATRIX_ENCRYPTION_ENABLED = true
+
+        /** 625 × int32 LE samples from wearable PPG waveform window */
+        private const val PPG_WAVE_WINDOW_BYTES = 625 * 4
     }
 
     private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -205,6 +207,14 @@ class MainActivity : AppCompatActivity() {
 
     private val sensorDataReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_BP_PREDICTION) {
+                val sbp = intent.getFloatExtra(EXTRA_SBP, Float.NaN)
+                val dbp = intent.getFloatExtra(EXTRA_DBP, Float.NaN)
+                if (sbp.isFinite() && dbp.isFinite()) {
+                    runOnUiThread { updateBpPredictionUi(sbp, dbp) }
+                }
+                return
+            }
             if (intent?.action != ACTION_SENSOR_DATA) return
 
             val uuidString = intent.getStringExtra(EXTRA_UUID_STRING) ?: return
@@ -306,6 +316,7 @@ class MainActivity : AppCompatActivity() {
                             if (totalChunks <= 0 || totalChunks > 200) return@runOnUiThread
                             if (dataLen < 0 || dataLen > 56) return@runOnUiThread
                             if (plain.size < 8 + dataLen) return@runOnUiThread
+                            if (frameId == ppgWaveLastCompletedFrameId) return@runOnUiThread
 
                             // Lazy state: track one frame at a time (latest wins)
                             if (ppgWaveRxFrameId != frameId || ppgWaveRxTotalChunks != totalChunks) {
@@ -313,6 +324,7 @@ class MainActivity : AppCompatActivity() {
                                 ppgWaveRxTotalChunks = totalChunks
                                 ppgWaveRxReceived = BooleanArray(totalChunks)
                                 ppgWaveRxChunks = Array(totalChunks) { ByteArray(0) }
+                                Log.i(TAG, "PPG_WAVE frame start frame=$frameId chunks=$totalChunks chunk=$chunkId dataLen=$dataLen")
                             }
                             if (chunkId >= totalChunks) return@runOnUiThread
                             if (!ppgWaveRxReceived[chunkId]) {
@@ -329,27 +341,33 @@ class MainActivity : AppCompatActivity() {
                                     System.arraycopy(b, 0, assembled, w, b.size)
                                     w += b.size
                                 }
-                                // Expect exactly 2500 bytes (625 int32 LE)
-                                if (assembled.size >= 12) {
-                                    val s0 = readInt32LE(assembled, 0)
-                                    val s1 = readInt32LE(assembled, 4)
-                                    val s2 = readInt32LE(assembled, 8)
-                                    Log.i(TAG, "PPG_WAVE window ok frame=$frameId bytes=${assembled.size} s0=$s0 s1=$s1 s2=$s2")
-                                } else {
-                                    Log.i(TAG, "PPG_WAVE window ok frame=$frameId bytes=${assembled.size}")
+                                if (assembled.size != PPG_WAVE_WINDOW_BYTES) {
+                                    Log.w(
+                                        TAG,
+                                        "PPG_WAVE assembled ${assembled.size} bytes (expected $PPG_WAVE_WINDOW_BYTES); dropping frame $frameId",
+                                    )
+                                    ppgWaveRxFrameId = -1
+                                    ppgWaveRxTotalChunks = 0
+                                    ppgWaveRxReceived = BooleanArray(0)
+                                    ppgWaveRxChunks = emptyArray()
+                                    return@runOnUiThread
                                 }
 
-                                // Run BP inference on the full window, then update UI + broadcast.
-                                val window = IntArray(assembled.size / 4)
-                                var j = 0
+                                val s0 = readInt32LE(assembled, 0)
+                                val s1 = readInt32LE(assembled, 4)
+                                val s2 = readInt32LE(assembled, 8)
+                                Log.i(TAG, "PPG_WAVE window ok frame=$frameId bytes=${assembled.size} s0=$s0 s1=$s1 s2=$s2")
+
+                                val window = IntArray(PPG_WAVE_WINDOW_BYTES / 4)
                                 var off = 0
+                                var j = 0
                                 while (off + 4 <= assembled.size && j < window.size) {
                                     window[j++] = readInt32LE(assembled, off)
                                     off += 4
                                 }
                                 runBpInferenceAndUpdateUi(window)
 
-                                // Reset so next frame starts clean
+                                ppgWaveLastCompletedFrameId = frameId
                                 ppgWaveRxFrameId = -1
                                 ppgWaveRxTotalChunks = 0
                                 ppgWaveRxReceived = BooleanArray(0)
@@ -369,6 +387,7 @@ class MainActivity : AppCompatActivity() {
     private var ppgWaveRxTotalChunks: Int = 0
     private var ppgWaveRxReceived: BooleanArray = BooleanArray(0)
     private var ppgWaveRxChunks: Array<ByteArray> = emptyArray()
+    private var ppgWaveLastCompletedFrameId: Int = -1
 
     private fun readInt32LE(buf: ByteArray, off: Int): Int {
         if (off + 4 > buf.size) return 0
@@ -381,22 +400,23 @@ class MainActivity : AppCompatActivity() {
     // --- BP model ---
     private val bpRunner by lazy { BpModelRunner(this) }
 
+    private fun updateBpPredictionUi(sbp: Float, dbp: Float) {
+        val cls = BpUi.classify(sbp, dbp)
+        bpCard.findViewById<TextView>(R.id.bpStatus)?.text = when (cls) {
+            BpClass.HYPOTENSION -> "Hypotension"
+            BpClass.NORMAL -> "Normal"
+            BpClass.HYPERTENSION -> "Hypertension"
+        }
+        bpCard.findViewById<TextView>(R.id.bpStatus)?.let { applyNeonChip(it, "#31567D") }
+        bpValueText.text = "${sbp.toInt()}/${dbp.toInt()}"
+        bpUnitText.text = "mmHg"
+    }
+
     private fun runBpInferenceAndUpdateUi(window: IntArray) {
         Thread {
             val pred = bpRunner.predictFromWaveform(window) ?: return@Thread
-            val cls = BpUi.classify(pred.sbp, pred.dbp)
             BpPredictionStore.save(this, pred.sbp, pred.dbp)
-            runOnUiThread {
-                // Chip: classification. Text below: numeric BP with unit.
-                bpCard.findViewById<TextView>(R.id.bpStatus)?.text = when (cls) {
-                    BpClass.HYPOTENSION -> "Hypotension"
-                    BpClass.NORMAL -> "Normal"
-                    BpClass.HYPERTENSION -> "Hypertension"
-                }
-                bpCard.findViewById<TextView>(R.id.bpStatus)?.let { applyNeonChip(it, "#31567D") }
-                bpValueText.text = "${pred.sbp.toInt()}/${pred.dbp.toInt()}"
-                bpUnitText.text = "mmHg"
-            }
+            runOnUiThread { updateBpPredictionUi(pred.sbp, pred.dbp) }
 
             // Broadcast so other screens (e.g. BigToeAnalyticsActivity) can update BP classification UI.
             val intent = Intent(ACTION_BP_PREDICTION).apply {
@@ -463,7 +483,6 @@ class MainActivity : AppCompatActivity() {
         ataxiaCard = findViewById(R.id.ataxiaCard)
         ataxiaValueText = findViewById(R.id.ataxiaValueText)
         sharingExportCard = findViewById(R.id.sharingExportCard)
-        pressureMatrixCard = findViewById(R.id.pressureMatrixCard)
         vitalSignsCard = findViewById(R.id.vitalSignsCard)
         gaitAnalysisCard = findViewById(R.id.gaitAnalysisCard)
 
@@ -478,8 +497,7 @@ class MainActivity : AppCompatActivity() {
             swellingCard,
             ataxiaCard,
             gaitAnalysisCard,
-            sharingExportCard,
-            pressureMatrixCard
+            sharingExportCard
         )
 
         heartRateText.text = formatValueWithUnit("--", "BPM")
@@ -547,14 +565,6 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
-        attachInfoTapBehavior(
-            view = findViewById<MaterialCardView>(R.id.pressureMatrixCard),
-            readTextProvider = { getString(R.string.plantar_pressure) },
-            onDoubleTapAction = {
-                startActivity(Intent(this, PressureMatrixActivity::class.java))
-            }
-        )
-        
         // Add long-press TTS for BP, Swelling, and Ataxia cards
         bpCard.setOnLongClickListener {
             if (canUseCustomSpeech()) {
@@ -597,13 +607,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        findViewById<Button>(R.id.calibrateButton)?.setOnClickListener {
-            startActivity(Intent(this, PressureMatrixActivity::class.java).apply {
-                putExtra(PressureMatrixActivity.EXTRA_START_CALIBRATION, true)
-            })
-        }
-        attachLongPressReadAloud(findViewById(R.id.calibrateButton), getString(R.string.calibrate))
-
         findViewById<Button>(R.id.download_data_button).setOnClickListener {
             checkPermissionAndExport()
         }
@@ -918,7 +921,10 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         LocalBroadcastManager.getInstance(this).registerReceiver(
             sensorDataReceiver,
-            IntentFilter(ACTION_SENSOR_DATA)
+            IntentFilter().apply {
+                addAction(ACTION_SENSOR_DATA)
+                addAction(ACTION_BP_PREDICTION)
+            }
         )
     }
 
@@ -926,6 +932,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         updateToolbarUsername()
         updateToolbarProfileImage()
+        BpPredictionStore.latest(this)?.let { updateBpPredictionUi(it.sbp, it.dbp) }
         reconcileDisconnectedOverlay()
         promptEnableBluetoothIfNeeded()
         // Stop any ongoing TTS speech in case the user disabled it in Settings
@@ -1138,7 +1145,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     gatt.writeCharacteristic(phoneKeyChar)
                 }
-                // Set a timeout for key exchange - if no response in 3 seconds, proceed with legacy mode
+                // Give the peripheral enough time to answer even if it is temporarily busy switching modes.
                 keyExchangeTimeoutRunnable = Runnable {
                     if (isKeyExchangeInProgress) {
                         Log.w(TAG, "Key exchange timeout - falling back to legacy mode")
@@ -1147,7 +1154,7 @@ class MainActivity : AppCompatActivity() {
                         setupDataNotifications(gatt)
                     }
                 }
-                uiHandler.postDelayed(keyExchangeTimeoutRunnable!!, 3000)
+                uiHandler.postDelayed(keyExchangeTimeoutRunnable!!, 10000)
                 return
             }
 
@@ -1279,6 +1286,10 @@ class MainActivity : AppCompatActivity() {
             isProcessingQueue = false
             processNotificationQueue(gatt)
         }
+
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            Log.i(TAG, "BLE MTU changed mtu=$mtu status=$status")
+        }
     }
 
     private fun completeKeyExchange(gatt: BluetoothGatt, devicePubKeyBytes: ByteArray) {
@@ -1331,8 +1342,8 @@ class MainActivity : AppCompatActivity() {
             imuService.getCharacteristic(heartRateCharUuid),
             imuService.getCharacteristic(spo2CharUuid),
             imuService.getCharacteristic(edemaCharUuid),
-            imuService.getCharacteristic(pressureCharUuid),
-            imuService.getCharacteristic(ppgWaveCharUuid)
+            imuService.getCharacteristic(ppgWaveCharUuid),
+            imuService.getCharacteristic(pressureCharUuid)
         )
         
         val validCharacteristics = characteristics.filterNotNull()
@@ -1414,6 +1425,7 @@ class MainActivity : AppCompatActivity() {
         synchronized(bleNotifyAssemblyLock) {
             // no per-characteristic buffers anymore
         }
+        PpgWaveProcessor.reset()
         BleGattSession.gatt?.close()
         BleGattSession.gatt = null
         stopDataLogging()
@@ -1640,6 +1652,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val messageBytes = bytes.copyOfRange(1, payloadLength + 1)
+        if (characteristic.uuid == ppgWaveCharUuid) {
+            PpgWaveProcessor.processEncryptedChunk(applicationContext, messageBytes)
+            return
+        }
         val intent = Intent(ACTION_SENSOR_DATA).apply {
             putExtra(EXTRA_UUID_STRING, characteristic.uuid.toString())
             putExtra(EXTRA_DECRYPTED_DATA, messageBytes)

@@ -82,6 +82,10 @@ android {
         buildConfig = true
         compose = false
     }
+    androidResources {
+        // Keeps .pte uncompressed so asset size checks / extraction stay reliable.
+        noCompress += "pte"
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -107,7 +111,7 @@ dependencies {
     // ExecuTorch runtime (BP model inference)
     implementation("org.pytorch:executorch-android:1.2.0")
 
-    // FFT for STFT / spectrogram preprocessing (Option A)
+    // Spectrogram on-device (matches training torch.stft for ExecuTorch export path)
     implementation("com.github.wendykierp:JTransforms:3.1")
 
     testImplementation("junit:junit:4.13.2")

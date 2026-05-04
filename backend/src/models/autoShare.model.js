@@ -16,11 +16,12 @@ exports.create = (userId, name, email, alertsEnabled) =>
   db.query(
     `INSERT INTO auto_share_recipients (user_id, recipient_name, recipient_email, alerts_enabled)
      VALUES ($1,$2,$3,$4) RETURNING *`,
-    [userId, name, email, alertsEnabled !== false]
+    [userId, name, email, alertsEnabled ?? true]
   );
 
 exports.update = (recipientId, userId, fields) => {
   const keys   = Object.keys(fields);
+  if (!keys.length) return exports.findByIdAndUser(recipientId, userId);
   const values = Object.values(fields);
   const sets   = keys.map((k, i) => `${k} = $${i + 3}`).join(', ');
   return db.query(

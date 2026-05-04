@@ -5,7 +5,7 @@ exports.findByEmailOrUsername = (identifier) =>
     `SELECT user_id, username, email, password_hash, auth_provider,
             email_verified, account_status, last_login_at
      FROM users
-     WHERE (email = $1 OR username = $1) LIMIT 1`,
+     WHERE (LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)) LIMIT 1`,
     [identifier]
   );
 
@@ -18,10 +18,10 @@ exports.findById = (userId) =>
   );
 
 exports.findByEmail = (email) =>
-  db.query('SELECT user_id FROM users WHERE email = $1 LIMIT 1', [email]);
+  db.query('SELECT user_id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [email]);
 
 exports.findByUsername = (username) =>
-  db.query('SELECT user_id FROM users WHERE username = $1 LIMIT 1', [username]);
+  db.query('SELECT user_id FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1', [username]);
 
 exports.create = (username, email, passwordHash, provider) =>
   db.query(
@@ -86,10 +86,16 @@ exports.createProfile = (userId, displayName) =>
 
 exports.updateProfile = (userId, fields) => {
   const keys   = Object.keys(fields);
+  if (!keys.length) return exports.getProfile(userId);
   const values = Object.values(fields);
-  const sets   = keys.map((k, i) => `${k} = $${i + 2}`).join(', ');
+  const cols = keys.join(', ');
+  const valuePlaceholders = keys.map((_, i) => `$${i + 2}`).join(', ');
+  const sets = keys.map((k) => `${k} = EXCLUDED.${k}`).join(', ');
   return db.query(
-    `UPDATE user_profiles SET ${sets}, updated_at = NOW() WHERE user_id = $1 RETURNING *`,
+    `INSERT INTO user_profiles (user_id, ${cols}, updated_at)
+     VALUES ($1, ${valuePlaceholders}, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET ${sets}, updated_at = NOW()
+     RETURNING *`,
     [userId, ...values]
   );
 };
@@ -164,14 +170,14 @@ exports.findPendingById = (id) =>
 exports.findActivePendingByEmail = (email) =>
   db.query(
     `SELECT * FROM pending_registrations
-     WHERE email = $1 AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
+     WHERE LOWER(email) = LOWER($1) AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
     [email]
   );
 
 exports.findActivePendingByUsername = (username) =>
   db.query(
     `SELECT * FROM pending_registrations
-     WHERE username = $1 AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
+     WHERE LOWER(username) = LOWER($1) AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
     [username]
   );
 
@@ -183,7 +189,7 @@ exports.insertPending = (id, username, email, passwordHash, codeHash, codeExpire
   );
 
 exports.deletePendingByEmail = (email) =>
-  db.query('DELETE FROM pending_registrations WHERE email = $1', [email]);
+  db.query('DELETE FROM pending_registrations WHERE LOWER(email) = LOWER($1)', [email]);
 
 exports.updatePendingCode = (id, codeHash, codeExpiresAt) =>
   db.query(

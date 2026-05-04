@@ -8,11 +8,11 @@ exports.create = (userId, data) =>
      RETURNING *`,
     [
       userId,
-      data.device_id || null,
+      data.device_id ?? null,
       JSON.stringify(data.matrix_values),
       data.pressure_zones ? JSON.stringify(data.pressure_zones) : null,
-      data.foot_side || null,
-      data.recorded_at || null,
+      data.foot_side ?? null,
+      data.recorded_at ?? null,
     ]
   );
 

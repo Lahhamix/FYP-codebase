@@ -22,7 +22,8 @@ bool ppg_waveform_collect_has_window();
 bool ppg_waveform_collect_push(int32_t sample);
 
 /**
- * Copy the ready window into out625 and clear the ready flag.
+ * Copy the ready window into out625 without clearing it.
+ * The caller should clear it only after the saved window has finished transmitting.
  * Returns true if a window was available.
  */
 bool ppg_waveform_collect_take(int32_t* out625);

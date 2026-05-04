@@ -7,4 +7,11 @@
     <dimen name="dashboard_card_title_text_size">12sp</dimen>
     <dimen name="dashboard_card_value_text_size">24sp</dimen>
     <dimen name="dashboard_status_chip_text_size">10sp</dimen>
+
+    <!-- Plantar live: inset above Calibrate / below steps donut -->
+    <dimen name="plantar_live_card_edge_gap">12dp</dimen>
+    <!-- Gap between calibrate ↔ indicator stacks ↔ donut -->
+    <dimen name="plantar_live_section_gap">100dp</dimen>
+    <!-- Caption → chip only -->
+    <dimen name="plantar_live_label_chip_gap">8dp</dimen>
 </resources>

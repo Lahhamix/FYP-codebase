@@ -91,18 +91,53 @@ describe('POST /alerts', () => {
     expect(res.body.severity).toBe('info');
   });
 
-  it('accepts an optional reading_id (UUID)', async () => {
+  it('accepts an optional reading_id belonging to the authenticated user', async () => {
+    const reading = await request(app)
+      .post('/readings')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ heart_rate: 71 });
+
     const res = await request(app)
       .post('/alerts')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         alert_type: 'heart_rate',
         message:    'Alert with reading link',
+        reading_id: reading.body.reading_id,
+      });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('rejects a missing reading_id instead of falling through to a FK error', async () => {
+    const res = await request(app)
+      .post('/alerts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        alert_type: 'heart_rate',
+        message:    'Alert with missing reading link',
         reading_id: '00000000-0000-0000-0000-000000000000',
       });
 
-    // Validator accepts UUID; a non-existent FK causes a 500 if the reading doesn't exist
-    expect([201, 400, 404, 409, 500]).toContain(res.status);
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects a reading_id owned by another user', async () => {
+    const reading = await request(app)
+      .post('/readings')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ heart_rate: 73 });
+
+    const res = await request(app)
+      .post('/alerts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        alert_type: 'heart_rate',
+        message:    'Cross-user reading link',
+        reading_id: reading.body.reading_id,
+      });
+
+    expect(res.status).toBe(404);
   });
 
   it('rejects missing alert_type → 400', async () => {
