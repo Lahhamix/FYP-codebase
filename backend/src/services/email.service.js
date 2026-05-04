@@ -84,6 +84,8 @@ function resetHtml(resetUrl) {
 </div></body></html>`;
 }
 
+exports.send = send;
+
 exports.sendVerificationCode = (to, username, code) =>
   send({
     to,
