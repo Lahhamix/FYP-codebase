@@ -1875,19 +1875,7 @@ class SettingsActivity : AppCompatActivity() {
         val patientName = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .getString("username", getString(R.string.settings_default_name))
             .orEmpty()
-        val html = buildVerificationEmailHtml(patientName, code)
-        val plainText = """
-            SoleMate Email Verification
-
-            Hello,
-
-            $patientName has added you to receive health data via SoleMate.
-            Verification code: $code
-
-            This code expires in 10 minutes.
-        """.trimIndent()
-
-        return sendEmailViaBackend(recipientEmail, "SoleMate Email Verification", plainText, html)
+        return sendEmailViaBackend("share-verification", recipientEmail, patientName, code)
     }
 
     private fun sendSharingStoppedEmail(recipientEmail: String): Pair<Boolean, String?> {
@@ -1895,20 +1883,7 @@ class SettingsActivity : AppCompatActivity() {
             .getString("username", getString(R.string.settings_default_name))
             .orEmpty()
             .ifBlank { getString(R.string.settings_default_name) }
-
-        val safePatientName = escapeHtml(patientName)
-        val html = buildSharingStoppedEmailHtml(recipientEmail, safePatientName)
-        val plainText = """
-            SoleMate Alert Sharing Update
-
-            $patientName has stopped sharing health alerts with you.
-
-            You will no longer receive email notifications when alerts are triggered.
-
-            This is an automated message. No action is required.
-        """.trimIndent()
-
-        return sendEmailViaBackend(recipientEmail, "Alert Sharing Update - SoleMate", plainText, html)
+        return sendEmailViaBackend("sharing-stopped", recipientEmail, patientName)
     }
 
     private fun sendAutoShareDisabledEmails(recipientEmails: List<String>) {
@@ -1949,41 +1924,24 @@ class SettingsActivity : AppCompatActivity() {
             .getString("username", getString(R.string.settings_default_name))
             .orEmpty()
             .ifBlank { getString(R.string.settings_default_name) }
-
-        val safePatientName = escapeHtml(patientName)
-        val html = buildAlertSharingDisabledEmailHtml(recipientEmail, safePatientName)
-        val plainText = """
-            Alert Sharing Disabled - SoleMate
-
-            Hello,
-
-            $patientName has turned off alert sharing in the SoleMate Application.
-
-            As a result, you will no longer receive email notifications when alerts are triggered for this user.
-
-            If you believe this change was made unintentionally, please contact the user directly.
-
-            This is an automated message. No action is required.
-        """.trimIndent()
-
-        return sendEmailViaBackend(recipientEmail, "Alert Sharing Disabled - SoleMate", plainText, html)
+        return sendEmailViaBackend("sharing-disabled", recipientEmail, patientName)
     }
 
     private fun sendEmailViaBackend(
+        type: String,
         recipientEmail: String,
-        subject: String,
-        plainText: String,
-        html: String
+        patientName: String,
+        code: String? = null
     ): Pair<Boolean, String?> {
         val backendBaseUrl = BuildConfig.EMAIL_BACKEND_BASE_URL.trim().ifBlank { "http://10.0.2.2:3000" }.trimEnd('/')
         val sendUrl = "$backendBaseUrl/send-email"
 
         val backendResult = runCatching {
             val payload = JSONObject().apply {
+                put("type", type)
                 put("to", recipientEmail)
-                put("subject", subject)
-                put("text", plainText)
-                put("html", html)
+                put("patientName", patientName)
+                if (code != null) put("code", code)
             }
 
             val connection = (URL(sendUrl).openConnection() as HttpURLConnection).apply {

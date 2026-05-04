@@ -30,9 +30,22 @@ app.use('/feedback',        require('./routes/feedback.routes'));
 const emailSvc = require('./services/email.service');
 app.post('/send-email', async (req, res, next) => {
   try {
-    const { to, subject, text, html } = req.body;
-    if (!to || !subject) return res.status(400).json({ error: 'Missing required fields: to, subject' });
-    await emailSvc.send({ to, subject, text, html });
+    const { type, to, patientName, code } = req.body;
+    if (!type || !to) return res.status(400).json({ error: 'Missing required fields: type, to' });
+    switch (type) {
+      case 'share-verification':
+        if (!code) return res.status(400).json({ error: 'Missing field: code' });
+        await emailSvc.sendShareVerification(to, patientName, code);
+        break;
+      case 'sharing-stopped':
+        await emailSvc.sendSharingStoppedEmail(to, patientName);
+        break;
+      case 'sharing-disabled':
+        await emailSvc.sendAlertSharingDisabledEmail(to, patientName);
+        break;
+      default:
+        return res.status(400).json({ error: `Unknown email type: ${type}` });
+    }
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
