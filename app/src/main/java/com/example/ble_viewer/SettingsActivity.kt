@@ -1222,7 +1222,7 @@ class SettingsActivity : AppCompatActivity() {
                         verifyEmailButton.visibility = View.VISIBLE
                         val detail = errorDetail?.take(140).orEmpty()
                         val message = if (detail.isNotBlank()) {
-                            getString(R.string.settings_auto_share_send_failed) + " (" + detail + ")"
+                            " (" + detail + ")" + getString(R.string.settings_auto_share_send_failed)
                         } else {
                             getString(R.string.settings_auto_share_send_failed)
                         }
