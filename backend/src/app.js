@@ -26,7 +26,6 @@ app.use('/gait',            require('./routes/gait.routes'));
 app.use('/alerts',          require('./routes/alert.routes'));
 app.use('/auto-share',      require('./routes/autoShare.routes'));
 app.use('/feedback',        require('./routes/feedback.routes'));
-app.use('/',                require('./routes/email.routes'));
 
 app.get('/health', (_, res) => res.json({ ok: true, version: '2.0.0' }));
 
